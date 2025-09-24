@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Noto_Sans_Lao } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const noto_sans_lao = Noto_Sans_Lao({
+  subsets: ["lao"],
+  variable: "--font-sans-lao",
+  weight: ['400', '700']
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -17,11 +21,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="lo">
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          inter.variable
+          "min-h-screen bg-background font-sans-lao antialiased",
+          noto_sans_lao.variable
         )}
       >
         {children}
