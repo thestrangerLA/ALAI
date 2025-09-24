@@ -36,9 +36,10 @@ const ensureInitialState = async () => {
     }
 };
 
-export const listenToTourAccountSummary = (callback: (summary: TourAccountSummary | null) => void) => {
+export const listenToTourAccountSummary = (callback: (summary: TourAccountSummary | null) => void): (() => void) => {
+    let unsubscribe: (() => void) | null = null;
     ensureInitialState().then(() => {
-        const unsubscribe = onSnapshot(summaryDocRef, (docSnapshot) => {
+        unsubscribe = onSnapshot(summaryDocRef, (docSnapshot) => {
             if (docSnapshot.exists()) {
                 const data = docSnapshot.data();
                 callback({
@@ -48,21 +49,22 @@ export const listenToTourAccountSummary = (callback: (summary: TourAccountSummar
                     transfer: data.transfer || { ...initialCurrencyValues },
                 });
             } else {
-                // This case should ideally not be hit after ensureInitialState, but as a fallback:
                 callback({ id: 'latest', ...initialSummaryState });
             }
         }, (error) => {
             console.error("Error listening to account summary: ", error);
-            callback(null); // Pass null on error
+            callback(null);
         });
-        return unsubscribe;
     }).catch(error => {
         console.error("Error ensuring initial state for account summary: ", error);
         callback(null);
     });
 
-    // Return a dummy unsubscribe function for the initial phase
-    return () => {};
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
 };
 
 export const updateTourAccountSummary = async (summary: Partial<Omit<TourAccountSummary, 'id'>>) => {

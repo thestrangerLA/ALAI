@@ -74,14 +74,17 @@ export interface TourAccountSummary {
 export interface Transaction {
     id: string;
     date: Date;
-    type: 'income' | 'expense' | 'transfer-in' | 'transfer-out' | 'deposit' | 'withdraw';
-    from: string;
-    to: string;
+    type: 'income' | 'expense';
     description: string;
-    currency: 'kip' | 'baht' | 'usd' | 'cny';
-    amount: number;
+    amount: number; // Retaining for compatibility, but focusing on currency fields
+    kip: number;
+    baht: number;
+    usd: number;
+    cny: number;
     createdAt: Timestamp;
+    [key: string]: any; // Allow other properties
 }
+
 
 // Tour Calculator Specific Types
 export type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';

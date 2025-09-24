@@ -54,7 +54,7 @@ export default function TourAccountancyPage() {
     const [summary, setSummary] = useState<TourAccountSummary | null>(null);
     const [date, setDate] = useState<Date | undefined>(new Date());
     const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [newTransaction, setNewTransaction] = useState<Partial<Transaction>>({ type: 'expense', description: '', amount: 0, currency: 'kip' });
+    const [newTransaction, setNewTransaction] = useState<Partial<Transaction>>({ type: 'expense', description: '', kip: 0, baht: 0, usd: 0, cny: 0 });
     const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
     const [isFormVisible, setFormVisible] = useState(true);
     const [historyDisplayMonth, setHistoryDisplayMonth] = useState<Date>(new Date());
@@ -88,9 +88,8 @@ export default function TourAccountancyPage() {
 
         const broughtForward = currencies.reduce((acc, curr) => {
             acc[curr] = previousTransactions.reduce((sum, tx) => {
-                 if (tx.currency !== curr) return sum;
-                 const amount = tx.amount || 0;
-                 return tx.type === 'income' || tx.type === 'deposit' || tx.type === 'transfer-in' ? sum + amount : sum - amount;
+                 const amount = tx[curr] || 0;
+                 return tx.type === 'income' ? sum + amount : sum - amount;
             }, 0);
             return acc;
         }, { ...initialCurrencyValues });
@@ -99,15 +98,15 @@ export default function TourAccountancyPage() {
         
         const income = currencies.reduce((acc, curr) => {
             acc[curr] = monthlyTransactions
-                .filter(tx => (tx.type === 'income' || tx.type === 'deposit' || tx.type === 'transfer-in') && tx.currency === curr)
-                .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+                .filter(tx => tx.type === 'income')
+                .reduce((sum, tx) => sum + (tx[curr] || 0), 0);
             return acc;
         }, { ...initialCurrencyValues });
             
         const expense = currencies.reduce((acc, curr) => {
             acc[curr] = monthlyTransactions
-                .filter(tx => (tx.type === 'expense' || tx.type === 'withdraw' || tx.type === 'transfer-out') && tx.currency === curr)
-                .reduce((sum, tx) => sum + (tx.amount || 0), 0);
+                .filter(tx => tx.type === 'expense')
+                .reduce((sum, tx) => sum + (tx[curr] || 0), 0);
             return acc;
         }, { ...initialCurrencyValues });
     
@@ -142,11 +141,13 @@ export default function TourAccountancyPage() {
                 };
             }
             acc[dayKey].transactions.push(tx);
-            if (tx.type === 'income' || tx.type === 'deposit' || tx.type === 'transfer-in') {
-                acc[dayKey].income[tx.currency] += tx.amount || 0;
-            } else {
-                acc[dayKey].expense[tx.currency] += tx.amount || 0;
-            }
+            currencies.forEach(c => {
+                if (tx.type === 'income') {
+                    acc[dayKey].income[c] += tx[c] || 0;
+                } else {
+                    acc[dayKey].expense[c] += tx[c] || 0;
+                }
+            });
             return acc;
         }, {} as Record<string, { date: Date, transactions: Transaction[], income: CurrencyValues, expense: CurrencyValues }>);
 
@@ -161,19 +162,18 @@ export default function TourAccountancyPage() {
             return;
         }
         try {
-            const finalTransaction: Omit<Transaction, 'id' | 'createdAt'> = {
+            await addTourTransaction({
                 date: startOfDay(date),
                 type: newTransaction.type || 'expense',
                 description: newTransaction.description || '',
-                from: newTransaction.from || '',
-                to: newTransaction.to || '',
-                currency: newTransaction.currency || 'kip',
-                amount: Number(newTransaction.amount || 0),
-            };
-
-            await addTourTransaction(finalTransaction);
+                amount: 0, // Legacy, can be removed if not used elsewhere
+                kip: Number(newTransaction.kip || 0),
+                baht: Number(newTransaction.baht || 0),
+                usd: Number(newTransaction.usd || 0),
+                cny: Number(newTransaction.cny || 0),
+            });
             toast({ title: "ເພີ່ມທຸລະກຳສຳເລັດ" });
-            setNewTransaction({ type: 'expense', description: '', amount: 0, currency: 'kip' });
+            setNewTransaction({ type: 'expense', description: '', kip: 0, baht: 0, usd: 0, cny: 0 });
             setDate(new Date());
         } catch (error) {
             console.error("Error adding transaction: ", error);
@@ -297,7 +297,7 @@ export default function TourAccountancyPage() {
                 <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-4">
                      <SummaryCard title="ເງິນທຶນ" values={summary.capital} icon={<Briefcase className="h-5 w-5 text-primary" />} onClick={() => openEditDialog('capital')} />
                      <SummaryCard title="ເງິນສົດ" values={summary.cash} icon={<Wallet className="h-5 w-5 text-primary" />} onClick={() => openEditDialog('cash')} />
-                     <SummaryCard title="ເງິນໂອນ" values={summary.transfer} icon={<Landmark className="h-5 w-5 text-primary" />} onClick={() => openEditDialog('transfer')} />
+                     <SummaryCard title="ເງິນໂอน" values={summary.transfer} icon={<Landmark className="h-5 w-5 text-primary" />} onClick={() => openEditDialog('transfer')} />
                      <SummaryCard title="ລວມເງິນຄົງເຫຼືອ" values={totalBalance} icon={<Combine className="h-5 w-5 text-green-600" />} />
                 </div>
                  <Card>
@@ -308,7 +308,7 @@ export default function TourAccountancyPage() {
                         </div>
                         <MonthYearSelector />
                     </CardHeader>
-                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <CardContent className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                         <SummaryCard title="ຍອດຍົກມາ" values={performanceData.broughtForward} icon={<FileText className="h-5 w-5 text-primary" />} />
                         <SummaryCard title="ລາຍຮັບ (ເດືອນ)" values={performanceData.income} icon={<ArrowUpCircle className="h-5 w-5 text-green-500" />} />
                         <SummaryCard title="ລາຍຈ່າຍ (ເດືອນ)" values={performanceData.expense} icon={<ArrowDownCircle className="h-5 w-5 text-red-500" />} />
@@ -355,20 +355,13 @@ export default function TourAccountancyPage() {
                                         <Label htmlFor="description">ຄຳອະທິບາຍ</Label>
                                         <Textarea id="description" value={newTransaction.description || ''} onChange={(e) => setNewTransaction(p => ({ ...p, description: e.target.value }))} required />
                                     </div>
-                                     <div className="grid gap-2">
-                                        <Label htmlFor="amount">ຈຳນວນ</Label>
-                                        <Input id="amount" type="number" value={newTransaction.amount || ''} onChange={(e) => setNewTransaction(p => ({ ...p, amount: e.target.value }))} placeholder="0" />
-                                    </div>
-                                     <div className="grid gap-2">
-                                        <Label htmlFor="currency">ສະກຸນເງິນ</Label>
-                                         <RadioGroup value={newTransaction.currency} onValueChange={(v) => setNewTransaction(p => ({ ...p, currency: v as 'kip' | 'baht' | 'usd' | 'cny' }))} className="flex gap-4">
-                                            {currencies.map(c => (
-                                                <div key={c} className="flex items-center space-x-2">
-                                                    <RadioGroupItem value={c} id={`new-curr-${c}`} />
-                                                    <Label htmlFor={`new-curr-${c}`}>{c.toUpperCase()}</Label>
-                                                </div>
-                                            ))}
-                                        </RadioGroup>
+                                     <div className="grid grid-cols-2 gap-4">
+                                        {currencies.map(c => (
+                                            <div key={c} className="grid gap-2">
+                                                <Label htmlFor={`new-${c}`} className="uppercase">{c}</Label>
+                                                <Input id={`new-${c}`} type="number" value={newTransaction[c] || ''} onChange={(e) => setNewTransaction(p => ({ ...p, [c]: e.target.value }))} placeholder="0" />
+                                            </div>
+                                        ))}
                                     </div>
                                     <Button type="submit" className="w-full"><PlusCircle className="mr-2 h-4 w-4" />ເພີ່ມທຸລະກຳ</Button>
                                 </form>
@@ -383,6 +376,7 @@ export default function TourAccountancyPage() {
                                 <CardTitle>ປະຫວັດທຸລະກຳ</CardTitle>
                                 <CardDescription>ສະແດງລາຍການສຳລັບເດືອນທີ່ເລືอก</CardDescription>
                             </div>
+                             <MonthYearSelector />
                         </CardHeader>
                         <CardContent>
                              {dailySummaries.length > 0 ? (
@@ -403,15 +397,17 @@ export default function TourAccountancyPage() {
                                             <TableHeader>
                                                 <TableRow>
                                                     <TableHead>ຄຳອະທິບາຍ</TableHead>
-                                                    <TableHead className="text-right">ຈຳນວນ</TableHead>
+                                                    {currencies.map(c => <TableHead key={c} className="text-right uppercase">{c}</TableHead>)}
                                                     <TableHead><span className="sr-only">Actions</span></TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
                                                 {summary.transactions.map(tx => (
-                                                    <TableRow key={tx.id} className={tx.type.includes('income') || tx.type.includes('deposit') ? 'bg-green-50/50' : 'bg-red-50/50'}>
+                                                    <TableRow key={tx.id} className={tx.type === 'income' ? 'bg-green-50/50' : 'bg-red-50/50'}>
                                                         <TableCell className="font-medium">{tx.description}</TableCell>
-                                                        <TableCell className="text-right font-mono">{formatCurrency(tx.amount)} {tx.currency.toUpperCase()}</TableCell>
+                                                        {currencies.map(c => (
+                                                            <TableCell key={c} className="text-right font-mono">{(tx[c] || 0) > 0 ? formatCurrency(tx[c]!) : '-'}</TableCell>
+                                                        ))}
                                                         <TableCell className="text-right">
                                                             <DropdownMenu>
                                                                 <DropdownMenuTrigger asChild><Button variant="ghost" className="h-8 w-8 p-0"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
@@ -456,20 +452,13 @@ export default function TourAccountancyPage() {
                                 </PopoverContent>
                             </Popover>
                             <Textarea value={editingTransaction.description} onChange={(e) => setEditingTransaction(p => p ? { ...p, description: e.target.value } : null)} />
-                            <div className="grid gap-2">
-                                <Label htmlFor="edit-amount">ຈຳນວນ</Label>
-                                <Input id="edit-amount" type="number" value={editingTransaction.amount || ''} onChange={(e) => setEditingTransaction(p => p ? { ...p, amount: Number(e.target.value) } : null)} />
-                            </div>
-                            <div className="grid gap-2">
-                                <Label>ສະກຸນເງິນ</Label>
-                                <RadioGroup value={editingTransaction.currency} onValueChange={(v) => setEditingTransaction(p => p ? { ...p, currency: v as 'kip' | 'baht' | 'usd' | 'cny' } : null)} className="flex gap-4">
-                                    {currencies.map(c => (
-                                        <div key={`edit-curr-${c}`} className="flex items-center space-x-2">
-                                            <RadioGroupItem value={c} id={`edit-curr-${c}`} />
-                                            <Label htmlFor={`edit-curr-${c}`}>{c.toUpperCase()}</Label>
-                                        </div>
-                                    ))}
-                                </RadioGroup>
+                            <div className="grid grid-cols-2 gap-4">
+                                {currencies.map(c => (
+                                    <div key={`edit-${c}`} className="grid gap-2">
+                                        <Label htmlFor={`edit-${c}`} className="uppercase">{c}</Label>
+                                        <Input id={`edit-${c}`} type="number" value={editingTransaction[c] || ''} onChange={(e) => setEditingTransaction(p => p ? { ...p, [c]: Number(e.target.value) } : null)} />
+                                    </div>
+                                ))}
                             </div>
                         </div>
                         <DialogFooter>
