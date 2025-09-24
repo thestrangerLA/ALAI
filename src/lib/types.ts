@@ -84,7 +84,7 @@ export interface Transaction {
 }
 
 // Tour Calculator Specific Types
-type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
+export type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 export interface TourInfo {
     mouContact: string;
