@@ -5,7 +5,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from '../ui/button';
 import { LineChart } from 'lucide-react';
 
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
@@ -114,36 +113,48 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                      <div>
                         <Label className="font-semibold text-lg">ອັດຕາແລກປ່ຽນ</Label>
                         <div className="space-y-3 mt-2">
-                            <div className="flex items-center gap-2">
-                                <Label className="w-20">1 USD =</Label>
-                                <Input type="number" value={rates.USD?.THB || ''} onChange={e => handleRateChange('USD', 'THB', e.target.value)} />
-                                <Label>THB</Label>
-                                <Input type="number" value={rates.USD?.LAK || ''} onChange={e => handleRateChange('USD', 'LAK', e.target.value)} />
-                                <Label>LAK</Label>
-                                <Input type="number" value={rates.USD?.CNY || ''} onChange={e => handleRateChange('USD', 'CNY', e.target.value)} />
-                                <Label>CNY</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 border rounded-md">
+                                <Label className="md:col-span-3 font-semibold">1 USD =</Label>
+                                <div className="flex items-center gap-1">
+                                  <Input type="number" value={rates.USD?.THB?.toFixed(4) || ''} onChange={e => handleRateChange('USD', 'THB', e.target.value)} className="h-8"/>
+                                  <Label className="text-xs">THB</Label>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Input type="number" value={rates.USD?.LAK?.toFixed(0) || ''} onChange={e => handleRateChange('USD', 'LAK', e.target.value)} className="h-8"/>
+                                  <Label className="text-xs">LAK</Label>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Input type="number" value={rates.USD?.CNY?.toFixed(4) || ''} onChange={e => handleRateChange('USD', 'CNY', e.target.value)} className="h-8"/>
+                                  <Label className="text-xs">CNY</Label>
+                                </div>
                             </div>
-                             <div className="flex items-center gap-2">
-                                <Label className="w-20">1 THB =</Label>
-                                <Input type="number" value={rates.THB?.LAK || ''} onChange={e => handleRateChange('THB', 'LAK', e.target.value)} />
-                                <Label>LAK</Label>
-                                <Input type="number" value={rates.THB?.CNY || ''} onChange={e => handleRateChange('THB', 'CNY', e.target.value)} />
-                                <Label>CNY</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 border rounded-md">
+                                <Label className="md:col-span-3 font-semibold">1 THB =</Label>
+                                <div className="flex items-center gap-1">
+                                    <Input type="number" value={rates.THB?.LAK?.toFixed(0) || ''} onChange={e => handleRateChange('THB', 'LAK', e.target.value)} className="h-8"/>
+                                    <Label className="text-xs">LAK</Label>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                    <Input type="number" value={rates.THB?.CNY?.toFixed(4) || ''} onChange={e => handleRateChange('THB', 'CNY', e.target.value)} className="h-8"/>
+                                    <Label className="text-xs">CNY</Label>
+                                </div>
                             </div>
-                              <div className="flex items-center gap-2">
-                                <Label className="w-20">1 CNY =</Label>
-                                <Input type="number" value={rates.CNY?.LAK || ''} onChange={e => handleRateChange('CNY', 'LAK', e.target.value)} />
-                                <Label>LAK</Label>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 p-2 border rounded-md">
+                                <Label className="md:col-span-3 font-semibold">1 CNY =</Label>
+                                <div className="flex items-center gap-1">
+                                    <Input type="number" value={rates.CNY?.LAK?.toFixed(0) || ''} onChange={e => handleRateChange('CNY', 'LAK', e.target.value)} className="h-8"/>
+                                    <Label className="text-xs">LAK</Label>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 {/* Converted Total Section */}
-                <div className="space-y-4 rounded-lg border p-4">
+                <Card className="space-y-4 p-4">
                      <div className="grid md:grid-cols-2 gap-4 items-end">
                         <div>
-                            <Label htmlFor="target-currency">ເລືອກສະກຸນເງິນ</Label>
+                            <Label htmlFor="target-currency">ເລືອກສະກຸນເງິນທີ່ຕ້ອງການຂາຍ</Label>
                             <Select value={targetCurrency} onValueChange={(v: Currency) => setTargetCurrency(v)}>
                                 <SelectTrigger id="target-currency">
                                     <SelectValue placeholder="ເລືອກສະກຸນເງິນ" />
@@ -165,7 +176,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                                 />
                             </div>
                     </div>
-                </div>
+                </Card>
 
                 {/* Sale Price Calculation */}
                 <div className="grid md:grid-cols-3 gap-6">
@@ -199,7 +210,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg"><LineChart className="h-5 w-5"/>ກຳໄລ</CardTitle>
                              <CardDescription className="text-xs">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
-                        </CardHeader>
+                        </Header>
                         <CardContent>
                              <div className="text-xl font-bold text-blue-600 p-4 border bg-blue-50 rounded-md text-center">
                                <p className="text-sm font-medium text-muted-foreground">ກຳໄລ</p>
