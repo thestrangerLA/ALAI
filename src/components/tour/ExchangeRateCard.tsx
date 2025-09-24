@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -198,7 +197,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                         <CardHeader>
                             <CardTitle className="text-lg">ລາຄາຂາຍ</CardTitle>
                             <CardDescription className="text-xs">ຄຳນວນລາຄາຂາຍໂດຍອີງໃສ່ເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
-                        </Header>
+                        </CardHeader>
                         <CardContent>
                             <div className="text-xl font-bold text-green-600 p-4 border bg-green-50 rounded-md text-center">
                                <p className="text-sm font-medium text-muted-foreground">ລາຄາຂາຍສຸດທິ</p>
@@ -211,7 +210,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-lg"><LineChart className="h-5 w-5"/>ກຳໄລ</CardTitle>
                              <CardDescription className="text-xs">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
-                        </Header>
+                        </CardHeader>
                         <CardContent>
                              <div className="text-xl font-bold text-blue-600 p-4 border bg-blue-50 rounded-md text-center">
                                <p className="text-sm font-medium text-muted-foreground">ກຳໄລ</p>
