@@ -198,43 +198,43 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
             </div>
 
             {/* Sale Price Calculation */}
-            <div className="grid md:grid-cols-3 gap-6 print:grid-cols-3 print:gap-4 print:pt-4">
+            <div className="grid md:grid-cols-3 gap-6 print:grid-cols-3 print:gap-2 print:pt-2">
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">ຍອດລວມທີ່ແປງແລ້ວ</CardTitle>
-                        <CardDescription className="text-xs">ຍອດລວມທັງໝົດໃນສະກຸນເງິນດຽວ</CardDescription>
+                    <CardHeader className="print:p-2">
+                        <CardTitle className="text-lg print:text-sm">ຍອດລວມທີ່ແປງແລ້ວ</CardTitle>
+                        <CardDescription className="text-xs print:hidden">ຍອດລວມທັງໝົດໃນສະກຸນເງິນດຽວ</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                            <div className="text-xl font-bold text-primary p-4 border bg-muted rounded-md text-center">
-                            <p className="text-sm font-medium text-muted-foreground">ຍອດລວມ</p>
+                    <CardContent className="print:p-2">
+                        <div className="text-xl print:text-base font-bold text-primary p-4 print:p-2 border bg-muted rounded-md text-center">
+                            <p className="text-sm print:text-xs font-medium text-muted-foreground">ຍອດລວມ</p>
                             <span>{formatNumber(convertedTotal)}</span>
-                            <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
+                            <span className="text-sm print:text-xs font-medium text-muted-foreground ml-2">{targetCurrency}</span>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="text-lg">ລາຄາຂາຍ</CardTitle>
-                        <CardDescription className="text-xs">ຄຳນວນລາຄາຂາຍໂດຍອີງໃສ່ເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
+                    <CardHeader className="print:p-2">
+                        <CardTitle className="text-lg print:text-sm">ລາຄາຂາຍ</CardTitle>
+                        <CardDescription className="text-xs print:hidden">ຄຳນວນລາຄາຂາຍໂດຍອີງໃສ່ເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="text-xl font-bold text-green-600 p-4 border bg-green-50 rounded-md text-center">
-                            <p className="text-sm font-medium text-muted-foreground">ລາຄາຂາຍສຸດທິ</p>
+                    <CardContent className="print:p-2">
+                        <div className="text-xl print:text-base font-bold text-green-600 p-4 print:p-2 border bg-green-50 rounded-md text-center">
+                            <p className="text-sm print:text-xs font-medium text-muted-foreground">ລາຄາຂາຍສຸດທິ</p>
                             <span>{formatNumber(finalSalePrice)}</span>
-                            <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
+                            <span className="text-sm print:text-xs font-medium text-muted-foreground ml-2">{targetCurrency}</span>
                         </div>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-lg"><LineChart className="h-5 w-5"/>ກຳໄລ</CardTitle>
-                            <CardDescription className="text-xs">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
+                    <CardHeader className="print:p-2">
+                        <CardTitle className="flex items-center gap-2 text-lg print:text-sm"><LineChart className="h-5 w-5 print:hidden"/>ກຳໄລ</CardTitle>
+                        <CardDescription className="text-xs print:hidden">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                            <div className="text-xl font-bold text-blue-600 p-4 border bg-blue-50 rounded-md text-center">
-                            <p className="text-sm font-medium text-muted-foreground">ກຳໄລ</p>
+                    <CardContent className="print:p-2">
+                        <div className="text-xl print:text-base font-bold text-blue-600 p-4 print:p-2 border bg-blue-50 rounded-md text-center">
+                            <p className="text-sm print:text-xs font-medium text-muted-foreground">ກຳໄລ</p>
                             <span>{formatNumber(profit)}</span>
-                            <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
+                            <span className="text-sm print:text-xs font-medium text-muted-foreground ml-2">{targetCurrency}</span>
                         </div>
                     </CardContent>
                 </Card>

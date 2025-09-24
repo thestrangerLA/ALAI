@@ -74,6 +74,10 @@
     @apply bg-background text-foreground;
   }
 }
+@page {
+    size: auto;
+    margin: 0mm;
+}
 
 @media print {
   body {
@@ -81,8 +85,7 @@
     print-color-adjust: exact;
   }
   .print-container {
-    padding-top: 1rem;
-    padding-bottom: 1rem;
+    padding: 1rem;
   }
   .print\:hidden {
     display: none;

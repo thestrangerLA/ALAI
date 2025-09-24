@@ -55,28 +55,28 @@ export function TotalCostCard({ totalsByCategory }: TotalCostCardProps) {
     );
 
     return (
-        <Card className="w-full shadow-md">
-            <CardHeader className="flex flex-row items-center gap-3 bg-muted/50 rounded-t-lg">
-                <Calculator className="h-6 w-6 text-primary" />
-                <CardTitle className="text-xl">ສະຫຼຸບຕາມໝວດໝູ່</CardTitle>
+        <Card className="w-full shadow-md print:shadow-none print:border-0">
+            <CardHeader className="flex flex-row items-center gap-3 bg-muted/50 rounded-t-lg print:bg-transparent print:p-2">
+                <Calculator className="h-6 w-6 text-primary print:hidden" />
+                <CardTitle className="text-xl print:text-sm print:font-bold">ສະຫຼຸບຕາມໝວດໝູ່</CardTitle>
             </CardHeader>
-            <CardContent className="p-6">
+            <CardContent className="p-6 print:p-0">
                 {hasData ? (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 print:grid-cols-2 print:gap-2">
                         {Object.entries(totalsByCategory).map(([category, totals]) => {
                             const filteredTotals = Object.entries(totals).filter(([, value]) => value > 0);
                             if (filteredTotals.length === 0) return null;
 
                             return (
-                                <Card key={category} className="bg-background shadow-sm hover:shadow-md transition-shadow">
-                                    <CardContent className="p-4 flex items-start gap-4">
-                                        <div className="bg-muted p-3 rounded-full">
+                                <Card key={category} className="bg-background shadow-sm hover:shadow-md transition-shadow print:shadow-none print:border print:rounded-md">
+                                    <CardContent className="p-4 print:p-2 flex items-start gap-3 print:gap-2">
+                                        <div className="bg-muted p-3 print:p-1.5 rounded-full print:hidden">
                                             {categoryIcons[category] || <Calculator className="h-6 w-6" />}
                                         </div>
                                         <div>
-                                            <p className="text-sm font-semibold text-muted-foreground">{category}</p>
+                                            <p className="text-sm font-semibold text-muted-foreground print:text-xs">{category}</p>
                                             {filteredTotals.map(([currency, value]) => (
-                                                <p key={currency} className="text-lg font-bold">
+                                                <p key={currency} className="text-lg font-bold print:text-sm">
                                                    {currencySymbols[currency as Currency]}{formatNumber(value)}
                                                 </p>
                                             ))}
@@ -87,9 +87,9 @@ export function TotalCostCard({ totalsByCategory }: TotalCostCardProps) {
                         })}
                     </div>
                 ) : (
-                    <div className="text-center text-muted-foreground py-8">
+                    <div className="text-center text-muted-foreground py-8 print:py-2 print:text-xs">
                         <p>ยังไม่มีข้อมูลค่าใช้จ่าย</p>
-                        <p className="text-sm">กรอกข้อมูลในหมวดหมู่ต่างๆ เพื่อดูสรุปที่นี่</p>
+                        <p className="text-sm print:hidden">กรอกข้อมูลในหมวดหมู่ต่างๆ เพื่อดูสรุปที่นี่</p>
                     </div>
                 )}
             </CardContent>

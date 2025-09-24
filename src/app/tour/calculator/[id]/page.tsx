@@ -397,20 +397,20 @@ export default function TourCalculatorPage() {
                     </Button>
                 </div>
             </header>
-            <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-4 bg-background print:p-0 print:bg-white print:gap-4">
-                <div className="w-full max-w-screen-xl mx-auto flex flex-col gap-8">
+            <main className="flex w-full flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-0 bg-background print:p-0 print:bg-white print:gap-2">
+                <div className="w-full max-w-screen-xl mx-auto flex flex-col gap-4">
                     
                     <div id="print-content" className="print-container">
                         <div className="hidden print:block print:space-y-2">
-                            <h1 className="print:text-xl print:font-bold text-center">ຂໍ້ມູນທົວ</h1>
-                             <div className="grid grid-cols-2 gap-x-8 print:text-xs print:border-y print:py-2">
-                                <div className="space-y-1">
+                            <h1 className="print:text-lg print:font-bold text-center">ຂໍ້ມູນທົວ</h1>
+                             <div className="grid grid-cols-2 gap-x-4 print:text-xs print:border-y print:py-1">
+                                <div className="space-y-0.5">
                                     <div className="flex justify-between"><strong className="font-semibold">MOU Contact:</strong><span>{tourInfo.mouContact}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Group Code:</strong><span>{tourInfo.groupCode}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Destination:</strong><span>{tourInfo.destinationCountry}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Program:</strong><span>{tourInfo.program}</span></div>
                                 </div>
-                                <div className="space-y-1">
+                                <div className="space-y-0.5">
                                     <div className="flex justify-between"><strong className="font-semibold">Travel Dates:</strong><span>{tourInfo.startDate ? format(tourInfo.startDate, "dd/MM/yy") : ''} - {tourInfo.endDate ? format(tourInfo.endDate, "dd/MM/yy") : ''}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Duration:</strong><span>{tourInfo.numDays} Days, {tourInfo.numNights} Nights</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Pax:</strong><span>{tourInfo.numPeople}</span></div>
@@ -1048,16 +1048,16 @@ export default function TourCalculatorPage() {
                         <div className="hidden print:block print:space-y-2 print:pt-4">
                             <Card>
                                 <CardHeader className="print:px-2 print:py-1">
-                                    <CardTitle className="print:text-base print:font-bold">ຄ່າໃຊ້ຈ່າຍລວມທັງໝົດ</CardTitle>
+                                    <CardTitle className="print:text-sm print:font-bold">ຄ່າໃຊ້ຈ່າຍລວມທັງໝົດ</CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid grid-cols-4 gap-4 print:p-2">
+                                <CardContent className="grid grid-cols-4 gap-2 print:p-2">
                                     {(Object.keys(grandTotals) as Currency[]).map(currency => (
                                         <Card key={currency} className="print:shadow-none print:border">
-                                            <CardHeader className="pb-2 print:p-1">
-                                                <CardTitle className="print:text-sm">{currency}</CardTitle>
+                                            <CardHeader className="pb-1 print:p-1">
+                                                <CardTitle className="print:text-xs">{currency}</CardTitle>
                                             </CardHeader>
                                             <CardContent className="print:p-1">
-                                                <p className="print:text-base font-bold">{formatNumber(grandTotals[currency])}</p>
+                                                <p className="print:text-sm font-bold">{formatNumber(grandTotals[currency])}</p>
                                             </CardContent>
                                         </Card>
                                     ))}
