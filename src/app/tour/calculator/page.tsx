@@ -499,40 +499,6 @@ export default function TourCalculatorPage() {
                         
                         <Card className="print:hidden">
                             <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <History className="h-6 w-6 text-primary" />
-                                    ຂໍ້ມູນການຄຳນວນ
-                                </CardTitle>
-                                <CardDescription>ໂຫຼດ ຫຼື ລຶບຂໍ້ມູນການຄຳນວນທີ່ບັນທຶກໄວ້</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                {savedCalculations.length > 0 ? (
-                                    savedCalculations.map(calc => (
-                                        <div key={calc.id} className="flex items-center justify-between p-3 border rounded-lg bg-background">
-                                            <div>
-                                                <p className="font-semibold">{calc.tourInfo.groupCode || 'ບໍ່ມີລະຫັດ'}</p>
-                                                <p className="text-xs text-muted-foreground">{calc.tourInfo.program}</p>
-                                                <p className="text-xs text-muted-foreground">ບັນທຶກເມື່ອ: {format(calc.savedAt, 'dd/MM/yy HH:mm')}</p>
-                                            </div>
-                                            <div className="flex gap-1">
-                                                <Button size="sm" variant="outline" onClick={() => handleLoadCalculation(calc.id)}>
-                                                    <Download className="h-4 w-4 mr-1" />
-                                                    ໂຫຼດ
-                                                </Button>
-                                                <Button size="sm" variant="destructive" onClick={() => handleDeleteCalculation(calc.id)}>
-                                                    <Trash2 className="h-4 w-4" />
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    ))
-                                ) : (
-                                    <p className="text-center text-muted-foreground py-4">ບໍ່ມີຂໍ້ມູນທີ່ບັນທຶກໄວ້</p>
-                                )}
-                            </CardContent>
-                        </Card>
-
-                        <Card className="print:hidden">
-                            <CardHeader>
                                 <CardTitle>ຄຳນວນຄ່າໃຊ້ຈ່າຍ</CardTitle>
                                 <CardDescription>ເພີ່ມ ແລະ ຈັດການຄ່າໃຊ້ຈ່າຍຕ່າງໆ</CardDescription>
                             </CardHeader>
