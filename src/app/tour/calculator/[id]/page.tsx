@@ -4,20 +4,8 @@ import TourCalculatorClientPage from './client-page';
 import type { SavedCalculation } from '@/lib/types';
 import StaticExportWrapper from '@/components/StaticExportWrapper';
 
-export const dynamicParams = false;
-
-export async function generateStaticParams() {
-    const calculations = await getAllCalculations();
-    const params = calculations.map((calc) => ({
-        id: calc.id,
-    }));
-    // Ensure the default page is also generated
-    if (!params.find(p => p.id === 'default')) {
-        params.push({ id: 'default' });
-    }
-    return params;
-}
-
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 async function getCalculationData(id: string) {
     let calculation = await getCalculation(id);

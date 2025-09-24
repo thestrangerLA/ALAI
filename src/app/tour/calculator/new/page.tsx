@@ -59,7 +59,7 @@ function NewCalculationPageComponent() {
                 title: "ສ້າງລາຍການຄຳນວນໃໝ່ສຳເລັດ",
                 description: "ກຳລັງໄປທີ່ໜ້າລາຍລະອຽດ...",
             });
-            router.replace(`/tour/calculator/${newId}`);
+            router.push(`/tour/calculator/${newId}`);
         } catch (error) {
              toast({
                 title: "ເກີດຂໍ້ຜິດພາດ",
