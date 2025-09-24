@@ -88,7 +88,7 @@ export const listenToTourTransactions = (
 };
 
 export const addTourTransaction = async (transaction: Omit<Transaction, 'id'|'createdAt'>) => {
-    const newTransactionRef = doc(transactionsCollectionRef);
+    const newTransactionRef = doc(collection(db, 'tour-transactions'));
     await setDoc(newTransactionRef, { 
         ...transaction, 
         date: Timestamp.fromDate(transaction.date),
