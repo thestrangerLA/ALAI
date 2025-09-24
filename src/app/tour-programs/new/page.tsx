@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Calendar as CalendarIcon } from "lucide-react";
+import { ArrowLeft, Calendar as CalendarIcon, Save } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { addTourProgram } from '@/services/tourProgramService';
 import type { TourProgram, Currency } from '@/lib/types';
@@ -205,7 +205,10 @@ function NewTourProgramPageComponent() {
                             
                             <div className="flex justify-end gap-2">
                                 <Button type="button" variant="outline" asChild><Link href="/tour-programs">ຍົກເລີກ</Link></Button>
-                                <Button type="submit">ບັນທຶກ และ ໄປຕໍ່</Button>
+                                <Button type="submit">
+                                    <Save className="mr-2 h-4 w-4" />
+                                    ບັນທຶກ ແລະ ໄປຕໍ່
+                                </Button>
                             </div>
                         </form>
                     </CardContent>

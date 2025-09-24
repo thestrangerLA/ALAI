@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { MoreHorizontal, PlusCircle, Trash2, Edit } from "lucide-react";
+import { MoreHorizontal, PlusCircle, Trash2, Edit, ArrowLeft } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { listenToSavedCalculations, deleteCalculation } from '@/services/tourCalculatorService';
 import type { SavedCalculation } from '@/lib/types';
@@ -52,6 +52,12 @@ export default function TourCalculationsListPage() {
     return (
         <div className="flex min-h-screen w-full flex-col bg-muted/40">
             <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+                <Button variant="outline" size="icon" className="h-8 w-8" asChild>
+                    <Link href="/tour">
+                        <ArrowLeft className="h-4 w-4" />
+                        <span className="sr-only">ກັບໄປໜ້າຫຼັກ</span>
+                    </Link>
+                </Button>
                  <h1 className="text-xl font-bold tracking-tight">ລາຍການຄຳນວນຕົ້ນທຶນທົວ</h1>
             </header>
             <main className="flex-1 p-4 sm:px-6 sm:py-0">

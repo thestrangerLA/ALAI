@@ -49,18 +49,21 @@ function TourProgramsListPageComponent() {
     
     const filteredPrograms = useMemo(() => {
         return allPrograms.filter(p => {
-            if (!p.date || !isValid(p.date)) return false;
-            const isYearMatch = selectedYear === null || getYear(p.date) === selectedYear;
+            if (!p.date || !(p.date instanceof Date || p.date instanceof Timestamp) || !isValid(p.date instanceof Timestamp ? p.date.toDate() : p.date)) return false;
+            const date = p.date instanceof Timestamp ? p.date.toDate() : p.date;
+            const isYearMatch = selectedYear === null || getYear(date) === selectedYear;
             const isGroupCodeMatch = !selectedGroupCode || p.tourCode === selectedGroupCode;
             return isYearMatch && isGroupCodeMatch;
         });
     }, [allPrograms, selectedYear, selectedGroupCode]);
 
     const programsByMonth = useMemo(() => {
+        const getSafeDate = (date: any) => date instanceof Timestamp ? date.toDate() : date;
         if (selectedYear === null) {
             return filteredPrograms.reduce((acc, program) => {
-                const year = getYear(program.date);
-                const month = getMonth(program.date);
+                const date = getSafeDate(program.date);
+                const year = getYear(date);
+                const month = getMonth(date);
                 const key = `${year}-${month}`;
                 if (!acc[key]) {
                     acc[key] = { year, month, programs: [] };
@@ -70,7 +73,7 @@ function TourProgramsListPageComponent() {
             }, {} as Record<string, { year: number, month: number, programs: TourProgram[] }>);
         }
         return filteredPrograms.reduce((acc, program) => {
-            const month = getMonth(program.date);
+            const month = getMonth(getSafeDate(program.date));
             if (!acc[month]) {
                 acc[month] = [];
             }
@@ -126,7 +129,8 @@ function TourProgramsListPageComponent() {
     };
     
     const YearSelector = () => {
-        const years = [...new Set(allPrograms.map(p => getYear(p.date)))].sort((a,b) => b-a);
+        const getSafeDate = (date: any) => date instanceof Timestamp ? date.toDate() : date;
+        const years = [...new Set(allPrograms.map(p => getYear(getSafeDate(p.date))))].sort((a,b) => b-a);
 
 
         return (
@@ -177,7 +181,9 @@ function TourProgramsListPageComponent() {
         </DropdownMenu>
     );
     
-    const renderProgramRows = (programs: TourProgram[]) => (
+    const renderProgramRows = (programs: TourProgram[]) => {
+        const getSafeDate = (date: any) => date instanceof Timestamp ? date.toDate() : date;
+        return (
          <Table>
             <TableHeader>
                 <TableRow>
@@ -191,7 +197,9 @@ function TourProgramsListPageComponent() {
                 </TableRow>
             </TableHeader>
             <TableBody>
-            {programs.map(program => (
+            {programs.map(program => {
+                const safeDate = getSafeDate(program.date);
+                return(
                 <TableRow key={program.id} className="group">
                     <TableCell>
                         <Popover>
@@ -201,13 +209,13 @@ function TourProgramsListPageComponent() {
                                     className="w-[150px] justify-start text-left font-normal"
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
-                                    {program.date ? format(program.date, "dd/MM/yyyy") : <span>ເລືອກວັນທີ</span>}
+                                    {safeDate ? format(safeDate, "dd/MM/yyyy") : <span>ເລືອກວັນທີ</span>}
                                 </Button>
                             </PopoverTrigger>
                             <PopoverContent className="w-auto p-0">
                                 <Calendar
                                     mode="single"
-                                    selected={program.date}
+                                    selected={safeDate}
                                     onSelect={(date) => handleUpdateProgramDate(program.id, date)}
                                     initialFocus
                                     
@@ -246,10 +254,10 @@ function TourProgramsListPageComponent() {
                         </DropdownMenu>
                     </TableCell>
                 </TableRow>
-            ))}
+            )})}
             </TableBody>
         </Table>
-    );
+    )};
 
 
     return (
