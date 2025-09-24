@@ -11,3 +11,32 @@ export interface SavedCalculation {
     // Allow any other properties that might be part of a calculation
     [key: string]: any;
 }
+
+
+export interface TourProgram {
+    id: string;
+    name: string;
+    date: Date | Timestamp;
+    createdAt: Date | Timestamp;
+    [key: string]: any;
+}
+
+export interface TourCostItem {
+    id: string;
+    description: string;
+    amount: number;
+    date: Date | Timestamp | null;
+    createdAt: Date | Timestamp;
+    programId: string;
+    [key: string]: any;
+}
+
+export interface TourIncomeItem {
+    id: string;
+    description: string;
+    amount: number;
+    date: Date | Timestamp | null;
+    createdAt: Date | Timestamp;
+    programId: string;
+    [key: string]: any;
+}
