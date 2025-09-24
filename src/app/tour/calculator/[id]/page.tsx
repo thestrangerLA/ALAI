@@ -76,15 +76,16 @@ export interface SavedCalculation {
 const SAVED_CALCULATIONS_KEY = 'tour-savedCalculations';
 
 
-const CostCategoryContent = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
-     <AccordionItem value={title.toLowerCase().replace(/\s/g, '-')}>
-        <AccordionTrigger className="text-lg font-semibold">
+const CostCategoryContent = ({ title, icon, children, summary }: { title: string, icon: React.ReactNode, children: React.ReactNode, summary: React.ReactNode }) => (
+     <AccordionItem value={title.toLowerCase().replace(/\s/g, '-')} className="bg-card p-4 rounded-lg">
+        <AccordionTrigger className="text-lg font-semibold p-0 hover:no-underline">
           <div className="flex items-center gap-3">
             {icon} {title}
           </div>
         </AccordionTrigger>
-        <AccordionContent>
+        <AccordionContent className="pt-4">
             {children}
+            {summary}
         </AccordionContent>
     </AccordionItem>
 );
@@ -346,6 +347,22 @@ export default function TourCalculatorPage() {
         window.print();
     };
 
+    const CategorySummary = ({ totals }: { totals: Record<Currency, number> }) => {
+        const filteredTotals = Object.entries(totals).filter(([, value]) => value > 0);
+        if (filteredTotals.length === 0) return null;
+
+        return (
+            <div className="mt-4 rounded-lg bg-primary/10 p-3">
+                <p className="font-semibold text-primary mb-2">ສະຫຼຸບຍອດ:</p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                    {filteredTotals.map(([currency, value]) => (
+                        <span key={currency} className="text-sm font-medium">{`${currencySymbols[currency as Currency].split(' ')[0]} ${formatNumber(value)}`}</span>
+                    ))}
+                </div>
+            </div>
+        );
+    };
+
     if (!calculationId) {
         return <div className="flex items-center justify-center h-screen">Loading...</div>;
     }
@@ -485,9 +502,13 @@ export default function TourCalculatorPage() {
                                 <CardDescription>ເພີ່ມ ແລະ ຈັດການຄ່າໃຊ້ຈ່າຍຕ່າງໆ</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Accordion type="multiple" className="w-full space-y-2 mt-4">
+                                <Accordion type="multiple" className="w-full grid md:grid-cols-2 gap-4 items-start">
                                     {/* Accommodation */}
-                                    <CostCategoryContent title="ຄ່າທີ່ພັກ" icon={<BedDouble className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າທີ່ພັກ" 
+                                        icon={<BedDouble className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={accommodationTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.accommodations.map((acc, index) => (
                                                 <Card key={acc.id} className="bg-muted/30">
@@ -576,7 +597,11 @@ export default function TourCalculatorPage() {
                                     </CostCategoryContent>
                                     
                                     {/* Transport */}
-                                    <CostCategoryContent title="ຄ່າຂົນສົ່ງ" icon={<Truck className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າຂົນສົ່ງ" 
+                                        icon={<Truck className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={tripTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.trips.map((trip, index) => (
                                                 <Card key={trip.id} className="bg-muted/30">
@@ -636,7 +661,11 @@ export default function TourCalculatorPage() {
                                         </div>
                                     </CostCategoryContent>
                                     {/* Flights */}
-                                    <CostCategoryContent title="ຄ່າປີ້ຍົນ" icon={<Plane className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າປີ້ຍົນ" 
+                                        icon={<Plane className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={flightTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.flights.map((flight, index) => (
                                                 <Card key={flight.id} className="bg-muted/30">
@@ -706,7 +735,11 @@ export default function TourCalculatorPage() {
                                         </div>
                                     </CostCategoryContent>
                                     {/* Train Tickets */}
-                                    <CostCategoryContent title="ຄ່າປີ້ລົດໄຟ" icon={<TrainFront className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າປີ້ລົດໄຟ" 
+                                        icon={<TrainFront className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={trainTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.trainTickets.map((ticket, index) => (
                                                 <Card key={ticket.id} className="bg-muted/30">
@@ -780,7 +813,11 @@ export default function TourCalculatorPage() {
                                         </div>
                                     </CostCategoryContent>
                                     {/* Entrance Fees */}
-                                    <CostCategoryContent title="ຄ່າເຂົ້າຊົມສະຖານທີ່" icon={<Camera className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າເຂົ້າຊົມສະຖານທີ່" 
+                                        icon={<Camera className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={entranceFeeTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.entranceFees.map((fee, index) => (
                                                 <Card key={fee.id} className="bg-muted/30">
@@ -830,7 +867,11 @@ export default function TourCalculatorPage() {
                                         </div>
                                     </CostCategoryContent>
                                     {/* Meals */}
-                                    <CostCategoryContent title="ຄ່າອາຫານ" icon={<UtensilsCrossed className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າອາຫານ" 
+                                        icon={<UtensilsCrossed className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={mealTotals} />}
+                                    >
                                     <div className="space-y-4 pt-2">
                                             {allCosts.meals.map((meal, index) => (
                                                 <Card key={meal.id} className="bg-muted/30">
@@ -890,7 +931,11 @@ export default function TourCalculatorPage() {
                                     </div>
                                     </CostCategoryContent>
                                     {/* Guide */}
-                                    <CostCategoryContent title="ຄ່າໄກ້" icon={<Users className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າໄກ້" 
+                                        icon={<Users className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={guideTotals} />}
+                                    >
                                     <div className="space-y-4 pt-2">
                                             {allCosts.guides.map((guide, index) => (
                                                 <Card key={guide.id} className="bg-muted/30">
@@ -940,7 +985,11 @@ export default function TourCalculatorPage() {
                                     </div>
                                     </CostCategoryContent>
                                     {/* Documents */}
-                                    <CostCategoryContent title="ຄ່າເອກະສານ" icon={<FileText className="h-5 w-5" />}>
+                                    <CostCategoryContent 
+                                        title="ຄ່າເອກະສານ" 
+                                        icon={<FileText className="h-5 w-5" />}
+                                        summary={<CategorySummary totals={documentTotals} />}
+                                    >
                                         <div className="space-y-4 pt-2">
                                             {allCosts.documents.map((doc, index) => (
                                                 <Card key={doc.id} className="bg-muted/30">
