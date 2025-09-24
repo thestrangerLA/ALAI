@@ -13,7 +13,7 @@ export default function Home() {
         </p>
         <div className="mt-10 flex items-center justify-center gap-x-6">
           <Button asChild>
-            <Link href="/tour/calculator">Get Started</Link>
+            <Link href="/tour">Get Started</Link>
           </Button>
         </div>
       </div>

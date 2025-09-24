@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { v4 as uuidv4 } from 'uuid';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -10,14 +11,13 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Copy, Clock, Eye, EyeOff, Download, History, Printer } from "lucide-react";
+import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer } from "lucide-react";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { TotalCostCard } from '@/components/tour/TotalCostCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
@@ -66,7 +66,7 @@ interface TourCosts {
     documents: DocumentFee[];
 }
 
-interface SavedCalculation {
+export interface SavedCalculation {
     id: string;
     savedAt: Date;
     tourInfo: TourInfo;
@@ -74,11 +74,6 @@ interface SavedCalculation {
 }
 
 const SAVED_CALCULATIONS_KEY = 'tour-savedCalculations';
-
-const costCategories: Array<keyof TourCosts> = [
-    'accommodations', 'trips', 'flights', 'trainTickets',
-    'entranceFees', 'meals', 'guides', 'documents'
-];
 
 
 const CostCategoryContent = ({ title, icon, children }: { title: string, icon: React.ReactNode, children: React.ReactNode }) => (
@@ -97,6 +92,10 @@ const CostCategoryContent = ({ title, icon, children }: { title: string, icon: R
 
 export default function TourCalculatorPage() {
     const { toast } = useToast();
+    const router = useRouter();
+    const params = useParams();
+    const calculationId = params.id as string;
+
     const [tourInfo, setTourInfo] = useState<TourInfo>({
         mouContact: '',
         groupCode: '',
@@ -122,24 +121,33 @@ export default function TourCalculatorPage() {
     });
     
     const [itemVisibility, setItemVisibility] = useState<Record<string, boolean>>({});
-    const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>([]);
 
     useEffect(() => {
+        if (!calculationId) return;
+
         const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY);
         if (saved) {
-            setSavedCalculations(JSON.parse(saved, (key, value) => {
-                 if (key === 'savedAt' || key === 'startDate' || key === 'endDate' || key === 'checkInDate' || key === 'departureDate') {
+            const savedCalculations: SavedCalculation[] = JSON.parse(saved, (key, value) => {
+                 if (['savedAt', 'startDate', 'endDate', 'checkInDate', 'departureDate'].includes(key)) {
                     return value ? new Date(value) : undefined;
                  }
                  return value;
-            }));
+            });
+            const calculationToLoad = savedCalculations.find(c => c.id === calculationId);
+            if (calculationToLoad) {
+                 setTourInfo(calculationToLoad.tourInfo);
+                 setAllCosts(calculationToLoad.allCosts);
+            } else {
+                 console.error("Calculation not found!");
+                 toast({ title: "Error", description: "Calculation not found.", variant: "destructive" });
+                 router.push('/tour');
+            }
         }
-    }, []);
+    }, [calculationId, router, toast]);
 
     const saveCalculationsToLocalStorage = (calculations: SavedCalculation[]) => {
         localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(calculations));
     };
-
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -150,56 +158,42 @@ export default function TourCalculatorPage() {
     }, []);
     
     const handleSaveCalculation = () => {
-        const newCalculation: SavedCalculation = {
-            id: uuidv4(),
+        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
+        const savedCalculations: SavedCalculation[] = JSON.parse(saved);
+        
+        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
+
+        const currentCalculationData: SavedCalculation = {
+            id: calculationId,
             savedAt: new Date(),
             tourInfo: JSON.parse(JSON.stringify(tourInfo)), // Deep copy
             allCosts: JSON.parse(JSON.stringify(allCosts)), // Deep copy
         };
-        const updatedSaved = [...savedCalculations, newCalculation];
-        setSavedCalculations(updatedSaved);
-        saveCalculationsToLocalStorage(updatedSaved);
+        
+        if (existingIndex > -1) {
+            savedCalculations[existingIndex] = currentCalculationData;
+        } else {
+            savedCalculations.push(currentCalculationData);
+        }
+
+        saveCalculationsToLocalStorage(savedCalculations);
         toast({
             title: "ບັນທຶກການຄຳນວນສຳເລັດ",
             description: `ຂໍ້ມູນ ${tourInfo.groupCode || 'ບໍ່ມີຊື່'} ໄດ້ຖືກບັນທຶກແລ້ວ.`,
         });
     };
-
-    const handleLoadCalculation = (id: string) => {
-        const calculationToLoad = savedCalculations.find(c => c.id === id);
-        if (calculationToLoad) {
-            // Need to parse dates correctly from JSON string
-            const parsedTourInfo = JSON.parse(JSON.stringify(calculationToLoad.tourInfo), (key, value) => {
-                if (key === 'startDate' || key === 'endDate') {
-                    return value ? new Date(value) : undefined;
-                }
-                return value;
-            });
-            const parsedAllCosts = JSON.parse(JSON.stringify(calculationToLoad.allCosts), (key, value) => {
-                 if ((key === 'checkInDate' || key === 'departureDate') && typeof value === 'string') {
-                    return new Date(value);
-                }
-                return value;
-            });
-            
-            setTourInfo(parsedTourInfo);
-            setAllCosts(parsedAllCosts);
-            toast({
-                title: "ໂຫຼດຂໍ້ມູນສຳເລັດ",
-                description: `ຂໍ້ມູນ ${calculationToLoad.tourInfo.groupCode} ໄດ້ຖືກໂຫຼດແລ້ວ.`,
-            });
-        }
-    };
     
-    const handleDeleteCalculation = (id: string) => {
+    const handleDeleteCalculation = () => {
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            const updatedSaved = savedCalculations.filter(c => c.id !== id);
-            setSavedCalculations(updatedSaved);
+            const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
+            const savedCalculations: SavedCalculation[] = JSON.parse(saved);
+            const updatedSaved = savedCalculations.filter(c => c.id !== calculationId);
             saveCalculationsToLocalStorage(updatedSaved);
             toast({
                 title: "ລຶບຂໍ້ມູນສຳເລັດ",
                 variant: "destructive"
             });
+            router.push('/tour');
         }
     };
 
@@ -352,25 +346,9 @@ export default function TourCalculatorPage() {
         window.print();
     };
 
-
-    const SummaryFooter = ({ title, totals }: { title: string; totals: Record<Currency, number> }) => {
-        const filteredTotals = Object.entries(totals).filter(([, value]) => value > 0);
-        if (filteredTotals.length === 0) return null;
-
-        return (
-            <div className="mt-4 rounded-lg bg-green-100 p-3">
-                <div className="flex items-center justify-between font-semibold text-green-800">
-                    <span>{title}:</span>
-                    <div className="flex items-center gap-4">
-                        {filteredTotals.map(([currency, value]) => (
-                            <span key={currency}>{`${currencySymbols[currency as Currency].split(' ')[0]} ${formatNumber(value)}`}</span>
-                        ))}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
+    if (!calculationId) {
+        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col">
@@ -378,7 +356,7 @@ export default function TourCalculatorPage() {
                 <Button variant="outline" size="icon" className="h-8 w-8 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" asChild>
                     <Link href="/tour">
                         <ArrowLeft className="h-4 w-4" />
-                        <span className="sr-only">ກັບໄປໜ້າແດຊ໌ບອດ</span>
+                        <span className="sr-only">ກັບໄປໜ້າລາຍການ</span>
                     </Link>
                 </Button>
                 <div className="flex-1">
@@ -389,6 +367,10 @@ export default function TourCalculatorPage() {
                     <Button variant="outline" className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" onClick={handleSaveCalculation}>
                         <Save className="mr-2 h-4 w-4" />
                         ບັນທຶກຂໍ້ມູນ
+                    </Button>
+                    <Button variant="destructive" onClick={handleDeleteCalculation}>
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        ລຶບ
                     </Button>
                     <Button variant="outline" className="bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" onClick={handlePrint}>
                         <Printer className="mr-2 h-4 w-4" />
@@ -1056,5 +1038,4 @@ export default function TourCalculatorPage() {
             </main>
         </div>
     );
-
 }
