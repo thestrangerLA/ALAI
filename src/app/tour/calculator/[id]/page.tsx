@@ -1084,9 +1084,7 @@ export default function TourCalculatorPage() {
                                 </CardContent>
                             </Card>
                         </div>
-                        <div className="print:hidden">
-                            <ExchangeRateCard grandTotals={grandTotals} />
-                        </div>
+                        <ExchangeRateCard grandTotals={grandTotals} />
                     </div>
                 </div>
             </main>
