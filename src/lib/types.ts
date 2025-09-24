@@ -51,3 +51,29 @@ export interface TourIncomeItem {
     cny?: number;
     [key: string]: any;
 }
+
+export interface CurrencyValues {
+    kip: number;
+    baht: number;
+    usd: number;
+    cny: number;
+}
+
+export interface TourAccountSummary {
+    id: string;
+    capital: CurrencyValues;
+    cash: CurrencyValues;
+    transfer: CurrencyValues;
+}
+
+export interface Transaction {
+    id: string;
+    date: Date;
+    type: 'income' | 'expense' | 'transfer-in' | 'transfer-out' | 'deposit' | 'withdraw';
+    from: string;
+    to: string;
+    description: string;
+    currency: 'kip' | 'baht' | 'usd' | 'cny';
+    amount: number;
+    createdAt: Timestamp;
+}
