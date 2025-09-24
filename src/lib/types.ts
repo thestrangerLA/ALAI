@@ -18,6 +18,7 @@ export interface TourProgram {
     name: string;
     date: Date | Timestamp;
     createdAt: Date | Timestamp;
+    tourDates?: string;
     [key: string]: any;
 }
 
@@ -28,6 +29,11 @@ export interface TourCostItem {
     date: Date | Timestamp | null;
     createdAt: Date | Timestamp;
     programId: string;
+    detail?: string;
+    lak?: number;
+    thb?: number;
+    usd?: number;
+    cny?: number;
     [key: string]: any;
 }
 
@@ -38,5 +44,10 @@ export interface TourIncomeItem {
     date: Date | Timestamp | null;
     createdAt: Date | Timestamp;
     programId: string;
+    detail?: string;
+    lak?: number;
+    thb?: number;
+    usd?: number;
+    cny?: number;
     [key: string]: any;
 }
