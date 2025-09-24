@@ -201,19 +201,20 @@ function TourProgramsListPageComponent() {
             {programs.map(program => {
                 const safeDate = getSafeDate(program.date);
                 return(
-                <TableRow key={program.id} className="group">
+                <TableRow key={program.id} className="group cursor-pointer" onClick={() => handleRowClick(program.id)}>
                     <TableCell>
                         <Popover>
                             <PopoverTrigger asChild>
                                 <Button
                                     variant={"outline"}
                                     className="w-[150px] justify-start text-left font-normal"
+                                    onClick={(e) => e.stopPropagation()}
                                 >
                                     <CalendarIcon className="mr-2 h-4 w-4" />
                                     {safeDate ? format(safeDate, "dd/MM/yyyy") : <span>ເລືອກວັນທີ</span>}
                                 </Button>
                             </PopoverTrigger>
-                            <PopoverContent className="w-auto p-0">
+                            <PopoverContent className="w-auto p-0" onClick={(e) => e.stopPropagation()}>
                                 <Calendar
                                     mode="single"
                                     selected={safeDate}
@@ -224,11 +225,11 @@ function TourProgramsListPageComponent() {
                             </PopoverContent>
                         </Popover>
                     </TableCell>
-                    <TableCell onClick={() => handleRowClick(program.id)} className="cursor-pointer">{program.tourCode}</TableCell>
-                    <TableCell onClick={() => handleRowClick(program.id)} className="cursor-pointer font-medium">{program.programName}</TableCell>
-                    <TableCell onClick={() => handleRowClick(program.id)} className="cursor-pointer">{program.groupName}</TableCell>
-                    <TableCell onClick={() => handleRowClick(program.id)} className="cursor-pointer">{program.destination}</TableCell>
-                    <TableCell onClick={() => handleRowClick(program.id)} className="cursor-pointer text-right">{program.pax}</TableCell>
+                    <TableCell>{program.tourCode}</TableCell>
+                    <TableCell className="font-medium">{program.programName}</TableCell>
+                    <TableCell>{program.groupName}</TableCell>
+                    <TableCell>{program.destination}</TableCell>
+                    <TableCell className="text-right">{program.pax}</TableCell>
                     <TableCell className="text-right">
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -237,17 +238,14 @@ function TourProgramsListPageComponent() {
                                     <MoreHorizontal className="h-4 w-4" />
                                 </Button>
                             </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
+                            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
                                 <DropdownMenuLabel>ການດຳເນີນການ</DropdownMenuLabel>
                                 <DropdownMenuItem onClick={() => handleRowClick(program.id)}>
                                     ເບິ່ງ/ແກ້ໄຂ
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                     className="text-red-600"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleDeleteProgram(program.id, program.programName)
-                                    }}
+                                    onClick={() => handleDeleteProgram(program.id, program.programName)}
                                 >
                                     ລົບ
                                 </DropdownMenuItem>
