@@ -47,7 +47,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
             ...prev,
             [from]: { ...prev[from], [to]: numericValue },
             // Also update the inverse rate
-            [to]: { ...prev[to], [from]: 1 / numericValue }
+            [to]: { ...prev[to], [from]: numericValue === 0 ? 0 : 1 / numericValue }
         }));
     };
     
