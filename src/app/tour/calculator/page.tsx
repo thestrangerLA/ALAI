@@ -47,6 +47,10 @@ export default function TourCalculationsListPage() {
             }
         }
     };
+    
+    const handleRowClick = (id: string) => {
+        router.push(`/tour/calculator/${id}`);
+    };
 
 
     return (
@@ -95,7 +99,7 @@ export default function TourCalculationsListPage() {
                                     </TableRow>
                                 ) : calculations.length > 0 ? (
                                     calculations.map((calc) => (
-                                        <TableRow key={calc.id}>
+                                        <TableRow key={calc.id} onClick={() => handleRowClick(calc.id)} className="cursor-pointer">
                                             <TableCell className="font-medium">{calc.name || calc.tourInfo.program}</TableCell>
                                             <TableCell>{calc.tourInfo.groupCode}</TableCell>
                                             <TableCell>
@@ -104,20 +108,23 @@ export default function TourCalculationsListPage() {
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
                                                     <DropdownMenuTrigger asChild>
-                                                        <Button aria-haspopup="true" size="icon" variant="ghost">
+                                                        <Button aria-haspopup="true" size="icon" variant="ghost" onClick={(e) => e.stopPropagation()}>
                                                             <MoreHorizontal className="h-4 w-4" />
                                                             <span className="sr-only">Toggle menu</span>
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
                                                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                        <DropdownMenuItem onSelect={() => router.push(`/tour/calculator/${calc.id}`)}>
+                                                        <DropdownMenuItem onSelect={() => handleRowClick(calc.id)}>
                                                              <Edit className="mr-2 h-4 w-4"/>
                                                             ແກ້ໄຂ
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             className="text-red-600"
-                                                            onSelect={() => handleDelete(calc.id, calc.name || calc.tourInfo.program)}
+                                                            onSelect={(e) => {
+                                                                e.stopPropagation();
+                                                                handleDelete(calc.id, calc.name || calc.tourInfo.program);
+                                                            }}
                                                         >
                                                             <Trash2 className="mr-2 h-4 w-4" />
                                                             ລົບ
