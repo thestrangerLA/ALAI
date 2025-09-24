@@ -358,8 +358,8 @@ export default function TourCalculatorPage() {
         if (filteredTotals.length === 0) return null;
 
         return (
-            <div className="mt-4 rounded-lg bg-purple-100 p-3">
-                <div className="flex items-center justify-between font-semibold text-purple-800">
+            <div className="mt-4 rounded-lg bg-green-100 p-3">
+                <div className="flex items-center justify-between font-semibold text-green-800">
                     <span>{title}:</span>
                     <div className="flex items-center gap-4">
                         {filteredTotals.map(([currency, value]) => (
@@ -396,7 +396,7 @@ export default function TourCalculatorPage() {
                     </Button>
                 </div>
             </header>
-            <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-4 bg-muted/40 print:p-0 print:bg-white print:gap-4">
+            <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-4 bg-background print:p-0 print:bg-white print:gap-4">
                 <div className="w-full max-w-screen-xl mx-auto flex flex-col gap-8">
                     
                     <div id="print-content" className="print-container">
@@ -426,78 +426,72 @@ export default function TourCalculatorPage() {
                                         ຂໍ້ມູນທົວ
                                     </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid gap-6">
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="mou-contact">MOU Contact:</Label>
-                                            <Input id="mou-contact" placeholder="ຊື່ຜູ້ຕິດຕໍ່" value={tourInfo.mouContact} onChange={e => setTourInfo({...tourInfo, mouContact: e.target.value})} />
+                                <CardContent className="grid md:grid-cols-2 gap-x-8 gap-y-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="mou-contact">MOU Contact:</Label>
+                                        <Input id="mou-contact" placeholder="ຊື່ຜູ້ຕິດຕໍ່" value={tourInfo.mouContact} onChange={e => setTourInfo({...tourInfo, mouContact: e.target.value})} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="group-code">Group Code:</Label>
+                                        <Input id="group-code" placeholder="ລະຫັດກຸ່ມ" value={tourInfo.groupCode} onChange={e => setTourInfo({...tourInfo, groupCode: e.target.value})} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="destination-country">ປະເທດປາຍທາງ:</Label>
+                                        <Input id="destination-country" placeholder="ປະເທດປາຍທາງ" value={tourInfo.destinationCountry} onChange={e => setTourInfo({...tourInfo, destinationCountry: e.target.value})} />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="program">ໂປຣແກຣມ:</Label>
+                                        <Input id="program" placeholder="ລະບຸໂປຣແກຣມ" value={tourInfo.program} onChange={e => setTourInfo({...tourInfo, program: e.target.value})} />
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-2 gap-4">
+                                         <div className="grid gap-2">
+                                            <Label htmlFor="travel-date-start">ວັນທີເດີນທາງ:</Label>
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant={"outline"} className="justify-start text-left font-normal bg-input">
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {tourInfo.startDate ? format(tourInfo.startDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0">
+                                                    <Calendar mode="single" selected={tourInfo.startDate} onSelect={date => setTourInfo({...tourInfo, startDate: date})} initialFocus locale={th} />
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="group-code">Group Code:</Label>
-                                            <Input id="group-code" placeholder="ລະຫັດກຸ່ມ" value={tourInfo.groupCode} onChange={e => setTourInfo({...tourInfo, groupCode: e.target.value})} />
+                                         <div className="grid gap-2 items-end">
+                                            <Popover>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant={"outline"} className="justify-start text-left font-normal bg-input">
+                                                        <CalendarIcon className="mr-2 h-4 w-4" />
+                                                        {tourInfo.endDate ? format(tourInfo.endDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0">
+                                                    <Calendar mode="single" selected={tourInfo.endDate} onSelect={date => setTourInfo({...tourInfo, endDate: date})} initialFocus locale={th} />
+                                                </PopoverContent>
+                                            </Popover>
                                         </div>
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-6">
+
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div className="grid gap-2">
-                                            <Label htmlFor="destination-country">ປະເທດປາຍທາງ:</Label>
-                                            <Input id="destination-country" placeholder="ປະເທດປາຍທາງ" value={tourInfo.destinationCountry} onChange={e => setTourInfo({...tourInfo, destinationCountry: e.target.value})} />
+                                            <Label htmlFor="num-days">ຈຳນວນວັນ:</Label>
+                                            <Input id="num-days" type="number" placeholder="1" value={tourInfo.numDays} onChange={e => setTourInfo({...tourInfo, numDays: Number(e.target.value) || 1})} />
                                         </div>
                                         <div className="grid gap-2">
-                                            <Label htmlFor="program">ໂປຣແກຣມ:</Label>
-                                            <Input id="program" placeholder="ລະບຸໂປຣແກຣມ" value={tourInfo.program} onChange={e => setTourInfo({...tourInfo, program: e.target.value})} />
+                                            <Label htmlFor="num-nights">ຈຳນວນຄືນ:</Label>
+                                            <Input id="num-nights" type="number" placeholder="0" value={tourInfo.numNights} onChange={e => setTourInfo({...tourInfo, numNights: Number(e.target.value) || 0})} />
                                         </div>
                                     </div>
-                                        <div className="grid md:grid-cols-2 gap-6 items-end">
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="travel-date-start">ວັນທີເດີນທາງ:</Label>
-                                                    <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant={"outline"} className="justify-start text-left font-normal">
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {tourInfo.startDate ? format(tourInfo.startDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0">
-                                                        <Calendar mode="single" selected={tourInfo.startDate} onSelect={date => setTourInfo({...tourInfo, startDate: date})} initialFocus locale={th} />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-                                            <div className="grid gap-2">
-                                                    <Label htmlFor="travel-date-end" className="text-transparent hidden md:block">-</Label>
-                                                    <Popover>
-                                                    <PopoverTrigger asChild>
-                                                        <Button variant={"outline"} className="justify-start text-left font-normal">
-                                                            <CalendarIcon className="mr-2 h-4 w-4" />
-                                                            {tourInfo.endDate ? format(tourInfo.endDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0">
-                                                        <Calendar mode="single" selected={tourInfo.endDate} onSelect={date => setTourInfo({...tourInfo, endDate: date})} initialFocus locale={th} />
-                                                    </PopoverContent>
-                                                </Popover>
-                                            </div>
-                                        </div>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="num-days">ຈຳນວນວັນ:</Label>
-                                                <Input id="num-days" type="number" placeholder="1" value={tourInfo.numDays} onChange={e => setTourInfo({...tourInfo, numDays: Number(e.target.value) || 1})} />
-                                            </div>
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="num-nights">ຈຳນວນຄືນ:</Label>
-                                                <Input id="num-nights" type="number" placeholder="0" value={tourInfo.numNights} onChange={e => setTourInfo({...tourInfo, numNights: Number(e.target.value) || 0})} />
-                                            </div>
-                                        </div>
+
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="num-people">ຈຳນວນຄົນ:</Label>
+                                        <Input id="num-people" type="number" placeholder="1" value={tourInfo.numPeople} onChange={e => setTourInfo({...tourInfo, numPeople: Number(e.target.value) || 1})} />
                                     </div>
-                                    <div className="grid md:grid-cols-2 gap-6">
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="num-people">ຈຳນວນຄົນ:</Label>
-                                            <Input id="num-people" type="number" placeholder="1" value={tourInfo.numPeople} onChange={e => setTourInfo({...tourInfo, numPeople: Number(e.target.value) || 1})} />
-                                        </div>
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="traveler-info">ຂໍ້ມູນຜູ້ຮ່ວມເດີນທາງ:</Label>
-                                            <Textarea id="traveler-info" placeholder="ຕົວຢ່າງ ກຸ່ມຄອບຄົວ, ຄູ່ຮັກ, ຜູ້ສູງອາຍຸ" className="min-h-[40px]" value={tourInfo.travelerInfo} onChange={e => setTourInfo({...tourInfo, travelerInfo: e.target.value})} />
-                                        </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="traveler-info">ຂໍ້ມູນຜູ້ຮ່ວມເດີນທາງ:</Label>
+                                        <Textarea id="traveler-info" placeholder="ຕົວຢ່າງ ກຸ່ມຄອບຄົວ, ຄູ່ຮັກ, ຜູ້ສູງອາຍຸ" className="min-h-[40px]" value={tourInfo.travelerInfo} onChange={e => setTourInfo({...tourInfo, travelerInfo: e.target.value})} />
                                     </div>
                                 </CardContent>
                             </Card>
