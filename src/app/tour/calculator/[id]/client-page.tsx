@@ -65,6 +65,7 @@ const CostCategoryContent = ({ title, icon, children }: { title: string, icon: R
 );
 
 export default function TourCalculatorClientPage({ initialCalculation }: { initialCalculation: SavedCalculation }) {
+    const router = useRouter();
     const { toast } = useToast();
     const [isSaving, setIsSaving] = useState(false);
     
