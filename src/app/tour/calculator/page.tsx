@@ -9,14 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { MoreHorizontal, PlusCircle, Trash2, Edit, ArrowLeft } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { listenToSavedCalculations, deleteCalculation } from '@/services/tourCalculatorService';
+import { listenToSavedCalculations, deleteCalculation, saveCalculation } from '@/services/tourCalculatorService';
 import type { SavedCalculation } from '@/lib/types';
 import { format } from 'date-fns';
 import { useToast } from "@/components/ui/use-toast";
+import { v4 as uuidv4 } from 'uuid';
 
 export default function TourCalculationsListPage() {
     const [calculations, setCalculations] = useState<SavedCalculation[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isCreating, setIsCreating] = useState(false);
     const router = useRouter();
     const { toast } = useToast();
 
@@ -28,6 +30,56 @@ export default function TourCalculationsListPage() {
 
         return () => unsubscribe();
     }, []);
+
+    const handleCreateNew = async () => {
+        setIsCreating(true);
+        const newId = uuidv4();
+        const programName = 'New Calculation';
+        const groupCode = `NewCalc-${newId.substring(0, 4)}`;
+
+        const newCalculationData: Omit<SavedCalculation, 'id' | 'savedAt'> = {
+            name: programName,
+            tourInfo: {
+                mouContact: '',
+                groupCode: groupCode,
+                destinationCountry: '',
+                program: programName,
+                startDate: new Date(),
+                endDate: new Date(),
+                numDays: 1,
+                numNights: 0,
+                numPeople: 1,
+                travelerInfo: ''
+            },
+            allCosts: {
+                accommodations: [],
+                trips: [],
+                flights: [],
+                trainTickets: [],
+                entranceFees: [],
+                meals: [],
+                guides: [],
+                documents: [],
+            }
+        };
+
+        try {
+            await saveCalculation(newCalculationData, newId);
+            toast({
+                title: "ສ້າງລາຍການຄຳນວນໃໝ່ສຳເລັດ",
+                description: "ກຳລັງໄປທີ່ໜ້າລາຍລະອຽດ...",
+            });
+            router.push(`/tour/calculator/${newId}`);
+        } catch (error) {
+            toast({
+                title: "ເກີດຂໍ້ຜິດພາດ",
+                description: "ບໍ່ສາມາດສ້າງລາຍການຄຳນວນໃໝ່ໄດ້",
+                variant: "destructive",
+            });
+            console.error("Failed to create new calculation:", error);
+            setIsCreating(false);
+        }
+    };
     
     const handleDelete = async (id: string, name: string) => {
         if (confirm(`คุณแน่ใจหรือไม่ว่าต้องการลบรายการคำนวณ "${name}"?`)) {
@@ -72,11 +124,9 @@ export default function TourCalculationsListPage() {
                                 <CardTitle>ລາຍການທັງໝົດ</CardTitle>
                                 <CardDescription>ລາຍການຄຳນວນຕົ້ນທຶນທີ່ບັນທຶກໄວ້</CardDescription>
                             </div>
-                             <Button asChild>
-                                <Link href="/tour/calculator/new">
-                                    <PlusCircle className="mr-2 h-4 w-4" />
-                                    <span>ເພີ່ມການຄຳນວນໃໝ່</span>
-                                </Link>
+                             <Button onClick={handleCreateNew} disabled={isCreating}>
+                                <PlusCircle className="mr-2 h-4 w-4" />
+                                <span>{isCreating ? 'ກຳລັງສ້າງ...' : 'ເພີ່ມການຄຳນວນໃໝ່'}</span>
                             </Button>
                         </div>
                     </CardHeader>
