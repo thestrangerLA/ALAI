@@ -1,4 +1,3 @@
-
 // src/lib/types.ts
 import type { Timestamp } from 'firebase/firestore';
 
@@ -7,7 +6,7 @@ import type { Timestamp } from 'firebase/firestore';
 export interface SavedCalculation {
     id: string;
     name: string;
-    savedAt: Date | Timestamp;
+    savedAt: Timestamp;
     totalCost?: number;
     tourInfo: TourInfo;
     allCosts: TourCosts;
@@ -22,8 +21,8 @@ export interface TourProgram {
     date: Date | Timestamp;
     createdAt: Date | Timestamp;
     tourDates?: string;
-    description?: string;
-    amount?: number;
+    description: string;
+    amount: number;
     // Allow any other properties that might be part of a calculation
     [key: string]: any;
 }
@@ -35,11 +34,11 @@ export interface TourCostItem {
     date: Date | Timestamp | null;
     createdAt: Date | Timestamp;
     programId: string;
-    detail?: string;
-    lak?: number;
-    thb?: number;
-    usd?: number;
-    cny?: number;
+    detail: string;
+    lak: number;
+    thb: number;
+    usd: number;
+    cny: number;
     [key: string]: any;
 }
 
@@ -50,11 +49,11 @@ export interface TourIncomeItem {
     date: Date | Timestamp | null;
     createdAt: Date | Timestamp;
     programId: string;
-    detail?: string;
-    lak?: number;
-    thb?: number;
-    usd?: number;
-    cny?: number;
+    detail: string;
+    lak: number;
+    thb: number;
+    usd: number;
+    cny: number;
     [key: string]: any;
 }
 
@@ -197,5 +196,3 @@ export interface TourCosts {
     guides: GuideFee[];
     documents: DocumentFee[];
 }
-
-    

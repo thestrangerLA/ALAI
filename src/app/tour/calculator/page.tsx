@@ -93,7 +93,7 @@ export default function TourCalculationsListPage() {
                                             <TableCell className="font-medium">{calc.name || calc.tourInfo.program}</TableCell>
                                             <TableCell>{calc.tourInfo.groupCode}</TableCell>
                                             <TableCell>
-                                                {calc.savedAt ? format(new Date(calc.savedAt.seconds * 1000), 'dd/MM/yyyy p') : 'N/A'}
+                                                {calc.savedAt && 'seconds' in calc.savedAt ? format(new Date(calc.savedAt.seconds * 1000), 'dd/MM/yyyy p') : 'N/A'}
                                             </TableCell>
                                             <TableCell className="text-right">
                                                 <DropdownMenu>
@@ -136,4 +136,3 @@ export default function TourCalculationsListPage() {
         </div>
     );
 }
-
