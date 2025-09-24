@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from '../ui/button';
+import { LineChart } from 'lucide-react';
 
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 type ExchangeRates = {
@@ -154,13 +155,15 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div>
-                             <Label>ຍອດລວມທີ່ແປງແລ້ວ</Label>
-                             <div className="text-2xl font-bold text-primary p-2 border bg-muted rounded-md h-10 flex items-center">
-                                <span>{formatNumber(convertedTotal)}</span>
-                                <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
+                         <div className="flex items-center gap-2">
+                                <Label className="whitespace-nowrap">ກຳໄລ %</Label>
+                                <Input 
+                                    type="number" 
+                                    value={profitPercentage}
+                                    onChange={e => setProfitPercentage(parseFloat(e.target.value) || 0)}
+                                    className="w-[100px]"
+                                />
                             </div>
-                        </div>
                     </div>
                 </div>
 
@@ -168,21 +171,25 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                 <div className="grid md:grid-cols-3 gap-6">
                     <Card>
                         <CardHeader>
+                            <CardTitle className="text-lg">ຍອດລວມທີ່ແປງແລ້ວ</CardTitle>
+                            <CardDescription className="text-xs">ຍອດລວມທັງໝົດໃນສະກຸນເງິນດຽວ</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                             <div className="text-xl font-bold text-primary p-4 border bg-muted rounded-md text-center">
+                               <p className="text-sm font-medium text-muted-foreground">ຍອດລວມ</p>
+                               <span>{formatNumber(convertedTotal)}</span>
+                               <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
+                            </div>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader>
                             <CardTitle className="text-lg">ລາຄາຂາຍ</CardTitle>
                             <CardDescription className="text-xs">ຄຳນວນລາຄາຂາຍໂດຍອີງໃສ່ເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Label className="whitespace-nowrap">ຍອດລວມ x %</Label>
-                                <Input 
-                                    type="number" 
-                                    value={profitPercentage}
-                                    onChange={e => setProfitPercentage(parseFloat(e.target.value) || 0)}
-                                    className="w-[80px]"
-                                />
-                            </div>
-                            <Label>ລາຄາຂາຍສຸດທິ</Label>
-                            <div className="text-xl font-bold text-green-600 p-2 border bg-green-50 rounded-md">
+                        <CardContent>
+                            <div className="text-xl font-bold text-green-600 p-4 border bg-green-50 rounded-md text-center">
+                               <p className="text-sm font-medium text-muted-foreground">ລາຄາຂາຍສຸດທິ</p>
                                <span>{formatNumber(finalSalePrice)}</span>
                                <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
                             </div>
@@ -190,12 +197,12 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                     </Card>
                     <Card>
                         <CardHeader>
-                            <CardTitle className="text-lg">ກຳໄລ</CardTitle>
-                            <CardDescription className="text-xs">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
+                            <CardTitle className="flex items-center gap-2 text-lg"><LineChart className="h-5 w-5"/>ກຳໄລ</CardTitle>
+                             <CardDescription className="text-xs">ກຳໄລຈາກເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <Label>ກຳໄລ</Label>
-                            <div className="text-xl font-bold text-blue-600 p-2 border bg-blue-50 rounded-md">
+                             <div className="text-xl font-bold text-blue-600 p-4 border bg-blue-50 rounded-md text-center">
+                               <p className="text-sm font-medium text-muted-foreground">ກຳໄລ</p>
                                <span>{formatNumber(profit)}</span>
                                <span className="text-sm font-medium text-muted-foreground ml-2">{targetCurrency}</span>
                             </div>
