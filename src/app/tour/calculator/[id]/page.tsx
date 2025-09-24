@@ -18,6 +18,8 @@ import { TotalCostCard } from '@/components/tour/TotalCostCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { ExchangeRateCard } from '@/components/tour/ExchangeRateCard';
+
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
@@ -1081,6 +1083,9 @@ export default function TourCalculatorPage() {
                                     ))}
                                 </CardContent>
                             </Card>
+                        </div>
+                        <div className="print:hidden">
+                            <ExchangeRateCard grandTotals={grandTotals} />
                         </div>
                     </div>
                 </div>
