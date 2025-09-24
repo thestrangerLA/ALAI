@@ -10,6 +10,7 @@ import { listenToTourTransactions } from '@/services/tourAccountancyService';
 import type { Transaction, CurrencyValues } from '@/lib/types';
 import { format, isWithinInterval, startOfMonth, endOfMonth, isValid } from 'date-fns';
 import { useSearchParams } from 'next/navigation';
+import { Timestamp } from 'firebase/firestore';
 
 import StaticExportWrapper from '@/components/StaticExportWrapper';
 

@@ -10,6 +10,7 @@ import { ArrowLeft, FileText, PlusCircle, MoreHorizontal, ChevronDown, Calendar 
 import { listenToTourPrograms, deleteTourProgram, updateTourProgram } from '@/services/tourProgramService';
 import type { TourProgram } from '@/lib/types';
 import { format, getYear, getMonth, startOfDay, isValid } from 'date-fns';
+import { Timestamp } from 'firebase/firestore';
 
 import {
   DropdownMenu,
