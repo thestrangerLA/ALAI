@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
@@ -38,7 +39,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
     const [profitPercentage, setProfitPercentage] = useState<number>(20);
 
     const [isClient, setIsClient] = useState(false);
-    useEffect(() => { setIsClient(true) }, []);
+    useEffect(() => { setIsClient(true); }, []);
 
 
     const handleRateChange = (from: Currency, to: Currency, value: string) => {
@@ -197,7 +198,7 @@ export function ExchangeRateCard({ grandTotals }: ExchangeRateCardProps) {
                         <CardHeader>
                             <CardTitle className="text-lg">ລາຄາຂາຍ</CardTitle>
                             <CardDescription className="text-xs">ຄຳນວນລາຄາຂາຍໂດຍອີງໃສ່ເປີເຊັນທີ່ເພີ່ມຂຶ້ນ</CardDescription>
-                        </CardHeader>
+                        </Header>
                         <CardContent>
                             <div className="text-xl font-bold text-green-600 p-4 border bg-green-50 rounded-md text-center">
                                <p className="text-sm font-medium text-muted-foreground">ລາຄາຂາຍສຸດທິ</p>
