@@ -36,23 +36,33 @@ const ensureInitialState = async () => {
     }
 };
 
-export const listenToTourAccountSummary = (callback: (summary: TourAccountSummary) => void) => {
-    ensureInitialState();
-    
-    const unsubscribe = onSnapshot(summaryDocRef, (docSnapshot) => {
-        if (docSnapshot.exists()) {
-            const data = docSnapshot.data();
-            callback({
-                id: docSnapshot.id,
-                capital: data.capital || { ...initialCurrencyValues },
-                cash: data.cash || { ...initialCurrencyValues },
-                transfer: data.transfer || { ...initialCurrencyValues },
-            });
-        } else {
-            callback({ id: 'latest', ...initialSummaryState });
-        }
+export const listenToTourAccountSummary = (callback: (summary: TourAccountSummary | null) => void) => {
+    ensureInitialState().then(() => {
+        const unsubscribe = onSnapshot(summaryDocRef, (docSnapshot) => {
+            if (docSnapshot.exists()) {
+                const data = docSnapshot.data();
+                callback({
+                    id: docSnapshot.id,
+                    capital: data.capital || { ...initialCurrencyValues },
+                    cash: data.cash || { ...initialCurrencyValues },
+                    transfer: data.transfer || { ...initialCurrencyValues },
+                });
+            } else {
+                // This case should ideally not be hit after ensureInitialState, but as a fallback:
+                callback({ id: 'latest', ...initialSummaryState });
+            }
+        }, (error) => {
+            console.error("Error listening to account summary: ", error);
+            callback(null); // Pass null on error
+        });
+        return unsubscribe;
+    }).catch(error => {
+        console.error("Error ensuring initial state for account summary: ", error);
+        callback(null);
     });
-    return unsubscribe;
+
+    // Return a dummy unsubscribe function for the initial phase
+    return () => {};
 };
 
 export const updateTourAccountSummary = async (summary: Partial<Omit<TourAccountSummary, 'id'>>) => {
