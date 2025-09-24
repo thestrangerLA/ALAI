@@ -53,4 +53,5 @@ export default async function TourProgramPage({ params }: { params: { id: string
         <StaticExportWrapper fallback={<LoadingFallback/>}>
             <TourProgramClientPage initialProgram={programData} />
         </StaticExportWrapper>
-    
+    );
+}
