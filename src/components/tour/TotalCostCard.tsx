@@ -88,8 +88,8 @@ export function TotalCostCard({ totalsByCategory }: TotalCostCardProps) {
                     </div>
                 ) : (
                     <div className="text-center text-muted-foreground py-8 print:py-2 print:text-xs">
-                        <p>ยังไม่มีข้อมูลค่าใช้จ่าย</p>
-                        <p className="text-sm print:hidden">กรอกข้อมูลในหมวดหมู่ต่างๆ เพื่อดูสรุปที่นี่</p>
+                        <p>ຍັງບໍ່ມີຂໍ້ມູນຄ່າໃຊ້ຈ່າຍ</p>
+                        <p className="text-sm print:hidden">ກະລຸນາປ້ອນຂໍ້ມູນໃນໝວດໝູ່ຕ່າງໆ ເພື່ອເບິ່ງສະຫຼຸບລາຍຈ່າຍ</p>
                     </div>
                 )}
             </CardContent>
