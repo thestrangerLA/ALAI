@@ -8,13 +8,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Calendar as CalendarIcon, Calculator } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Calculator, Pencil, Trash2 } from 'lucide-react';
 import { SavedCalculation } from './tour/calculator/[id]/page';
+import { useToast } from "@/hooks/use-toast";
+
 
 const SAVED_CALCULATIONS_KEY = 'tour-savedCalculations';
 
 export default function TourListPage() {
     const router = useRouter();
+    const { toast } = useToast();
     const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>([]);
     const [groupedCalculations, setGroupedCalculations] = useState<Record<string, SavedCalculation[]>>({});
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -105,6 +108,20 @@ export default function TourListPage() {
     const navigateToCalculation = (id: string) => {
         router.push(`/tour/calculator/${id}`);
     }
+    
+    const handleDeleteCalculation = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation(); // Prevent row click event
+        if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
+            const updatedSaved = savedCalculations.filter(c => c.id !== id);
+            localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(updatedSaved));
+            setSavedCalculations(updatedSaved);
+            toast({
+                title: "ລຶບຂໍ້ມູນສຳເລັດ",
+                variant: "destructive"
+            });
+        }
+    };
+
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -155,6 +172,7 @@ export default function TourListPage() {
                                                             <th className="p-3 font-medium">ໂປຣແກຣມ</th>
                                                             <th className="p-3 font-medium">ຈຸດໝາຍ</th>
                                                             <th className="p-3 font-medium">ຈຳນວນຄົນ</th>
+                                                            <th className="p-3 font-medium text-right">ການກະທຳ</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -165,6 +183,14 @@ export default function TourListPage() {
                                                                 <td className="p-3">{calc.tourInfo.program}</td>
                                                                 <td className="p-3">{calc.tourInfo.destinationCountry}</td>
                                                                 <td className="p-3">{calc.tourInfo.numPeople}</td>
+                                                                <td className="p-3 text-right">
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); navigateToCalculation(calc.id); }}>
+                                                                        <Pencil className="h-4 w-4 text-blue-500" />
+                                                                    </Button>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => handleDeleteCalculation(e, calc.id)}>
+                                                                        <Trash2 className="h-4 w-4 text-red-500" />
+                                                                    </Button>
+                                                                </td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
