@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -12,21 +13,23 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer } from "lucide-react";
+import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer, LogIn } from "lucide-react";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { TotalCostCard } from '@/components/tour/TotalCostCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/components/ui/use-toast";
 import { ExchangeRateCard } from '@/components/tour/ExchangeRateCard';
+import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
+import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 const currencySymbols: Record<Currency, string> = {
-    USD: '$ (ດอลລár)',
+    USD: '$ (ດอลลár)',
     THB: '฿ (ບາດ)',
     LAK: '₭ (ກີບ)',
     CNY: '¥ (ຢວນ)',
@@ -34,12 +37,14 @@ const currencySymbols: Record<Currency, string> = {
 
 const formatNumber = (num: number, options?: Intl.NumberFormatOptions) => new Intl.NumberFormat('en-US', options).format(num);
 
+type DateValue = Date | Timestamp | undefined;
+
 // --- Component Prop Types ---
-type Accommodation = { id: string; name: string; type: 'hotel' | 'guesthouse'; checkInDate?: Date; rooms: Room[]; };
+type Accommodation = { id: string; name: string; type: 'hotel' | 'guesthouse'; checkInDate?: DateValue; rooms: Room[]; };
 type Room = { id: string; type: string; numRooms: number; numNights: number; price: number; currency: Currency; };
 type Trip = { id: string; location: string; route: string; vehicleType: string; numVehicles: number; numDays: number; pricePerVehicle: number; currency: Currency; };
-type Flight = { id: string; from: string; to: string; departureDate?: Date; departureTime: string; pricePerPerson: number; numPeople: number; currency: Currency; };
-type TrainTicket = { id: string; from: string; to: string; departureDate?: Date; departureTime: string; ticketClass: string; numTickets: number; pricePerTicket: number; currency: Currency; };
+type Flight = { id: string; from: string; to: string; departureDate?: DateValue; departureTime: string; pricePerPerson: number; numPeople: number; currency: Currency; };
+type TrainTicket = { id: string; from: string; to: string; departureDate?: DateValue; departureTime: string; ticketClass: string; numTickets: number; pricePerTicket: number; currency: Currency; };
 type EntranceFee = { id: string; locationName: string; pax: number; numLocations: number; price: number; currency: Currency; };
 type MealCost = { id: string; name: string; pax: number; breakfast: number; lunch: number; dinner: number; pricePerMeal: number; currency: Currency; };
 type GuideFee = { id: string; guideName: string; numGuides: number; numDays: number; pricePerDay: number; currency: Currency; };
@@ -50,8 +55,8 @@ interface TourInfo {
     groupCode: string;
     destinationCountry: string;
     program: string;
-    startDate?: Date;
-    endDate?: Date;
+    startDate?: DateValue;
+    endDate?: DateValue;
     numDays: number;
     numNights: number;
     numPeople: number;
@@ -63,7 +68,7 @@ interface TourCosts {
     trips: Trip[];
     flights: Flight[];
     trainTickets: TrainTicket[];
-    entranceFees: MealCost[];
+    entranceFees: EntranceFee[];
     meals: MealCost[];
     guides: GuideFee[];
     documents: DocumentFee[];
@@ -71,12 +76,18 @@ interface TourCosts {
 
 export interface SavedCalculation {
     id: string;
-    savedAt: Date;
+    savedAt: DateValue;
     tourInfo: TourInfo;
     allCosts: TourCosts;
 }
 
-const SAVED_CALCULATIONS_KEY = 'tour-savedCalculations';
+const toDate = (date: DateValue): Date | undefined => {
+  if (!date) return undefined;
+  if (date instanceof Timestamp) {
+    return date.toDate();
+  }
+  return date as Date;
+};
 
 
 const CostCategoryContent = ({ title, icon, children, summary }: { title: string, icon: React.ReactNode, children: React.ReactNode, summary: React.ReactNode }) => (
@@ -99,121 +110,79 @@ export default function TourCalculatorPage() {
     const router = useRouter();
     const params = useParams();
     const calculationId = params.id as string;
+    
+    const { user, auth } = useUser();
+    const firestore = useFirestore();
+
+    const calculationDocRef = useMemoFirebase(() => {
+        if (!user || !firestore || !calculationId) return null;
+        return doc(firestore, 'users', user.uid, 'calculations', calculationId);
+    }, [user, firestore, calculationId]);
+
+    const { data: calculationData, status: calculationStatus, error } = useDoc(calculationDocRef);
 
     const [tourInfo, setTourInfo] = useState<TourInfo>({
-        mouContact: '',
-        groupCode: '',
-        destinationCountry: '',
-        program: '',
-        startDate: undefined,
-        endDate: undefined,
-        numDays: 1,
-        numNights: 0,
-        numPeople: 1,
-        travelerInfo: ''
+        mouContact: '', groupCode: '', destinationCountry: '', program: '',
+        numDays: 1, numNights: 0, numPeople: 1, travelerInfo: ''
     });
 
     const [allCosts, setAllCosts] = useState<TourCosts>({
-        accommodations: [],
-        trips: [],
-        flights: [],
-        trainTickets: [],
-        entranceFees: [],
-        meals: [],
-        guides: [],
-        documents: [],
+        accommodations: [], trips: [], flights: [], trainTickets: [],
+        entranceFees: [], meals: [], guides: [], documents: []
     });
     
     const [itemVisibility, setItemVisibility] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        if (!calculationId) return;
-
-        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY);
-        if (saved) {
-            const savedCalculations: SavedCalculation[] = JSON.parse(saved, (key, value) => {
-                 if (['savedAt', 'startDate', 'endDate', 'checkInDate', 'departureDate'].includes(key)) {
-                    return value ? new Date(value) : undefined;
-                 }
-                 return value;
+        if (calculationData) {
+            setTourInfo(calculationData.tourInfo || {
+                mouContact: '', groupCode: '', destinationCountry: '', program: '',
+                numDays: 1, numNights: 0, numPeople: 1, travelerInfo: ''
             });
-            const calculationToLoad = savedCalculations.find(c => c.id === calculationId);
-            if (calculationToLoad) {
-                 setTourInfo(calculationToLoad.tourInfo);
-                 setAllCosts(calculationToLoad.allCosts);
-            } else {
-                 console.error("Calculation not found!");
-                 toast({ title: "Error", description: "Calculation not found.", variant: "destructive" });
-                 router.push('/');
-            }
+            setAllCosts(calculationData.allCosts || {
+                accommodations: [], trips: [], flights: [], trainTickets: [],
+                entranceFees: [], meals: [], guides: [], documents: []
+            });
         }
-    }, [calculationId, router, toast]);
-
-    const saveCurrentCalculation = useCallback(() => {
-        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
-        let savedCalculations: SavedCalculation[] = JSON.parse(saved);
-        
-        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
-
-        const currentCalculationData: SavedCalculation = {
-            id: calculationId,
-            savedAt: existingIndex > -1 ? savedCalculations[existingIndex].savedAt : new Date(),
+    }, [calculationData]);
+    
+    useEffect(() => {
+        if (calculationStatus === 'error') {
+            console.error("Error loading calculation:", error);
+            toast({ title: "Error", description: "Calculation not found or you don't have permission.", variant: "destructive" });
+            router.push('/');
+        }
+    }, [calculationStatus, error, router, toast]);
+    
+    const handleDataChange = useCallback(() => {
+        if (!calculationDocRef) return;
+        const dataToSave = {
             tourInfo: JSON.parse(JSON.stringify(tourInfo)),
             allCosts: JSON.parse(JSON.stringify(allCosts)),
+            savedAt: serverTimestamp(),
         };
-
-        if (existingIndex > -1) {
-            savedCalculations[existingIndex] = currentCalculationData;
-        } else {
-            savedCalculations.push(currentCalculationData);
-        }
-        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
-    }, [calculationId, tourInfo, allCosts]);
+        setDoc(calculationDocRef, dataToSave, { merge: true });
+    }, [calculationDocRef, tourInfo, allCosts]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
     };
 
-    const updateCosts = useCallback((category: keyof TourCosts, data: any) => {
+    const updateCosts = useCallback((category: keyof TourCosts, data: any[]) => {
         setAllCosts(prev => ({ ...prev, [category]: data }));
     }, []);
     
     const handleSaveCalculation = () => {
-        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
-        const savedCalculations: SavedCalculation[] = JSON.parse(saved);
-        
-        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
-
-        const currentCalculationData: SavedCalculation = {
-            id: calculationId,
-            savedAt: new Date(),
-            tourInfo: JSON.parse(JSON.stringify(tourInfo)), // Deep copy
-            allCosts: JSON.parse(JSON.stringify(allCosts)), // Deep copy
-        };
-        
-        if (existingIndex > -1) {
-            savedCalculations[existingIndex] = currentCalculationData;
-        } else {
-            savedCalculations.push(currentCalculationData);
-        }
-
-        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
+        handleDataChange();
         toast({
             title: "ບັນທຶກການຄຳນວນສຳເລັດ",
             description: `ຂໍ້ມູນ ${tourInfo.groupCode || 'ບໍ່ມີຊື່'} ໄດ້ຖືກບັນທຶກແລ້ວ.`,
         });
     };
     
-    const handleDeleteCalculation = () => {
+    const handleDeleteCalculation = async () => {
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
-            const savedCalculations: SavedCalculation[] = JSON.parse(saved);
-            const updatedSaved = savedCalculations.filter(c => c.id !== calculationId);
-            localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(updatedSaved));
-            toast({
-                title: "ລຶບຂໍ້ມູນສຳເລັດ",
-                variant: "destructive"
-            });
+            // Firestore deletion is now handled on the list page
             router.push('/');
         }
     };
@@ -231,25 +200,23 @@ export default function TourCalculatorPage() {
     };
     
     const deleteItem = <T extends keyof TourCosts>(category: T, itemId: string) => {
-        const updatedCosts = {
-            ...allCosts,
-            [category]: allCosts[category].filter((item: any) => item.id !== itemId),
-        };
-        setAllCosts(updatedCosts);
-
-        // Also update localStorage
-        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
-        let savedCalculations: SavedCalculation[] = JSON.parse(saved);
-        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
-        if (existingIndex > -1) {
-            savedCalculations[existingIndex].allCosts = updatedCosts;
-            localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
-        }
+        const updatedItems = allCosts[category].filter((item: any) => item.id !== itemId);
+        updateCosts(category, updatedItems as TourCosts[T]);
          toast({
             title: "ລຶບລາຍການສຳເລັດ",
             variant: "destructive"
         });
     };
+    
+    // Auto-save on change
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            if (calculationStatus === 'success') {
+                handleDataChange();
+            }
+        }, 2000); // Debounce time
+        return () => clearTimeout(handler);
+    }, [tourInfo, allCosts, calculationStatus, handleDataChange]);
 
 
     // Specific Component Logic
@@ -295,7 +262,7 @@ export default function TourCalculatorPage() {
     // --- Total Calculation Memos ---
     const accommodationTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.accommodations.forEach(acc => {
+        allCosts.accommodations?.forEach(acc => {
             acc.rooms.forEach(room => {
                 totals[room.currency] += (room.numRooms || 0) * (room.numNights || 0) * (room.price || 0);
             });
@@ -305,7 +272,7 @@ export default function TourCalculatorPage() {
 
     const tripTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.trips.forEach(trip => {
+        allCosts.trips?.forEach(trip => {
             totals[trip.currency] += (trip.numVehicles || 0) * (trip.numDays || 0) * (trip.pricePerVehicle || 0);
         });
         return totals;
@@ -313,7 +280,7 @@ export default function TourCalculatorPage() {
 
     const flightTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.flights.forEach(flight => {
+        allCosts.flights?.forEach(flight => {
             totals[flight.currency] += (flight.pricePerPerson || 0) * (flight.numPeople || 0);
         });
         return totals;
@@ -321,7 +288,7 @@ export default function TourCalculatorPage() {
     
     const trainTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.trainTickets.forEach(ticket => {
+        allCosts.trainTickets?.forEach(ticket => {
             totals[ticket.currency] += (ticket.pricePerTicket || 0) * (ticket.numTickets || 0);
         });
         return totals;
@@ -329,7 +296,7 @@ export default function TourCalculatorPage() {
 
     const entranceFeeTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.entranceFees.forEach(fee => {
+        allCosts.entranceFees?.forEach(fee => {
             totals[fee.currency] += (fee.pax || 0) * (fee.numLocations || 0) * (fee.price || 0);
         });
         return totals;
@@ -337,7 +304,7 @@ export default function TourCalculatorPage() {
 
     const mealTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.meals.forEach(meal => {
+        allCosts.meals?.forEach(meal => {
             totals[meal.currency] += ((meal.breakfast || 0) + (meal.lunch || 0) + (meal.dinner || 0)) * (meal.pricePerMeal || 0) * (meal.pax || 0);
         });
         return totals;
@@ -345,7 +312,7 @@ export default function TourCalculatorPage() {
 
     const guideTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.guides.forEach(guide => {
+        allCosts.guides?.forEach(guide => {
             totals[guide.currency] += (guide.numGuides || 0) * (guide.numDays || 0) * (guide.pricePerDay || 0);
         });
         return totals;
@@ -353,7 +320,7 @@ export default function TourCalculatorPage() {
 
     const documentTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
-        allCosts.documents.forEach(doc => {
+        allCosts.documents?.forEach(doc => {
             totals[doc.currency] += (doc.pax || 0) * (doc.price || 0);
         });
         return totals;
@@ -400,8 +367,34 @@ export default function TourCalculatorPage() {
         );
     };
 
-    if (!calculationId) {
-        return <div className="flex items-center justify-center h-screen">Loading...</div>;
+    if (calculationStatus === 'loading' || !user) {
+        return (
+            <div className="flex flex-col items-center justify-center h-screen">
+                <p className="text-2xl font-semibold mb-4">Loading...</p>
+                 {!user && calculationStatus !== 'error' && (
+                    <Card className="p-8 text-center">
+                        <CardHeader>
+                            <CardTitle>ກະລຸນາລັອກອິນ</CardTitle>
+                            <CardDescription>ທ່ານຕ້ອງລັອກອິນກ່ອນຈຶ່ງຈະສາມາດເບິ່ງ ຫຼື ແກ້ໄຂຂໍ້ມູນໄດ້.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Button onClick={() => auth?.signInWithGoogle()}>
+                                <LogIn className="mr-2 h-4 w-4"/>
+                                ລັອກອິນດ້ວຍ Google
+                            </Button>
+                        </CardContent>
+                    </Card>
+                 )}
+            </div>
+        );
+    }
+    
+    if (calculationStatus === 'error') {
+         return (
+            <div className="flex items-center justify-center h-screen">
+                <p>Error loading data. You may not have permission or the document does not exist.</p>
+            </div>
+         );
     }
 
     return (
@@ -436,9 +429,9 @@ export default function TourCalculatorPage() {
                 <div className="w-full max-w-screen-xl mx-auto flex flex-col gap-4">
                     
                     <div id="print-content" className="print-container">
-                        <div className="hidden print:block print:space-y-2">
+                         <div className="hidden print:block print:space-y-2">
                             <h1 className="print:text-lg print:font-bold text-center">ຂໍ້ມູນທົວ</h1>
-                             <div className="grid grid-cols-2 gap-x-4 print:text-xs print:border-y print:py-1">
+                            <div className="grid grid-cols-2 gap-x-4 print:text-xs print:border-y print:py-1">
                                 <div className="space-y-0.5">
                                     <div className="flex justify-between"><strong className="font-semibold">MOU Contact:</strong><span>{tourInfo.mouContact}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Group Code:</strong><span>{tourInfo.groupCode}</span></div>
@@ -446,7 +439,7 @@ export default function TourCalculatorPage() {
                                     <div className="flex justify-between"><strong className="font-semibold">Program:</strong><span>{tourInfo.program}</span></div>
                                 </div>
                                 <div className="space-y-0.5">
-                                    <div className="flex justify-between"><strong className="font-semibold">Travel Dates:</strong><span>{tourInfo.startDate ? format(tourInfo.startDate, "dd/MM/yy") : ''} - {tourInfo.endDate ? format(tourInfo.endDate, "dd/MM/yy") : ''}</span></div>
+                                    <div className="flex justify-between"><strong className="font-semibold">Travel Dates:</strong><span>{tourInfo.startDate ? format(toDate(tourInfo.startDate)!, "dd/MM/yy") : ''} - {tourInfo.endDate ? format(toDate(tourInfo.endDate)!, "dd/MM/yy") : ''}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Duration:</strong><span>{tourInfo.numDays} Days, {tourInfo.numNights} Nights</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Pax:</strong><span>{tourInfo.numPeople}</span></div>
                                     <div className="flex justify-between"><strong className="font-semibold">Traveler Info:</strong><span>{tourInfo.travelerInfo}</span></div>
@@ -487,11 +480,11 @@ export default function TourCalculatorPage() {
                                                 <PopoverTrigger asChild>
                                                     <Button variant={"outline"} className="justify-start text-left font-normal bg-input">
                                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {tourInfo.startDate ? format(tourInfo.startDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                        {toDate(tourInfo.startDate) ? format(toDate(tourInfo.startDate)!, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0">
-                                                    <Calendar mode="single" selected={tourInfo.startDate} onSelect={date => setTourInfo({...tourInfo, startDate: date})} initialFocus locale={th} />
+                                                    <Calendar mode="single" selected={toDate(tourInfo.startDate)} onSelect={date => setTourInfo({...tourInfo, startDate: date})} initialFocus locale={th} />
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -500,11 +493,11 @@ export default function TourCalculatorPage() {
                                                 <PopoverTrigger asChild>
                                                     <Button variant={"outline"} className="justify-start text-left font-normal bg-input">
                                                         <CalendarIcon className="mr-2 h-4 w-4" />
-                                                        {tourInfo.endDate ? format(tourInfo.endDate, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                        {toDate(tourInfo.endDate) ? format(toDate(tourInfo.endDate)!, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0">
-                                                    <Calendar mode="single" selected={tourInfo.endDate} onSelect={date => setTourInfo({...tourInfo, endDate: date})} initialFocus locale={th} />
+                                                    <Calendar mode="single" selected={toDate(tourInfo.endDate)} onSelect={date => setTourInfo({...tourInfo, endDate: date})} initialFocus locale={th} />
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -539,7 +532,7 @@ export default function TourCalculatorPage() {
                                 <CardDescription>ເພີ່ມ ແລະ ຈັດການຄ່າໃຊ້ຈ່າຍຕ່າງໆ</CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <Accordion type="multiple" className="w-full grid md:grid-cols-2 gap-4 items-start">
+                                <Accordion type="multiple" className="w-full grid md:grid-cols-2 gap-4 items-start" defaultValue={['ຄ່າທີ່ພັກ', 'ຄ່າຂົນສົ່ງ', 'ຄ່າປີ້ຍົນ', 'ຄ່າປີ້ລົດໄຟ', 'ຄ່າເຂົ້າຊົມສະຖານທີ່', 'ຄ່າອາຫານ', 'ຄ່າໄກ້', 'ຄ່າເອກະສານ'].map(t => t.toLowerCase().replace(/\s/g, '-'))}>
                                     {/* Accommodation */}
                                     <CostCategoryContent 
                                         title="ຄ່າທີ່ພັກ" 
@@ -547,7 +540,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={accommodationTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.accommodations.map((acc, index) => (
+                                            {allCosts.accommodations?.map((acc, index) => (
                                                 <Card key={acc.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ທີ່ພັກ #{index + 1}</CardTitle>
@@ -572,11 +565,11 @@ export default function TourCalculatorPage() {
                                                                     <PopoverTrigger asChild>
                                                                         <Button variant={"outline"} className="w-full justify-start text-left font-normal">
                                                                             <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                            {acc.checkInDate ? format(new Date(acc.checkInDate), "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                                            {toDate(acc.checkInDate) ? format(toDate(acc.checkInDate)!, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
                                                                         </Button>
                                                                     </PopoverTrigger>
                                                                     <PopoverContent className="w-auto p-0">
-                                                                        <Calendar mode="single" selected={acc.checkInDate} onSelect={(date) => updateItem('accommodations', acc.id, 'checkInDate', date)} initialFocus />
+                                                                        <Calendar mode="single" selected={toDate(acc.checkInDate)} onSelect={(date) => updateItem('accommodations', acc.id, 'checkInDate', date)} initialFocus />
                                                                     </PopoverContent>
                                                                 </Popover>
                                                             </div>
@@ -640,7 +633,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={tripTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.trips.map((trip, index) => (
+                                            {allCosts.trips?.map((trip, index) => (
                                                 <Card key={trip.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ການເດີນທາງ #{index + 1}</CardTitle>
@@ -704,7 +697,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={flightTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.flights.map((flight, index) => (
+                                            {allCosts.flights?.map((flight, index) => (
                                                 <Card key={flight.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ປີ້ຍົນ #{index + 1}</CardTitle>
@@ -733,11 +726,11 @@ export default function TourCalculatorPage() {
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant={"outline"} className="w-[180px] justify-start text-left font-normal">
                                                                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                                {flight.departureDate ? format(new Date(flight.departureDate), "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                                                {toDate(flight.departureDate) ? format(toDate(flight.departureDate)!, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-auto p-0">
-                                                                            <Calendar mode="single" selected={flight.departureDate} onSelect={(date) => updateItem('flights', flight.id, 'departureDate', date)} initialFocus />
+                                                                            <Calendar mode="single" selected={toDate(flight.departureDate)} onSelect={(date) => updateItem('flights', flight.id, 'departureDate', date)} initialFocus />
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                     <div className="relative">
@@ -778,7 +771,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={trainTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.trainTickets.map((ticket, index) => (
+                                            {allCosts.trainTickets?.map((ticket, index) => (
                                                 <Card key={ticket.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ປີ້ລົດໄຟ #{index + 1}</CardTitle>
@@ -807,11 +800,11 @@ export default function TourCalculatorPage() {
                                                                         <PopoverTrigger asChild>
                                                                             <Button variant={"outline"} className="w-[180px] justify-start text-left font-normal">
                                                                                 <CalendarIcon className="mr-2 h-4 w-4" />
-                                                                                {ticket.departureDate ? format(new Date(ticket.departureDate), "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
+                                                                                {toDate(ticket.departureDate) ? format(toDate(ticket.departureDate)!, "dd/MM/yyyy") : <span>mm/dd/yyyy</span>}
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-auto p-0">
-                                                                            <Calendar mode="single" selected={ticket.departureDate} onSelect={(date) => updateItem('trainTickets', ticket.id, 'departureDate', date)} initialFocus />
+                                                                            <Calendar mode="single" selected={toDate(ticket.departureDate)} onSelect={(date) => updateItem('trainTickets', ticket.id, 'departureDate', date)} initialFocus />
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                     <div className="relative">
@@ -832,7 +825,7 @@ export default function TourCalculatorPage() {
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label>ຊັ້ນປີ້</Label>
-                                                                <Input value={ticket.ticketClass} onChange={e => updateItem('trainTickets', ticket.id, 'ticketClass', e.target.value)} placeholder="เช่น ชั้น 1, ชั้น 2" />
+                                                                <Input value={ticket.ticketClass} onChange={e => updateItem('trainTickets', ticket.id, 'ticketClass', e.target.value)} placeholder="ເຊັ່ນ ຊັ້ນ 1, ຊັ້ນ 2" />
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label>ສະກຸນເງິນ</Label>
@@ -856,7 +849,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={entranceFeeTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.entranceFees.map((fee, index) => (
+                                            {allCosts.entranceFees?.map((fee, index) => (
                                                 <Card key={fee.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ຄ່າເຂົ້າຊົມ #{index + 1}</CardTitle>
@@ -872,7 +865,7 @@ export default function TourCalculatorPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label>ຊື່ສະຖານທີ່</Label>
-                                                                <Input value={fee.locationName} onChange={e => updateItem('entranceFees', fee.id, 'locationName', e.target.value)} placeholder="เช่น พระธาตุหลวง, ประตูชัย" />
+                                                                <Input value={fee.locationName} onChange={e => updateItem('entranceFees', fee.id, 'locationName', e.target.value)} placeholder="ເຊັ່ນ ພຣະທາດຫຼວງ, ປະຕູໄຊ" />
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -910,7 +903,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={mealTotals} />}
                                     >
                                     <div className="space-y-4 pt-2">
-                                            {allCosts.meals.map((meal, index) => (
+                                            {allCosts.meals?.map((meal, index) => (
                                                 <Card key={meal.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ລາຍການອາຫານ #{index + 1}</CardTitle>
@@ -926,7 +919,7 @@ export default function TourCalculatorPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label>ຊື່ລາຍການ</Label>
-                                                                <Input value={meal.name} onChange={e => updateItem('meals', meal.id, 'name', e.target.value)} placeholder="เช่น อาหารเย็นวันแรก, ร้าน..." />
+                                                                <Input value={meal.name} onChange={e => updateItem('meals', meal.id, 'name', e.target.value)} placeholder="ເຊັ່ນ ອາຫານເຢັນມື້ທຳອິດ, ຮ້ານ..." />
                                                             </div>
                                                             <div className="space-y-2">
                                                                 <Label>Pax</Label>
@@ -974,7 +967,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={guideTotals} />}
                                     >
                                     <div className="space-y-4 pt-2">
-                                            {allCosts.guides.map((guide, index) => (
+                                            {allCosts.guides?.map((guide, index) => (
                                                 <Card key={guide.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ລາຍການໄກ້ #{index + 1}</CardTitle>
@@ -1028,7 +1021,7 @@ export default function TourCalculatorPage() {
                                         summary={<CategorySummary totals={documentTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
-                                            {allCosts.documents.map((doc, index) => (
+                                            {allCosts.documents?.map((doc, index) => (
                                                 <Card key={doc.id} className="bg-muted/30">
                                                     <CardHeader className="flex-row items-center justify-between p-3 bg-muted/50">
                                                         <CardTitle className="text-base">ລາຍການເອກະສານ #{index + 1}</CardTitle>
@@ -1044,7 +1037,7 @@ export default function TourCalculatorPage() {
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                             <Label>ຊື່ເອກະສານ</Label>
-                                                            <Input value={doc.documentName} onChange={e => updateItem('documents', doc.id, 'documentName', e.target.value)} placeholder="เช่น ค่าวีซ่า, ค่าเอกสารผ่านแดน" />
+                                                            <Input value={doc.documentName} onChange={e => updateItem('documents', doc.id, 'documentName', e.target.value)} placeholder="ເຊັ່ນ ຄ່າວີຊາ, ຄ່າເອກະສານຜ່ານແດນ" />
                                                         </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
