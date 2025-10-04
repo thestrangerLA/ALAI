@@ -74,12 +74,13 @@
     @apply bg-background text-foreground;
   }
 }
-@page {
-    size: auto;
-    margin: 0mm;
-}
 
 @media print {
+  @page {
+      size: auto;
+      margin: 0mm;
+  }
+
   body {
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
