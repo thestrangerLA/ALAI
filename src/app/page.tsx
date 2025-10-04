@@ -141,7 +141,7 @@ export default function TourListPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 {availableYears.map(year => (
-                                    <SelectItem key={year} value={year}>ປີ {parseInt(year) + 543}</SelectItem>
+                                    <SelectItem key={year} value={year}>ປີ {parseInt(year)}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -178,7 +178,7 @@ export default function TourListPage() {
                                                     <tbody>
                                                         {calcs.map(calc => (
                                                             <tr key={calc.id} className="border-b border-muted/50 last:border-b-0 cursor-pointer hover:bg-muted/30" onClick={() => navigateToCalculation(calc.id)}>
-                                                                <td className="p-3">{format(new Date(calc.savedAt), 'dd/MM/yyyy HH:mm')}</td>
+                                                                <td className="p-3">{format(new Date(calc.savedAt), 'dd/MM/yyyy')}</td>
                                                                 <td className="p-3">{calc.tourInfo.groupCode}</td>
                                                                 <td className="p-3">{calc.tourInfo.program}</td>
                                                                 <td className="p-3">{calc.tourInfo.destinationCountry}</td>
@@ -204,7 +204,7 @@ export default function TourListPage() {
                     ) : (
                          <Card>
                             <CardContent className="p-10 text-center text-muted-foreground">
-                                <p>ບໍ່ມີຂໍ້ມູນການຄຳນວນໃນປີ {parseInt(selectedYear)+543}.</p>
+                                <p>ບໍ່ມີຂໍ້ມູນການຄຳນວນໃນປີ {parseInt(selectedYear)}.</p>
                                 <p>ກົດ "ເພີ່ມການຄຳນວນໃໝ່" ເພື່ອເລີ່ມຕົ້ນ.</p>
                              </CardContent>
                         </Card>
