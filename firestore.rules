@@ -1,0 +1,75 @@
+/**
+ * @fileoverview Firestore Security Rules for Idea Spark application.
+ *
+ * Core Philosophy:
+ * This ruleset enforces a strict user-ownership model, ensuring that users can only access and modify their own data.
+ *
+ * Data Structure:
+ * - Users are stored in the `/users/{userId}` collection, with their profile information.
+ * - Ideas are stored as subcollections under each user's document at `/users/{userId}/ideas/{ideaId}`.
+ *
+ * Key Security Decisions:
+ * - Users can only create, read, update, and delete their own ideas.
+ * - Users can only read and update their own user document.
+ * - Listing all users is disallowed for privacy reasons.
+ * - Denormalization is used where appropriate to avoid `get()` calls in rules. The `userId` is technically redundant on the Idea, but included for potential future data migrations and complex queries.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Rules for the /users collection.  Allows a user to create their own profile and read/write their own data. Listing all users is disallowed.
+     * @path /users/{userId}
+     * @allow (create) - Authenticated user can create their own user document, where the document ID matches their UID.
+     * @allow (get) - Authenticated user can read their own user document.
+     * @allow (update) - Authenticated user can update their own user document.
+     * @deny (delete) -  No one can delete a user document via the rules.
+     * @deny (list) - Listing all users is not allowed.
+     * @principle Enforces user-ownership and prevents unauthorized access to user profiles.
+     */
+    match /users/{userId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
+      allow delete: if false;
+      allow list: if false;
+    }
+
+    /**
+     * @description Rules for the /users/{userId}/ideas collection.  Allows a user to create, read, update, and delete their own ideas.
+     * @path /users/{userId}/ideas/{ideaId}
+     * @allow (create) - Authenticated user can create a new idea under their user document. The idea's userId field must match the authenticated user's UID.
+     * @allow (get) - Authenticated user can read their own idea.
+     * @allow (update) - Authenticated user can update their own idea.
+     * @allow (delete) - Authenticated user can delete their own idea.
+     * @deny (create) - An unauthenticated user cannot create an idea.
+     * @deny (get) - Another user cannot read this user's idea.
+     * @principle Enforces document ownership for writes.
+     */
+    match /users/{userId}/ideas/{ideaId} {
+      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
+      allow get: if isSignedIn() && isOwner(userId);
+      allow update: if isSignedIn() && isExistingOwner(userId);
+      allow delete: if isSignedIn() && isExistingOwner(userId);
+      allow list: if isSignedIn() && isOwner(userId);
+    }
+
+    // --- Helper functions ---
+
+    // Checks if the user is signed in.
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Checks if the user ID matches the authenticated user's UID.
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // Checks if the user is the owner of the existing document.
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+  }
+}
