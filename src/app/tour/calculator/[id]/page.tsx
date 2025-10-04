@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -148,9 +149,26 @@ export default function TourCalculatorPage() {
         }
     }, [calculationId, router, toast]);
 
-    const saveCalculationsToLocalStorage = (calculations: SavedCalculation[]) => {
-        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(calculations));
-    };
+    const saveCurrentCalculation = useCallback(() => {
+        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
+        let savedCalculations: SavedCalculation[] = JSON.parse(saved);
+        
+        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
+
+        const currentCalculationData: SavedCalculation = {
+            id: calculationId,
+            savedAt: existingIndex > -1 ? savedCalculations[existingIndex].savedAt : new Date(),
+            tourInfo: JSON.parse(JSON.stringify(tourInfo)),
+            allCosts: JSON.parse(JSON.stringify(allCosts)),
+        };
+
+        if (existingIndex > -1) {
+            savedCalculations[existingIndex] = currentCalculationData;
+        } else {
+            savedCalculations.push(currentCalculationData);
+        }
+        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
+    }, [calculationId, tourInfo, allCosts]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -179,7 +197,7 @@ export default function TourCalculatorPage() {
             savedCalculations.push(currentCalculationData);
         }
 
-        saveCalculationsToLocalStorage(savedCalculations);
+        localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
         toast({
             title: "ບັນທຶກການຄຳນວນສຳເລັດ",
             description: `ຂໍ້ມູນ ${tourInfo.groupCode || 'ບໍ່ມີຊື່'} ໄດ້ຖືກບັນທຶກແລ້ວ.`,
@@ -191,7 +209,7 @@ export default function TourCalculatorPage() {
             const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
             const savedCalculations: SavedCalculation[] = JSON.parse(saved);
             const updatedSaved = savedCalculations.filter(c => c.id !== calculationId);
-            saveCalculationsToLocalStorage(updatedSaved);
+            localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(updatedSaved));
             toast({
                 title: "ລຶບຂໍ້ມູນສຳເລັດ",
                 variant: "destructive"
@@ -213,9 +231,26 @@ export default function TourCalculatorPage() {
     };
     
     const deleteItem = <T extends keyof TourCosts>(category: T, itemId: string) => {
-        const currentItems = allCosts[category] as any[];
-        updateCosts(category, currentItems.filter(item => item.id !== itemId) as TourCosts[T]);
+        const updatedCosts = {
+            ...allCosts,
+            [category]: allCosts[category].filter((item: any) => item.id !== itemId),
+        };
+        setAllCosts(updatedCosts);
+
+        // Also update localStorage
+        const saved = localStorage.getItem(SAVED_CALCULATIONS_KEY) || '[]';
+        let savedCalculations: SavedCalculation[] = JSON.parse(saved);
+        const existingIndex = savedCalculations.findIndex(c => c.id === calculationId);
+        if (existingIndex > -1) {
+            savedCalculations[existingIndex].allCosts = updatedCosts;
+            localStorage.setItem(SAVED_CALCULATIONS_KEY, JSON.stringify(savedCalculations));
+        }
+         toast({
+            title: "ລຶບລາຍການສຳເລັດ",
+            variant: "destructive"
+        });
     };
+
 
     // Specific Component Logic
     const addAccommodation = () => addItem('accommodations', { id: uuidv4(), name: '', type: 'hotel', rooms: [{ id: uuidv4(), type: 'เตียงเดี่ยว', numRooms: 1, numNights: 1, price: 0, currency: 'USD' }] });
@@ -1091,3 +1126,5 @@ export default function TourCalculatorPage() {
         </div>
     );
 }
+
+    
