@@ -68,7 +68,7 @@ export default function TourListPage() {
     };
 
     useEffect(() => {
-        if (savedCalculations.length > 0) {
+        if (savedCalculations && savedCalculations.length > 0) {
             const years = [...new Set(savedCalculations.map(c => {
                 const savedAtDate = toDate(c.savedAt);
                 return savedAtDate ? new Date(savedAtDate).getFullYear().toString() : '';
@@ -85,34 +85,38 @@ export default function TourListPage() {
     }, [savedCalculations]);
 
     useEffect(() => {
-        const filtered = savedCalculations.filter(c => {
-            const savedAtDate = toDate(c.savedAt);
-            return savedAtDate ? new Date(savedAtDate).getFullYear().toString() === selectedYear : false;
-        });
+        if (savedCalculations) {
+            const filtered = savedCalculations.filter(c => {
+                const savedAtDate = toDate(c.savedAt);
+                return savedAtDate ? new Date(savedAtDate).getFullYear().toString() === selectedYear : false;
+            });
 
-        const grouped = filtered.reduce((acc, calc) => {
-            const savedAtDate = toDate(calc.savedAt);
-            if (!savedAtDate) return acc;
-            const month = format(new Date(savedAtDate), 'MMMM yyyy');
-            if (!acc[month]) {
-                acc[month] = [];
+            const grouped = filtered.reduce((acc, calc) => {
+                const savedAtDate = toDate(calc.savedAt);
+                if (!savedAtDate) return acc;
+                const month = format(new Date(savedAtDate), 'MMMM yyyy');
+                if (!acc[month]) {
+                    acc[month] = [];
+                }
+                acc[month].push(calc);
+                // Calculations are already sorted by Firestore query
+                return acc;
+            }, {} as Record<string, SavedCalculation[]>);
+
+            const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+                // Sort by date object to handle month and year sorting correctly
+                return new Date(b).getTime() - new Date(a).getTime();
+            });
+
+            const sortedGroupedCalculations: Record<string, SavedCalculation[]> = {};
+            for(const key of sortedGroupKeys) {
+                sortedGroupedCalculations[key] = grouped[key];
             }
-            acc[month].push(calc);
-            // Calculations are already sorted by Firestore query
-            return acc;
-        }, {} as Record<string, SavedCalculation[]>);
 
-        const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
-            // Sort by date object to handle month and year sorting correctly
-            return new Date(b).getTime() - new Date(a).getTime();
-        });
-
-        const sortedGroupedCalculations: Record<string, SavedCalculation[]> = {};
-        for(const key of sortedGroupKeys) {
-            sortedGroupedCalculations[key] = grouped[key];
+            setGroupedCalculations(sortedGroupedCalculations);
+        } else {
+            setGroupedCalculations({});
         }
-
-        setGroupedCalculations(sortedGroupedCalculations);
     }, [savedCalculations, selectedYear]);
 
     const handleAddNewCalculation = async () => {
