@@ -141,7 +141,7 @@ export default function TourListPage() {
                             </SelectTrigger>
                             <SelectContent>
                                 {availableYears.map(year => (
-                                    <SelectItem key={year} value={year}>ປີ {parseInt(year)}</SelectItem>
+                                    <SelectItem key={year} value={year}>ປີ {parseInt(year) + 543}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
