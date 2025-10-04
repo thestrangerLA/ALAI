@@ -14,7 +14,7 @@ import { useUser, useFirestore, useCollection, useMemoFirebase, useAuth } from '
 import { collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { UserButton } from '@/components/auth/UserButton';
 import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Auth } from 'firebase/auth';
+import { Auth, signInAnonymously } from 'firebase/auth';
 
 // Define the shape of a calculation document from Firestore
 export interface SavedCalculation {
@@ -53,7 +53,7 @@ export default function TourListPage() {
         );
     }, [user, firestore]);
 
-    const { data: savedCalculations = [], isLoading: calculationsLoading } = useCollection(calculationsQuery);
+    const { data: savedCalculations, isLoading: calculationsLoading } = useCollection(calculationsQuery);
 
     const [groupedCalculations, setGroupedCalculations] = useState<Record<string, SavedCalculation[]>>({});
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -199,7 +199,7 @@ export default function TourListPage() {
                     </CardHeader>
                     <CardContent>
                          {auth && (
-                            <Button onClick={() => auth.signInAnonymously()}>
+                            <Button onClick={() => signInAnonymously(auth)}>
                                 <LogIn className="mr-2 h-4 w-4"/>
                                 ລັອກອິນແບບບໍ່ລະບຸຊື່
                             </Button>

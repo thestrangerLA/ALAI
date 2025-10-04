@@ -23,14 +23,14 @@ import { ExchangeRateCard } from '@/components/tour/ExchangeRateCard';
 import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
 import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
-import { Auth } from 'firebase/auth';
+import { Auth, signInAnonymously } from 'firebase/auth';
 
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 const currencySymbols: Record<Currency, string> = {
-    USD: '$ (ดอลลár)',
+    USD: '$ (ດอลລár)',
     THB: '฿ (ບາດ)',
     LAK: '₭ (ກີບ)',
     CNY: '¥ (ຢວນ)',
@@ -396,7 +396,7 @@ export default function TourCalculatorPage() {
                     </CardHeader>
                     <CardContent>
                         {auth && (
-                            <Button onClick={() => auth.signInAnonymously()}>
+                            <Button onClick={() => signInAnonymously(auth)}>
                                 <LogIn className="mr-2 h-4 w-4"/>
                                 ລັອກອິນແບບບໍ່ລະບຸຊື່
                             </Button>
