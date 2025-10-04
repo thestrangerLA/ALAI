@@ -5,14 +5,16 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Calendar as CalendarIcon, Calculator, Pencil, Trash2, LogIn } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
-import { useUser, useFirestore, useCollection } from '@/firebase';
+import { useUser, useFirestore, useCollection, useMemoFirebase, useAuth } from '@/firebase';
 import { collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { UserButton } from '@/components/auth/UserButton';
+import { addDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Auth } from 'firebase/auth';
 
 // Define the shape of a calculation document from Firestore
 export interface SavedCalculation {
@@ -37,11 +39,21 @@ export interface SavedCalculation {
 export default function TourListPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { user, auth } = useUser();
+    const { user, isUserLoading } = useUser();
+    const [auth, setAuth] = useState<Auth | null>(null);
     const firestore = useFirestore();
 
+    useEffect(() => {
+        // useAuth hook can only be called on the client side.
+        // We are using a state to hold the auth instance
+        // so that it is only initialized on the client.
+        const authInstance = useAuth();
+        setAuth(authInstance);
+    }, []);
+
+
     // Get calculations from Firestore
-    const calculationsQuery = useMemo(() => {
+    const calculationsQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;
         return query(
             collection(firestore, 'users', user.uid, 'calculations'),
@@ -49,7 +61,7 @@ export default function TourListPage() {
         );
     }, [user, firestore]);
 
-    const { data: savedCalculations = [], status: calculationsStatus } = useCollection(calculationsQuery);
+    const { data: savedCalculations = [], isLoading: calculationsLoading } = useCollection(calculationsQuery);
 
     const [groupedCalculations, setGroupedCalculations] = useState<Record<string, SavedCalculation[]>>({});
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
@@ -121,42 +133,35 @@ export default function TourListPage() {
             return;
         }
 
-        try {
-            const newCalculationData = {
-                savedAt: serverTimestamp(),
-                tourInfo: {
-                    mouContact: '',
-                    groupCode: `LTH${format(new Date(),'yyyyMMddHHmmss')}`,
-                    destinationCountry: '',
-                    program: '',
-                    startDate: null,
-                    endDate: null,
-                    numDays: 1,
-                    numNights: 0,
-                    numPeople: 1,
-                    travelerInfo: ''
-                },
-                allCosts: {
-                    accommodations: [],
-                    trips: [],
-                    flights: [],
-                    trainTickets: [],
-                    entranceFees: [],
-                    meals: [],
-                    guides: [],
-                    documents: [],
-                },
-            };
-            const calculationsColRef = collection(firestore, 'users', user.uid, 'calculations');
-            const newDocRef = await addDoc(calculationsColRef, newCalculationData);
-            router.push(`/tour/calculator/${newDocRef.id}`);
-        } catch (error) {
-            console.error("Error creating new calculation: ", error);
-            toast({
-                title: "Error",
-                description: "Could not create a new calculation.",
-                variant: "destructive"
-            });
+        const newCalculationData = {
+            savedAt: serverTimestamp(),
+            tourInfo: {
+                mouContact: '',
+                groupCode: `LTH${format(new Date(),'yyyyMMddHHmmss')}`,
+                destinationCountry: '',
+                program: '',
+                startDate: null,
+                endDate: null,
+                numDays: 1,
+                numNights: 0,
+                numPeople: 1,
+                travelerInfo: ''
+            },
+            allCosts: {
+                accommodations: [],
+                trips: [],
+                flights: [],
+                trainTickets: [],
+                entranceFees: [],
+                meals: [],
+                guides: [],
+                documents: [],
+            },
+        };
+        const calculationsColRef = collection(firestore, 'users', user.uid, 'calculations');
+        const newDocRef = await addDocumentNonBlocking(calculationsColRef, newCalculationData);
+        if(newDocRef){
+          router.push(`/tour/calculator/${newDocRef.id}`);
         }
     };
     
@@ -171,25 +176,24 @@ export default function TourListPage() {
              return;
         }
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            try {
-                const docRef = doc(firestore, 'users', user.uid, 'calculations', id);
-                await deleteDoc(docRef);
-                toast({
-                    title: "ລຶບຂໍ້ມູນສຳເລັດ",
-                    description: "ການຄຳນວນໄດ້ຖືກລຶບອອກແລ້ວ."
-                });
-            } catch (error) {
-                 console.error("Error deleting calculation: ", error);
-                 toast({
-                    title: "Error deleting calculation",
-                    variant: "destructive"
-                });
-            }
+            const docRef = doc(firestore, 'users', user.uid, 'calculations', id);
+            deleteDocumentNonBlocking(docRef);
+            toast({
+                title: "ລຶບຂໍ້ມູນສຳເລັດ",
+                description: "ການຄຳນວນໄດ້ຖືກລຶບອອກແລ້ວ."
+            });
         }
     };
 
+    if (isUserLoading) {
+      return (
+          <div className="flex items-center justify-center h-screen">
+              <p>Loading...</p>
+          </div>
+      )
+    }
 
-    if (!user && calculationsStatus !== 'loading') {
+    if (!user) {
         return (
             <div className="flex items-center justify-center h-screen">
                 <Card className="p-8 text-center">
@@ -198,10 +202,12 @@ export default function TourListPage() {
                         <CardDescription>ທ່ານຕ້ອງລັອກອິນກ່ອນຈຶ່ງຈະສາມາດເບິ່ງຂໍ້ມູນໄດ້.</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <Button onClick={() => auth?.signInWithGoogle()}>
-                            <LogIn className="mr-2 h-4 w-4"/>
-                            ລັອກອິນດ້ວຍ Google
-                        </Button>
+                         {auth && (
+                            <Button onClick={() => auth.signInAnonymously()}>
+                                <LogIn className="mr-2 h-4 w-4"/>
+                                ລັອກອິນແບບບໍ່ລະບຸຊື່
+                            </Button>
+                        )}
                     </CardContent>
                 </Card>
             </div>
@@ -223,7 +229,7 @@ export default function TourListPage() {
                         <CalendarIcon className="h-5 w-5"/>
                         <Select value={selectedYear} onValueChange={setSelectedYear}>
                             <SelectTrigger className="w-[120px] bg-primary text-primary-foreground border-primary-foreground">
-                                <SelectValue placeholder="ເລືອກປີ" />
+                                <SelectValue placeholder="ເລືอกປີ" />
                             </SelectTrigger>
                             <SelectContent>
                                 {availableYears.map(year => (
@@ -241,7 +247,7 @@ export default function TourListPage() {
             </header>
             <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-4">
                  <div className="w-full max-w-screen-xl mx-auto flex flex-col gap-4">
-                     {calculationsStatus === 'loading' ? (
+                     {calculationsLoading ? (
                         <Card>
                             <CardContent className="p-10 text-center text-muted-foreground">
                                 <p>Loading calculations...</p>
@@ -310,3 +316,5 @@ export default function TourListPage() {
         </div>
     );
 }
+
+    

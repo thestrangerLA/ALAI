@@ -20,15 +20,17 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { ExchangeRateCard } from '@/components/tour/ExchangeRateCard';
-import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
-import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { useUser, useFirestore, useDoc, useMemoFirebase, useAuth } from '@/firebase';
+import { doc, setDoc, serverTimestamp, Timestamp, deleteDoc } from 'firebase/firestore';
+import { setDocumentNonBlocking, deleteDocumentNonBlocking } from '@/firebase/non-blocking-updates';
+import { Auth } from 'firebase/auth';
 
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 const currencySymbols: Record<Currency, string> = {
-    USD: '$ (ດอลลár)',
+    USD: '$ (ດอลລár)',
     THB: '฿ (ບາດ)',
     LAK: '₭ (ກີບ)',
     CNY: '¥ (ຢວນ)',
@@ -110,15 +112,24 @@ export default function TourCalculatorPage() {
     const params = useParams();
     const calculationId = params.id as string;
     
-    const { user, auth } = useUser();
+    const { user, isUserLoading } = useUser();
+    const [auth, setAuth] = useState<Auth | null>(null);
     const firestore = useFirestore();
+
+    useEffect(() => {
+        // useAuth hook can only be called on the client side.
+        // We are using a state to hold the auth instance
+        // so that it is only initialized on the client.
+        const authInstance = useAuth();
+        setAuth(authInstance);
+    }, []);
 
     const calculationDocRef = useMemoFirebase(() => {
         if (!user || !firestore || !calculationId) return null;
         return doc(firestore, 'users', user.uid, 'calculations', calculationId);
     }, [user, firestore, calculationId]);
 
-    const { data: calculationData, status: calculationStatus, error } = useDoc(calculationDocRef);
+    const { data: calculationData, isLoading: calculationLoading, error } = useDoc(calculationDocRef);
 
     const [tourInfo, setTourInfo] = useState<TourInfo>({
         mouContact: '', groupCode: '', destinationCountry: '', program: '',
@@ -146,15 +157,18 @@ export default function TourCalculatorPage() {
     }, [calculationData]);
     
     useEffect(() => {
-        if (calculationStatus === 'error') {
+        if (!isUserLoading && !user) {
+            toast({ title: "Authentication required", description: "Please log in to view this page.", variant: "destructive" });
+        }
+        if (error) {
             console.error("Error loading calculation:", error);
             toast({ title: "Error", description: "Calculation not found or you don't have permission.", variant: "destructive" });
             router.push('/');
         }
-    }, [calculationStatus, error, router, toast]);
+    }, [isUserLoading, user, error, router, toast]);
     
     const handleDataChange = useCallback(() => {
-        if (!calculationDocRef || calculationStatus !== 'success') return;
+        if (!calculationDocRef || calculationLoading) return;
         
         // Create a deep copy and handle Timestamps
         const dataToSave = {
@@ -163,16 +177,9 @@ export default function TourCalculatorPage() {
             savedAt: serverTimestamp(),
         };
 
-        setDoc(calculationDocRef, dataToSave, { merge: true }).catch(err => {
-            console.error("Failed to save data:", err);
-            toast({
-                title: "Save Failed",
-                description: "Could not save changes to the database.",
-                variant: "destructive"
-            });
-        });
+        setDocumentNonBlocking(calculationDocRef, dataToSave, { merge: true });
 
-    }, [calculationDocRef, tourInfo, allCosts, calculationStatus, toast]);
+    }, [calculationDocRef, tourInfo, allCosts, calculationLoading]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -192,7 +199,9 @@ export default function TourCalculatorPage() {
     
     const handleDeleteCalculation = async () => {
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            // Firestore deletion is now handled on the list page
+            if (calculationDocRef) {
+                deleteDocumentNonBlocking(calculationDocRef);
+            }
             router.push('/');
         }
     };
@@ -221,12 +230,12 @@ export default function TourCalculatorPage() {
     // Auto-save on change
     useEffect(() => {
         const handler = setTimeout(() => {
-            if (calculationStatus === 'success') {
+            if (!calculationLoading && user) {
                 handleDataChange();
             }
         }, 2000); // Debounce time
         return () => clearTimeout(handler);
-    }, [tourInfo, allCosts, calculationStatus, handleDataChange]);
+    }, [tourInfo, allCosts, calculationLoading, user, handleDataChange]);
 
 
     // Specific Component Logic
@@ -377,35 +386,42 @@ export default function TourCalculatorPage() {
         );
     };
 
-    if (calculationStatus === 'loading' || !calculationData) {
+    if (isUserLoading || calculationLoading) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
                 <p className="text-2xl font-semibold mb-4">Loading...</p>
-                 {!user && calculationStatus !== 'error' && (
-                    <Card className="p-8 text-center">
-                        <CardHeader>
-                            <CardTitle>ກະລຸນາລັອກອິນ</CardTitle>
-                            <CardDescription>ທ່ານຕ້ອງລັອກອິນກ່ອນຈຶ່ງຈະສາມາດເບິ່ງ ຫຼື ແກ້ໄຂຂໍ້ມູນໄດ້.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Button onClick={() => auth?.signInWithGoogle()}>
-                                <LogIn className="mr-2 h-4 w-4"/>
-                                ລັອກອິນດ້ວຍ Google
-                            </Button>
-                        </CardContent>
-                    </Card>
-                 )}
             </div>
         );
     }
     
-    if (calculationStatus === 'error') {
+    if (!user) {
          return (
             <div className="flex items-center justify-center h-screen">
-                <p>Error loading data. You may not have permission or the document does not exist.</p>
+                <Card className="p-8 text-center">
+                    <CardHeader>
+                        <CardTitle>ກະລຸນາລັອກອິນ</CardTitle>
+                        <CardDescription>ທ່ານຕ້ອງລັອກອິນກ່ອນຈຶ່ງຈະສາມາດເບິ່ງ ຫຼື ແກ້ໄຂຂໍ້ມູນໄດ້.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {auth && (
+                            <Button onClick={() => auth.signInAnonymously()}>
+                                <LogIn className="mr-2 h-4 w-4"/>
+                                ລັອກອິນແບບບໍ່ລະບຸຊື່
+                            </Button>
+                        )}
+                    </CardContent>
+                </Card>
             </div>
          );
     }
+
+    if (error) {
+        return (
+           <div className="flex items-center justify-center h-screen">
+               <p>Error loading data. You may not have permission or the document does not exist.</p>
+           </div>
+        );
+   }
 
     return (
         <div className="flex min-h-screen w-full flex-col">
