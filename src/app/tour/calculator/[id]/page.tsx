@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -19,7 +18,7 @@ import { th } from 'date-fns/locale';
 import { TotalCostCard } from '@/components/tour/TotalCostCard';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ExchangeRateCard } from '@/components/tour/ExchangeRateCard';
 import { useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
@@ -37,7 +36,7 @@ const currencySymbols: Record<Currency, string> = {
 
 const formatNumber = (num: number, options?: Intl.NumberFormatOptions) => new Intl.NumberFormat('en-US', options).format(num);
 
-type DateValue = Date | Timestamp | undefined;
+type DateValue = Date | Timestamp | undefined | null;
 
 // --- Component Prop Types ---
 type Accommodation = { id: string; name: string; type: 'hotel' | 'guesthouse'; checkInDate?: DateValue; rooms: Room[]; };
@@ -155,14 +154,25 @@ export default function TourCalculatorPage() {
     }, [calculationStatus, error, router, toast]);
     
     const handleDataChange = useCallback(() => {
-        if (!calculationDocRef) return;
+        if (!calculationDocRef || calculationStatus !== 'success') return;
+        
+        // Create a deep copy and handle Timestamps
         const dataToSave = {
             tourInfo: JSON.parse(JSON.stringify(tourInfo)),
             allCosts: JSON.parse(JSON.stringify(allCosts)),
             savedAt: serverTimestamp(),
         };
-        setDoc(calculationDocRef, dataToSave, { merge: true });
-    }, [calculationDocRef, tourInfo, allCosts]);
+
+        setDoc(calculationDocRef, dataToSave, { merge: true }).catch(err => {
+            console.error("Failed to save data:", err);
+            toast({
+                title: "Save Failed",
+                description: "Could not save changes to the database.",
+                variant: "destructive"
+            });
+        });
+
+    }, [calculationDocRef, tourInfo, allCosts, calculationStatus, toast]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -367,7 +377,7 @@ export default function TourCalculatorPage() {
         );
     };
 
-    if (calculationStatus === 'loading' || !user) {
+    if (calculationStatus === 'loading' || !calculationData) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
                 <p className="text-2xl font-semibold mb-4">Loading...</p>
@@ -1119,5 +1129,3 @@ export default function TourCalculatorPage() {
         </div>
     );
 }
-
-    

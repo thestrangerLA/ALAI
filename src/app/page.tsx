@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Calendar as CalendarIcon, Calculator, Pencil, Trash2 } from 'lucide-react';
+import { PlusCircle, Calendar as CalendarIcon, Calculator, Pencil, Trash2, LogIn } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { useUser, useFirestore, useCollection } from '@/firebase';
-import { collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, orderBy, addDoc, deleteDoc, doc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { UserButton } from '@/components/auth/UserButton';
 
 // Define the shape of a calculation document from Firestore
 export interface SavedCalculation {
@@ -36,7 +37,7 @@ export interface SavedCalculation {
 export default function TourListPage() {
     const router = useRouter();
     const { toast } = useToast();
-    const { user } = useUser();
+    const { user, auth } = useUser();
     const firestore = useFirestore();
 
     // Get calculations from Firestore
@@ -54,10 +55,18 @@ export default function TourListPage() {
     const [selectedYear, setSelectedYear] = useState<string>(new Date().getFullYear().toString());
     const [availableYears, setAvailableYears] = useState<string[]>([]);
 
+    const toDate = (date: any): Date | undefined => {
+      if (!date) return undefined;
+      if (date instanceof Timestamp) {
+        return date.toDate();
+      }
+      return date as Date;
+    };
+
     useEffect(() => {
         if (savedCalculations.length > 0) {
             const years = [...new Set(savedCalculations.map(c => {
-                const savedAtDate = (c.savedAt as any)?.toDate();
+                const savedAtDate = toDate(c.savedAt);
                 return savedAtDate ? new Date(savedAtDate).getFullYear().toString() : '';
             }).filter(Boolean))];
             
@@ -73,12 +82,12 @@ export default function TourListPage() {
 
     useEffect(() => {
         const filtered = savedCalculations.filter(c => {
-            const savedAtDate = (c.savedAt as any)?.toDate();
+            const savedAtDate = toDate(c.savedAt);
             return savedAtDate ? new Date(savedAtDate).getFullYear().toString() === selectedYear : false;
         });
 
         const grouped = filtered.reduce((acc, calc) => {
-            const savedAtDate = (calc.savedAt as any)?.toDate();
+            const savedAtDate = toDate(calc.savedAt);
             if (!savedAtDate) return acc;
             const month = format(new Date(savedAtDate), 'MMMM yyyy');
             if (!acc[month]) {
@@ -90,6 +99,7 @@ export default function TourListPage() {
         }, {} as Record<string, SavedCalculation[]>);
 
         const sortedGroupKeys = Object.keys(grouped).sort((a, b) => {
+            // Sort by date object to handle month and year sorting correctly
             return new Date(b).getTime() - new Date(a).getTime();
         });
 
@@ -119,8 +129,8 @@ export default function TourListPage() {
                     groupCode: `LTH${format(new Date(),'yyyyMMddHHmmss')}`,
                     destinationCountry: '',
                     program: '',
-                    startDate: undefined,
-                    endDate: undefined,
+                    startDate: null,
+                    endDate: null,
                     numDays: 1,
                     numNights: 0,
                     numPeople: 1,
@@ -179,6 +189,26 @@ export default function TourListPage() {
     };
 
 
+    if (!user && calculationsStatus !== 'loading') {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <Card className="p-8 text-center">
+                    <CardHeader>
+                        <CardTitle>ກະລຸນາລັອກອິນ</CardTitle>
+                        <CardDescription>ທ່ານຕ້ອງລັອກອິນກ່ອນຈຶ່ງຈະສາມາດເບິ່ງຂໍ້ມູນໄດ້.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={() => auth?.signInWithGoogle()}>
+                            <LogIn className="mr-2 h-4 w-4"/>
+                            ລັອກອິນດ້ວຍ Google
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        )
+    }
+
+
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
              <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-primary px-4 text-primary-foreground sm:px-6">
@@ -206,6 +236,7 @@ export default function TourListPage() {
                         <PlusCircle className="mr-2 h-4 w-4" />
                         ເພີ່ມການຄຳນວນໃໝ່
                     </Button>
+                    <UserButton />
                 </div>
             </header>
             <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-4">
@@ -239,7 +270,7 @@ export default function TourListPage() {
                                                     </thead>
                                                     <tbody>
                                                         {calcs.map(calc => {
-                                                            const savedAtDate = (calc.savedAt as any)?.toDate();
+                                                            const savedAtDate = toDate(calc.savedAt);
                                                             return (
                                                             <tr key={calc.id} className="border-b border-muted/50 last:border-b-0 cursor-pointer hover:bg-muted/30" onClick={() => navigateToCalculation(calc.id)}>
                                                                 <td className="p-3">{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy') : '...'}</td>
@@ -279,8 +310,3 @@ export default function TourListPage() {
         </div>
     );
 }
-
-
-    
-
-    

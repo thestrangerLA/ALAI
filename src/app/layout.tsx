@@ -1,8 +1,10 @@
+
 import type { Metadata } from "next";
 import { Noto_Sans_Lao } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/toaster";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 const noto_sans_lao = Noto_Sans_Lao({
   subsets: ["lao"],
@@ -28,7 +30,9 @@ export default function RootLayout({
           noto_sans_lao.variable
         )}
       >
-        {children}
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
         <Toaster />
       </body>
     </html>
