@@ -40,16 +40,8 @@ export default function TourListPage() {
     const router = useRouter();
     const { toast } = useToast();
     const { user, isUserLoading } = useUser();
-    const [auth, setAuth] = useState<Auth | null>(null);
+    const auth = useAuth();
     const firestore = useFirestore();
-
-    useEffect(() => {
-        // useAuth hook can only be called on the client side.
-        // We are using a state to hold the auth instance
-        // so that it is only initialized on the client.
-        const authInstance = useAuth();
-        setAuth(authInstance);
-    }, []);
 
 
     // Get calculations from Firestore

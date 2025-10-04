@@ -30,7 +30,7 @@ import { Auth } from 'firebase/auth';
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 const currencySymbols: Record<Currency, string> = {
-    USD: '$ (ດอลລár)',
+    USD: '$ (ดอลลár)',
     THB: '฿ (ບາດ)',
     LAK: '₭ (ກີບ)',
     CNY: '¥ (ຢວນ)',
@@ -113,16 +113,8 @@ export default function TourCalculatorPage() {
     const calculationId = params.id as string;
     
     const { user, isUserLoading } = useUser();
-    const [auth, setAuth] = useState<Auth | null>(null);
+    const auth = useAuth();
     const firestore = useFirestore();
-
-    useEffect(() => {
-        // useAuth hook can only be called on the client side.
-        // We are using a state to hold the auth instance
-        // so that it is only initialized on the client.
-        const authInstance = useAuth();
-        setAuth(authInstance);
-    }, []);
 
     const calculationDocRef = useMemoFirebase(() => {
         if (!user || !firestore || !calculationId) return null;
