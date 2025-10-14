@@ -14,7 +14,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
+import { Trash2, Search, Printer, RotateCcw, Save, Tags } from 'lucide-react';
 
 interface InvoiceFormProps {
   allItems: StockItem[];
@@ -66,19 +66,24 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     };
   }, [searchQuery, allItems]);
   
-  const handleAddItem = (item: StockItem) => {
+  const handleAddItem = (item: StockItem, priceType: 'sell' | 'wholesale') => {
+    const price = priceType === 'sell' ? item.sellPrice : item.wholesalePrice;
+    
     setInvoiceItems(prev => {
-      const existingItem = prev.find(i => i.id === item.id);
+      // We identify an item not just by its ID, but by its ID and price type
+      const existingItem = prev.find(i => i.id === item.id && i.priceType === priceType);
       if (existingItem) {
         return prev.map(i =>
-          i.id === item.id ? { ...i, sellQuantity: i.sellQuantity + 1 } : i
+          i.id === item.id && i.priceType === priceType 
+            ? { ...i, sellQuantity: i.sellQuantity + 1 } 
+            : i
         );
       } else {
-        // Create a new invoice item, using sellPrice as the price
         const newItem: InvoiceItemType = { 
           ...item, 
           sellQuantity: 1,
-          price: item.sellPrice // Use sellPrice for invoice
+          price: price, // Use selected price for invoice
+          priceType: priceType,
         };
         return [...prev, newItem];
       }
@@ -87,14 +92,15 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     setSearchResults([]);
   };
 
-  const handleQuantityChange = (id: string, quantity: number) => {
+
+  const handleQuantityChange = (id: string, priceType: 'sell' | 'wholesale', quantity: number) => {
     setInvoiceItems(prev =>
-      prev.map(i => (i.id === id ? { ...i, sellQuantity: Math.max(0, quantity) } : i))
+      prev.map(i => (i.id === id && i.priceType === priceType ? { ...i, sellQuantity: Math.max(0, quantity) } : i))
     );
   };
 
-  const handleRemoveItem = (id: string) => {
-    setInvoiceItems(prev => prev.filter(i => i.id !== id));
+  const handleRemoveItem = (id: string, priceType: 'sell' | 'wholesale') => {
+    setInvoiceItems(prev => prev.filter(i => !(i.id === id && i.priceType === priceType)));
   };
   
   const handlePrint = () => {
@@ -154,17 +160,18 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                         className="w-full pl-10"
                     />
                     {searchResults.length > 0 && (
-                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
+                     <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg">
                         {searchResults.map(item => (
-                        <div
-                            key={item.id}
-                            onClick={() => handleAddItem(item)}
-                            className="p-3 hover:bg-gray-100 border-b cursor-pointer"
-                        >
+                        <div key={item.id} className="p-3 border-b last:border-b-0">
                             <p className="font-semibold">{item.productName} ({item.productCode})</p>
-                            <div className="flex justify-between text-sm text-gray-500 mt-1">
-                                <span>ຄົງເຫຼືອ: {item.quantity}</span>
-                                <span className="font-bold text-blue-600">ລາຄາ: {formatCurrency(item.sellPrice)}</span>
+                            <p className="text-sm text-gray-500">ຄົງເຫຼືອ: {item.quantity}</p>
+                            <div className="flex justify-end gap-2 mt-2">
+                                <Button size="sm" variant="outline" onClick={() => handleAddItem(item, 'sell')}>
+                                    ລາຄາຂາຍ: {formatCurrency(item.sellPrice)}
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => handleAddItem(item, 'wholesale')}>
+                                    ລາຄາສົ່ງ: {formatCurrency(item.wholesalePrice)}
+                                </Button>
                             </div>
                         </div>
                         ))}
@@ -220,7 +227,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                             <TableHead className="w-[50px]">ລຳດັບ</TableHead>
                             <TableHead>ລາຍການ</TableHead>
                             <TableHead className="text-center">ຈຳນວນ</TableHead>
-                            <TableHead>ໜ່ວຍ</TableHead>
+                             <TableHead>ປະເພດລາຄາ</TableHead>
                             <TableHead className="text-right">ລາຄາ/ໜ່ວຍ</TableHead>
                             <TableHead className="text-right">ລວມເງິນ</TableHead>
                             <TableHead className="w-[50px] no-print"></TableHead>
@@ -228,23 +235,27 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                     </TableHeader>
                     <TableBody>
                         {invoiceItems.length > 0 ? invoiceItems.map((item, index) => (
-                            <TableRow key={item.id}>
+                            <TableRow key={`${item.id}-${item.priceType}`}>
                                 <TableCell className="text-center">{index + 1}</TableCell>
                                 <TableCell>{item.productName} ({item.productCode})</TableCell>
                                 <TableCell className="text-center w-24">
                                      <Input 
                                         type="number" 
                                         value={item.sellQuantity} 
-                                        onChange={e => handleQuantityChange(item.id, parseInt(e.target.value))}
+                                        onChange={e => handleQuantityChange(item.id, item.priceType, parseInt(e.target.value))}
                                         className="w-20 text-center no-print"
                                      />
                                      <span className="print-only">{item.sellQuantity}</span>
                                 </TableCell>
-                                <TableCell>ອັນ</TableCell>
+                                <TableCell>
+                                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${item.priceType === 'sell' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                      {item.priceType === 'sell' ? 'ຂາຍ' : 'ສົ່ງ'}
+                                  </span>
+                                </TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price * item.sellQuantity)}</TableCell>
                                 <TableCell className="no-print">
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id, item.priceType)}>
                                         <Trash2 className="h-4 w-4 text-red-500"/>
                                     </Button>
                                 </TableCell>
@@ -278,3 +289,5 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
 });
 
 InvoiceForm.displayName = 'InvoiceForm';
+
+    
