@@ -7,11 +7,9 @@ export default function Home() {
     let inventory: any[] = [];
     let receiveHistory: any[] = [];
     let salesHistory: any[] = [];
-    let users: any[] = [];
     let cart: any[] = [];
     let editingId: number | null = null;
     let currentTab = 'pos';
-    let currentUser = { username: 'admin', fullName: 'ผู้ดูแลระบบ', role: 'admin' };
     let selectedCategory = '';
     let receiptNumber = 1;
 
@@ -20,7 +18,6 @@ export default function Home() {
         const savedInventory = localStorage.getItem('autoPartsInventory');
         const savedReceive = localStorage.getItem('receiveHistory');
         const savedSales = localStorage.getItem('salesHistory');
-        const savedUsers = localStorage.getItem('users');
         const savedReceiptNumber = localStorage.getItem('receiptNumber');
         
         if (savedInventory) {
@@ -32,21 +29,6 @@ export default function Home() {
         if (savedSales) {
             salesHistory = JSON.parse(savedSales);
         }
-        if (savedUsers) {
-            users = JSON.parse(savedUsers);
-        } else {
-            // Create default admin user
-            users = [{
-                id: 1,
-                username: 'admin',
-                password: 'admin123',
-                fullName: 'ผู้ดูแลระบบ',
-                role: 'admin',
-                status: 'active',
-                createdAt: new Date().toISOString()
-            }];
-            saveData();
-        }
         if (savedReceiptNumber) {
             receiptNumber = parseInt(savedReceiptNumber);
         }
@@ -56,7 +38,6 @@ export default function Home() {
         updatePartSelects();
         updateBrandFilter();
         renderReceiveHistory();
-        renderUsers();
         updateReports();
         renderPOSProducts();
         renderCategoryButtons();
@@ -72,18 +53,11 @@ export default function Home() {
         localStorage.setItem('autoPartsInventory', JSON.stringify(inventory));
         localStorage.setItem('receiveHistory', JSON.stringify(receiveHistory));
         localStorage.setItem('salesHistory', JSON.stringify(salesHistory));
-        localStorage.setItem('users', JSON.stringify(users));
         localStorage.setItem('receiptNumber', receiptNumber.toString());
     }
 
     // Tab switching
     function switchTab(tabName: string) {
-        // Check permissions
-        if (!hasPermission(tabName)) {
-            showNotification('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error');
-            return;
-        }
-
         // Hide all tab contents
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.add('hidden');
@@ -108,26 +82,6 @@ export default function Home() {
         } else if (tabName === 'pos') {
             renderPOSProducts();
             renderCategoryButtons();
-        }
-    }
-
-    // Check user permissions
-    function hasPermission(tabName: string) {
-        const role = currentUser.role;
-        
-        switch (tabName) {
-            case 'pos':
-                return ['admin', 'cashier', 'staff'].includes(role);
-            case 'inventory':
-                return ['admin'].includes(role);
-            case 'receive':
-                return ['admin', 'staff'].includes(role);
-            case 'reports':
-                return ['admin'].includes(role);
-            case 'users':
-                return ['admin'].includes(role);
-            default:
-                return false;
         }
     }
 
@@ -352,7 +306,7 @@ export default function Home() {
             received: received,
             change: change,
             customerName: customerName,
-            cashier: currentUser.fullName,
+            cashier: 'ผู้ดูแลระบบ',
             date: new Date().toISOString().split('T')[0],
             timestamp: new Date().toISOString()
         };
@@ -481,105 +435,6 @@ export default function Home() {
     function closeReceiptModal() {
         document.getElementById('receiptModal')!.classList.add('hidden');
         document.getElementById('receiptModal')!.classList.remove('flex');
-    }
-
-    function switchUser() {
-        (document.getElementById('loginUsername') as HTMLInputElement).value = '';
-        (document.getElementById('loginPassword') as HTMLInputElement).value = '';
-        document.getElementById('userSwitchModal')!.classList.remove('hidden');
-        document.getElementById('userSwitchModal')!.classList.add('flex');
-    }
-
-    function login() {
-        const username = (document.getElementById('loginUsername') as HTMLInputElement).value;
-        const password = (document.getElementById('loginPassword') as HTMLInputElement).value;
-        
-        const user = users.find(u => u.username === username && u.password === password && u.status === 'active');
-        
-        if (user) {
-            currentUser = user;
-            document.getElementById('currentUser')!.textContent = user.fullName;
-            closeUserSwitchModal();
-            updateTabVisibility();
-            showNotification(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${user.fullName}`, 'success');
-            
-            if (user.role === 'cashier' || user.role === 'staff') {
-                switchTab('pos');
-            } else {
-                switchTab('pos');
-            }
-        } else {
-            showNotification('ชื่อผู้ใช้ หรือ รหัสผ่านไม่ถูกต้อง', 'error');
-        }
-    }
-
-    function closeUserSwitchModal() {
-        document.getElementById('userSwitchModal')!.classList.add('hidden');
-        document.getElementById('userSwitchModal')!.classList.remove('flex');
-    }
-
-    function updateTabVisibility() {
-        const tabs = ['pos', 'inventory', 'receive', 'reports', 'users'];
-        
-        tabs.forEach(tab => {
-            const tabElement = document.getElementById(`tab-${tab}`) as HTMLElement;
-            if (tabElement) {
-              if (hasPermission(tab)) {
-                  tabElement.style.display = 'flex';
-              } else {
-                  tabElement.style.display = 'none';
-              }
-            }
-        });
-    }
-
-    function renderUsers() {
-        const tbody = document.getElementById('usersTable');
-        if(!tbody) return;
-        
-        tbody.innerHTML = users.map(user => {
-            const roleText: {[key: string]: string} = {
-                'admin': 'ผู้ดูแลระบบ',
-                'cashier': 'พนักงานขาย',
-                'staff': 'พนักงานทั่วไป'
-            };
-            
-            const statusClass = user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-            const statusText = user.status === 'active' ? 'ใช้งาน' : 'ปิดใช้งาน';
-            
-            return `
-                <tr class="hover:bg-gray-50 fade-in">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.username}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${user.fullName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${roleText[user.role]}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button id="toggle-user-${user.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">
-                            ${user.status === 'active' ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
-                        </button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        users.forEach(user => {
-          document.getElementById(`toggle-user-${user.id}`)?.addEventListener('click', () => toggleUserStatus(user.id));
-        });
-    }
-
-    function toggleUserStatus(userId: number) {
-        const user = users.find(u => u.id === userId);
-        if (user && user.username !== 'admin') {
-            user.status = user.status === 'active' ? 'inactive' : 'active';
-            saveData();
-            renderUsers();
-            showNotification(`${user.status === 'active' ? 'เปิด' : 'ปิด'}ใช้งานผู้ใช้ ${user.fullName} แล้ว`, 'success');
-        }
     }
 
     function updateTodayTotal() {
@@ -937,37 +792,6 @@ export default function Home() {
       showNotification(`รับสินค้า ${item.partName} จำนวน ${quantity} ชิ้น เรียบร้อยแล้ว`, 'success');
     });
 
-    document.getElementById('addUserForm')?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const username = (document.getElementById('username') as HTMLInputElement).value;
-      const password = (document.getElementById('password') as HTMLInputElement).value;
-      const fullName = (document.getElementById('fullName') as HTMLInputElement).value;
-      const role = (document.getElementById('userRole') as HTMLSelectElement).value;
-      
-      if (users.some(user => user.username === username)) {
-          showNotification('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
-          return;
-      }
-      
-      const newUser = {
-          id: Date.now(),
-          username: username,
-          password: password,
-          fullName: fullName,
-          role: role,
-          status: 'active',
-          createdAt: new Date().toISOString()
-      };
-      
-      users.push(newUser);
-      saveData();
-      renderUsers();
-      (this as HTMLFormElement).reset();
-      
-      showNotification('เพิ่มผู้ใช้งานเรียบร้อยแล้ว', 'success');
-    });
-
     document.getElementById('receivedAmount')?.addEventListener('input', function() {
         const received = parseFloat((this as HTMLInputElement).value) || 0;
         const total = parseFloat(document.getElementById('paymentTotal')!.textContent!.replace('฿', '').replace(/,/g, ''));
@@ -992,8 +816,6 @@ export default function Home() {
     document.getElementById('tab-inventory')?.addEventListener('click', () => switchTab('inventory'));
     document.getElementById('tab-receive')?.addEventListener('click', () => switchTab('receive'));
     document.getElementById('tab-reports')?.addEventListener('click', () => switchTab('reports'));
-    document.getElementById('tab-users')?.addEventListener('click', () => switchTab('users'));
-    document.getElementById('switchUserBtn')?.addEventListener('click', switchUser);
     document.getElementById('clearPosSearchBtn')?.addEventListener('click', clearPosSearch);
     document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
     document.getElementById('checkoutBtn')?.addEventListener('click', processPayment);
@@ -1003,8 +825,6 @@ export default function Home() {
     });
     document.getElementById('printReceiptBtn')?.addEventListener('click', printReceipt);
     document.getElementById('closeReceiptBtn')?.addEventListener('click', closeReceiptModal);
-    document.getElementById('loginBtn')?.addEventListener('click', login);
-    document.getElementById('closeUserSwitchBtn')?.addEventListener('click', closeUserSwitchModal);
     document.getElementById('saveEdit')?.addEventListener('click', () => {
         if (editingId) {
             const item = inventory.find(i => i.id === editingId);
@@ -1033,7 +853,6 @@ export default function Home() {
 
     // Initial setup
     loadData();
-    updateTabVisibility();
     // Re-assign because loadData clears them
     document.getElementById('clearPosSearchBtn')?.addEventListener('click', clearPosSearch);
     document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
@@ -1067,9 +886,6 @@ export default function Home() {
                     <div className="bg-blue-100 px-4 py-2 rounded-lg">
                         <span className="text-blue-800 font-semibold">ผู้ใช้: <span id="currentUser">Admin</span></span>
                     </div>
-                    <button id="switchUserBtn" className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200">
-                        เปลี่ยนผู้ใช้
-                    </button>
                 </div>
             </div>
         </div>
@@ -1102,12 +918,6 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
                     รายงาน
-                </button>
-                <button id="tab-users" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                    </svg>
-                    ผู้ใช้งาน
                 </button>
             </nav>
         </div>
@@ -1502,68 +1312,6 @@ export default function Home() {
                 </div>
             </div>
         </div>
-
-        {/* Users Tab */}
-        <div id="content-users" className="tab-content hidden">
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">เพิ่มผู้ใช้งานใหม่</h2>
-                <form id="addUserForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
-                        <input type="text" id="username" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อผู้ใช้" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
-                        <input type="password" id="password" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัสผ่าน" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อจริง</label>
-                        <input type="text" id="fullName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อ-นามสกุล" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
-                        <select id="userRole" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกตำแหน่ง</option>
-                            <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-                            <option value="cashier">พนักงานขาย (Cashier)</option>
-                            <option value="staff">พนักงานทั่วไป (Staff)</option>
-                        </select>
-                    </div>
-                    <div className="md:col-span-2">
-                        <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            เพิ่มผู้ใช้งาน
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {/* Users List */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">รายการผู้ใช้งาน</h2>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อผู้ใช้</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อจริง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตำแหน่ง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่สร้าง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="usersTable" className="bg-white divide-y divide-gray-200">
-                            {/* Users will be populated here */}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
     </div>
 
     {/* Payment Modal */}
@@ -1611,29 +1359,6 @@ export default function Home() {
                 <div className="flex space-x-3 mt-6">
                     <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>
                     <button id="closeReceiptBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {/* User Switch Modal */}
-    <div id="userSwitchModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-            <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">เข้าสู่ระบบ</h3>
-            </div>
-            <div className="p-6">
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
-                    <input type="text" id="loginUsername" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อผู้ใช้"/>
-                </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
-                    <input type="password" id="loginPassword" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัสผ่าน"/>
-                </div>
-                <div className="flex space-x-3">
-                    <button id="loginBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">เข้าสู่ระบบ</button>
-                    <button id="closeUserSwitchBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
                 </div>
             </div>
         </div>
