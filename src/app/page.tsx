@@ -36,7 +36,6 @@ export default function Home() {
         renderInventory();
         updateTotalStock();
         updatePartSelects();
-        updateBrandFilter();
         renderReceiveHistory();
         updateReports();
         renderPOSProducts();
@@ -121,7 +120,6 @@ export default function Home() {
         let filteredProducts = inventory.filter(item => {
             const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
                                 item.partName.toLowerCase().includes(searchTerm) ||
-                                item.brand.toLowerCase().includes(searchTerm) ||
                                 (item.barcode && item.barcode.toLowerCase().includes(searchTerm));
             const matchesCategory = !selectedCategory || item.category === selectedCategory;
             const hasStock = item.quantity > 0;
@@ -138,7 +136,6 @@ export default function Home() {
             <div id="pos-item-${item.id}" class="pos-item bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-lg">
                 <div class="text-sm font-medium text-gray-900 mb-1">${item.partCode}</div>
                 <div class="text-sm text-gray-600 mb-2">${item.partName}</div>
-                <div class="text-xs text-gray-500 mb-2">${item.brand} | ${item.carModel}</div>
                 <div class="flex justify-between items-center">
                     <div class="text-lg font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
                     <div class="text-xs text-gray-500">คงเหลือ: ${item.quantity}</div>
@@ -458,15 +455,6 @@ export default function Home() {
         receiveSelect.innerHTML = '<option value="">เลือกอะไหล่</option>' + options;
     }
 
-    function updateBrandFilter() {
-        const brandFilter = document.getElementById('filterBrand') as HTMLSelectElement;
-        if (!brandFilter) return;
-        const brands = [...new Set(inventory.map(item => item.brand))].sort();
-        
-        brandFilter.innerHTML = '<option value="">ทุกยี่ห้อ</option>' + 
-            brands.map(brand => `<option value="${brand}">${brand}</option>`).join('');
-    }
-
     function renderInventory() {
         const tbody = document.getElementById('inventoryTable');
         const emptyState = document.getElementById('emptyState');
@@ -493,8 +481,6 @@ export default function Home() {
                 <tr class="hover:bg-gray-50 fade-in">
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.partCode}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.partName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.brand}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.carModel}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${item.quantity.toLocaleString()}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
@@ -535,10 +521,6 @@ export default function Home() {
     }
 
     function updateReports() {
-        // Low stock count
-        const lowStockItems = inventory.filter(item => item.quantity <= item.reorderPoint);
-        document.getElementById('lowStockCount')!.textContent = lowStockItems.length.toString();
-        
         // Today's sales
         const today = new Date().toISOString().split('T')[0];
         const todaySales = salesHistory
@@ -552,23 +534,6 @@ export default function Home() {
         // Stock value
         const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
         document.getElementById('stockValue')!.textContent = `฿${stockValue.toLocaleString('th-TH')}`;
-        
-        // Low stock alert
-        const lowStockAlert = document.getElementById('lowStockAlert');
-        if (!lowStockAlert) return;
-        if (lowStockItems.length === 0) {
-            lowStockAlert.innerHTML = '<p class="text-green-600 font-semibold">✅ ไม่มีสินค้าที่สต๊อกต่ำ</p>';
-        } else {
-            lowStockAlert.innerHTML = lowStockItems.map(item => `
-                <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex justify-between items-center">
-                    <div>
-                        <p class="font-semibold text-red-800">${item.partCode} - ${item.partName}</p>
-                        <p class="text-red-600">คงเหลือ: ${item.quantity} ชิ้น (จุดสั่งซื้อ: ${item.reorderPoint} ชิ้น)</p>
-                    </div>
-                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">ต้องสั่งซื้อ</span>
-                </div>
-            `).join('');
-        }
         
         // Best selling items (last 7 days)
         const sevenDaysAgo = new Date();
@@ -616,31 +581,27 @@ export default function Home() {
     function filterInventory() {
         const searchTerm = (document.getElementById('searchInput') as HTMLInputElement).value.toLowerCase();
         const categoryFilter = (document.getElementById('filterCategory') as HTMLSelectElement).value;
-        const brandFilter = (document.getElementById('filterBrand') as HTMLSelectElement).value;
         const statusFilter = (document.getElementById('filterStatus') as HTMLSelectElement).value;
 
         return inventory.filter(item => {
             const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
-                                item.partName.toLowerCase().includes(searchTerm) ||
-                                item.brand.toLowerCase().includes(searchTerm) ||
-                                item.carModel.toLowerCase().includes(searchTerm);
+                                item.partName.toLowerCase().includes(searchTerm);
             const matchesCategory = !categoryFilter || item.category === categoryFilter;
-            const matchesBrand = !brandFilter || item.brand === brandFilter;
             const matchesStatus = !statusFilter || getStatusKey(item) === statusFilter;
 
-            return matchesSearch && matchesCategory && matchesBrand && matchesStatus;
+            return matchesSearch && matchesCategory && matchesStatus;
         });
     }
 
     function getStockStatus(item: any) {
         if (item.quantity === 0) return 'หมดสต๊อก';
-        if (item.quantity <= item.reorderPoint) return 'สต๊อกต่ำ';
+        if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'สต๊อกต่ำ';
         return 'ปกติ';
     }
 
     function getStatusKey(item: any) {
         if (item.quantity === 0) return 'out';
-        if (item.quantity <= item.reorderPoint) return 'low';
+        if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'low';
         return 'normal';
     }
 
@@ -679,7 +640,6 @@ export default function Home() {
         renderInventory();
         updateTotalStock();
         updatePartSelects();
-        updateBrandFilter();
         cancelDelete();
         showNotification('ลบอะไหล่เรียบร้อยแล้ว', 'success');
     }
@@ -726,13 +686,9 @@ export default function Home() {
           id: Date.now(),
           partCode: (document.getElementById('partCode') as HTMLInputElement).value.toUpperCase(),
           partName: (document.getElementById('partName') as HTMLInputElement).value,
-          brand: (document.getElementById('brand') as HTMLInputElement).value,
-          carModel: (document.getElementById('carModel') as HTMLInputElement).value,
-          oemCode: (document.getElementById('oemCode') as HTMLInputElement).value,
           category: (document.getElementById('category') as HTMLSelectElement).value,
           quantity: parseInt((document.getElementById('quantity') as HTMLInputElement).value),
           price: parseFloat((document.getElementById('price') as HTMLInputElement).value),
-          reorderPoint: parseInt((document.getElementById('reorderPoint') as HTMLInputElement).value),
           createdAt: new Date().toISOString()
       };
 
@@ -746,7 +702,6 @@ export default function Home() {
       renderInventory();
       updateTotalStock();
       updatePartSelects();
-      updateBrandFilter();
       (this as HTMLFormElement).reset();
       
       showNotification('เพิ่มอะไหล่เรียบร้อยแล้ว', 'success');
@@ -844,7 +799,6 @@ export default function Home() {
     document.getElementById('cancelEdit')?.addEventListener('click', closeModal);
     document.getElementById('searchInput')?.addEventListener('input', renderInventory);
     document.getElementById('filterCategory')?.addEventListener('change', renderInventory);
-    document.getElementById('filterBrand')?.addEventListener('change', renderInventory);
     document.getElementById('filterStatus')?.addEventListener('change', renderInventory);
     document.getElementById('posSearch')?.addEventListener('input', renderPOSProducts);
     document.getElementById('discountPercent')?.addEventListener('change', updateCartTotal);
@@ -1024,7 +978,7 @@ export default function Home() {
             {/* Add New Item Form */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">เพิ่มอะไหล่ใหม่</h2>
-                <form id="addItemForm" className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <form id="addItemForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">รหัสอะไหล่</label>
                         <input type="text" id="partCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น ENG001" required/>
@@ -1032,18 +986,6 @@ export default function Home() {
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ชื่ออะไหล่</label>
                         <input type="text" id="partName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น กรองอากาศ" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ยี่ห้อ</label>
-                        <input type="text" id="brand" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น Toyota, Honda" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รุ่นรถที่ใช้ได้</label>
-                        <input type="text" id="carModel" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น Vios, City, Civic" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">OEM Code</label>
-                        <input type="text" id="oemCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส OEM (ถ้ามี)"/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
@@ -1065,11 +1007,7 @@ export default function Home() {
                         <label className="block text-sm font-medium text-gray-700 mb-2">ราคาขาย (บาท)</label>
                         <input type="number" id="price" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จุดสั่งซื้อใหม่</label>
-                        <input type="number" id="reorderPoint" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="10" min="0" required/>
-                    </div>
-                    <div className="md:col-span-3">
+                    <div className="md:col-span-2">
                         <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
@@ -1083,10 +1021,10 @@ export default function Home() {
             {/* Search and Filter */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">ค้นหาและกรอง</h2>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
-                        <input type="text" id="searchInput" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส, ชื่อ, ยี่ห้อ, รุ่นรถ"/>
+                        <input type="text" id="searchInput" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส, ชื่อ"/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
@@ -1098,12 +1036,6 @@ export default function Home() {
                             <option value="ไฟฟ้า">ไฟฟ้า</option>
                             <option value="ตัวถัง">ตัวถัง</option>
                             <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ยี่ห้อ</label>
-                        <select id="filterBrand" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกยี่ห้อ</option>
                         </select>
                     </div>
                     <div>
@@ -1129,8 +1061,6 @@ export default function Home() {
                             <tr>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยี่ห้อ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รุ่นรถ</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมวดหมู่</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ราคา</th>
@@ -1228,20 +1158,7 @@ export default function Home() {
         {/* Reports Tab */}
         <div id="content-reports" className="tab-content hidden">
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div className="bg-white rounded-xl shadow-lg p-6">
-                    <div className="flex items-center">
-                        <div className="bg-red-100 p-3 rounded-lg">
-                            <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                            </svg>
-                        </div>
-                        <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">สต๊อกต่ำ</p>
-                            <p className="text-2xl font-bold text-gray-900" id="lowStockCount">0</p>
-                        </div>
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center">
                         <div className="bg-green-100 p-3 rounded-lg">
@@ -1280,14 +1197,6 @@ export default function Home() {
                             <p className="text-2xl font-bold text-gray-900" id="stockValue">฿0</p>
                         </div>
                     </div>
-                </div>
-            </div>
-
-            {/* Low Stock Alert */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">🚨 แจ้งเตือนสต๊อกต่ำ</h2>
-                <div id="lowStockAlert" className="space-y-3">
-                    {/* Low stock items will be populated here */}
                 </div>
             </div>
 
