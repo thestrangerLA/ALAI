@@ -117,27 +117,27 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
                 </div>
             </CardHeader>
             <CardContent>
-                <Table>
+                <Table className="table-fixed w-full">
                     <TableHeader>
                         <TableRow>
-                            <TableHead>ລະຫັດສິ້ນສ່ວນ</TableHead>
-                            <TableHead>ຊື່ສິ້ນສ່ວນ</TableHead>
-                            <TableHead className="text-right">ລາຄາຕົ້ນທຶນ</TableHead>
-                            <TableHead className="text-right">ລາຄາສົ່ງ</TableHead>
-                            <TableHead className="text-right">ລາຄາຂາຍ</TableHead>
-                            <TableHead className="text-right">ຈຳນວນຄົງເຫຼືອ</TableHead>
-                            <TableHead>ສະຖານະ</TableHead>
-                            <TableHead className="text-right">ຈັດການ</TableHead>
+                            <TableHead className="w-[10%]">ລະຫັດສິ້ນສ່ວນ</TableHead>
+                            <TableHead className="w-[25%]">ຊື່ສິ້ນສ່ວນ</TableHead>
+                            <TableHead className="w-[12%] text-right">ລາຄາຕົ້ນທຶນ</TableHead>
+                            <TableHead className="w-[12%] text-right">ລາຄາສົ່ງ</TableHead>
+                            <TableHead className="w-[12%] text-right">ລາຄາຂາຍ</TableHead>
+                            <TableHead className="w-[10%] text-right">ຈຳນວນຄົງເຫຼືອ</TableHead>
+                            <TableHead className="w-[10%]">ສະຖານະ</TableHead>
+                            <TableHead className="w-[9%] text-right">ຈັດການ</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {data.length > 0 ? data.map(item => (
                             <TableRow key={item.id}>
-                                <TableCell className="font-medium">{item.partCode}</TableCell>
-                                <TableCell>{item.partName}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(item.costPrice)}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(item.wholesalePrice)}</TableCell>
-                                <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
+                                <TableCell className="font-medium truncate">{item.partCode}</TableCell>
+                                <TableCell className="truncate">{item.partName}</TableCell>
+                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.costPrice)}</TableCell>
+                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.wholesalePrice)}</TableCell>
+                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.price)}</TableCell>
                                 <TableCell className="text-right font-medium">{item.quantity.toLocaleString('lo-LA')}</TableCell>
                                 <TableCell>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(item)}`}>
