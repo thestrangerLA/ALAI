@@ -1,180 +1,244 @@
+
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import {
+  collection,
+  query,
+  onSnapshot,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  writeBatch,
+  serverTimestamp
+} from 'firebase/firestore';
+import { useFirestore, useAuth, useUser } from '@/firebase';
+import Link from 'next/link';
+
+// Mock data structure, will be replaced by Firestore data
+interface InventoryItem {
+  id: string;
+  partCode: string;
+  partName: string;
+  category: string;
+  quantity: number;
+  price: number;
+}
+
+interface SaleItem {
+    id: string;
+    partCode: string;
+    partName: string;
+    price: number;
+    quantity: number;
+    maxQuantity: number;
+}
+
+
+interface SaleRecord {
+    id: string;
+    receiptNumber: number;
+    items: SaleItem[];
+    subtotal: number;
+    discountPercent: number;
+    discountAmount: number;
+    taxPercent: number;
+    taxAmount: number;
+    grandTotal: number;
+    received: number;
+    change: number;
+    customerName: string;
+    cashier: string;
+    date: string;
+    timestamp: any;
+}
+
+interface ReceiveRecord {
+    id: string;
+    partId: string;
+    partCode: string;
+    partName: string;
+    quantity: number;
+    cost: number;
+    supplier: string;
+    date: string;
+    note: string;
+    timestamp: any;
+}
+
 
 export default function Home() {
-  useEffect(() => {
-    let inventory: any[] = [];
-    let receiveHistory: any[] = [];
-    let salesHistory: any[] = [];
-    let cart: any[] = [];
-    let editingId: number | null = null;
-    let currentTab = 'pos';
-    let selectedCategory = '';
-    let receiptNumber = 1;
+    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [receiveHistory, setReceiveHistory] = useState<ReceiveRecord[]>([]);
+    const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
+    const [cart, setCart] = useState<SaleItem[]>([]);
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [currentTab, setCurrentTab] = useState('pos');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [receiptNumber, setReceiptNumber] = useState(1);
+    const [loading, setLoading] = useState(true);
 
-    // Load data from localStorage
-    function loadData() {
-        const savedInventory = localStorage.getItem('autoPartsInventory');
-        const savedReceive = localStorage.getItem('receiveHistory');
-        const savedSales = localStorage.getItem('salesHistory');
-        const savedReceiptNumber = localStorage.getItem('receiptNumber');
-        
-        if (savedInventory) {
-            inventory = JSON.parse(savedInventory);
-        }
-        if (savedReceive) {
-            receiveHistory = JSON.parse(savedReceive);
-        }
-        if (savedSales) {
-            salesHistory = JSON.parse(savedSales);
-        }
-        if (savedReceiptNumber) {
-            receiptNumber = parseInt(savedReceiptNumber);
-        }
-        
-        renderInventory();
-        updateTotalStock();
-        updatePartSelects();
-        renderReceiveHistory();
-        updateReports();
-        renderPOSProducts();
-        renderCategoryButtons();
-        updateTodayTotal();
-        
-        // Set today's date as default
-        const today = new Date().toISOString().split('T')[0];
-        (document.getElementById('receiveDate') as HTMLInputElement).value = today;
-    }
+    const [posSearch, setPosSearch] = useState('');
+    const [discountPercent, setDiscountPercent] = useState(0);
+    const [taxPercent, setTaxPercent] = useState(7);
+    const [paymentReceived, setPaymentReceived] = useState(0);
+    const [paymentCustomerName, setPaymentCustomerName] = useState('');
+    
+    const [editQuantity, setEditQuantity] = useState(0);
 
-    // Save data to localStorage
-    function saveData() {
-        localStorage.setItem('autoPartsInventory', JSON.stringify(inventory));
-        localStorage.setItem('receiveHistory', JSON.stringify(receiveHistory));
-        localStorage.setItem('salesHistory', JSON.stringify(salesHistory));
-        localStorage.setItem('receiptNumber', receiptNumber.toString());
-    }
+    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
+    const [isReceiptModalOpen, setReceiptModalOpen] = useState(false);
+    const [isEditModalOpen, setEditModalOpen] = useState(false);
+    const [receiptToShow, setReceiptToShow] = useState<SaleRecord | null>(null);
 
-    // Tab switching
-    function switchTab(tabName: string) {
-        // Hide all tab contents
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.add('hidden');
+    const [addItemPartCode, setAddItemPartCode] = useState('');
+    const [addItemPartName, setAddItemPartName] = useState('');
+    const [addItemCategory, setAddItemCategory] = useState('');
+    const [addItemQuantity, setAddItemQuantity] = useState(0);
+    const [addItemPrice, setAddItemPrice] = useState(0);
+
+    const [receivePartId, setReceivePartId] = useState('');
+    const [receiveQuantity, setReceiveQuantity] = useState(1);
+    const [receiveCost, setReceiveCost] = useState(0);
+    const [receiveSupplier, setReceiveSupplier] = useState('');
+    const [receiveDate, setReceiveDate] = useState(new Date().toISOString().split('T')[0]);
+    const [receiveNote, setReceiveNote] = useState('');
+
+    const [invSearch, setInvSearch] = useState('');
+    const [invCategory, setInvCategory] = useState('');
+    const [invStatus, setInvStatus] = useState('');
+    
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    // Data Fetching
+    useEffect(() => {
+        if (!firestore || !user) return;
+        setLoading(true);
+        const inventoryQuery = query(collection(firestore, 'inventory'));
+        const receiveQuery = query(collection(firestore, 'receiveHistory'));
+        const salesQuery = query(collection(firestore, 'salesHistory'));
+
+        const unsubInventory = onSnapshot(inventoryQuery, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
+            setInventory(items);
+            setLoading(false);
         });
-        
-        // Remove active class from all tabs
-        document.querySelectorAll('[id^="tab-"]').forEach(tab => {
-            tab.className = tab.className.replace('tab-active', 'tab-inactive');
+        const unsubReceive = onSnapshot(receiveQuery, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ReceiveRecord));
+            setReceiveHistory(items);
         });
-        
-        // Show selected tab content
-        document.getElementById(`content-${tabName}`)!.classList.remove('hidden');
-        
-        // Add active class to selected tab
-        const tabElement = document.getElementById(`tab-${tabName}`)!;
-        tabElement.className = tabElement.className.replace('tab-inactive', 'tab-active');
-        
-        currentTab = tabName;
-        
-        if (tabName === 'reports') {
-            updateReports();
-        } else if (tabName === 'pos') {
-            renderPOSProducts();
-            renderCategoryButtons();
-        }
-    }
-
-    // POS Functions
-    function renderCategoryButtons() {
-        const categoryButtons = document.getElementById('categoryButtons');
-        if (!categoryButtons) return;
-        const categories = [...new Set(inventory.map(item => item.category))];
-        
-        categoryButtons.innerHTML = `
-            <button id="cat-button-all" class="px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
-                ทั้งหมด
-            </button>
-            ${categories.map(category => `
-                <button id="cat-button-${category}" class="px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
-                    ${category}
-                </button>
-            `).join('')}
-        `;
-        document.getElementById('cat-button-all')?.addEventListener('click', () => selectCategory(''));
-        categories.forEach(category => {
-          document.getElementById(`cat-button-${category}`)?.addEventListener('click', () => selectCategory(category));
-        });
-    }
-
-    function selectCategory(category: string) {
-        selectedCategory = category;
-        renderCategoryButtons();
-        renderPOSProducts();
-    }
-
-    function renderPOSProducts() {
-        const productGrid = document.getElementById('productGrid');
-        if (!productGrid) return;
-        const searchTerm = (document.getElementById('posSearch') as HTMLInputElement).value.toLowerCase();
-        
-        let filteredProducts = inventory.filter(item => {
-            const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
-                                item.partName.toLowerCase().includes(searchTerm) ||
-                                (item.barcode && item.barcode.toLowerCase().includes(searchTerm));
-            const matchesCategory = !selectedCategory || item.category === selectedCategory;
-            const hasStock = item.quantity > 0;
-            
-            return matchesSearch && matchesCategory && hasStock;
+        const unsubSales = onSnapshot(salesQuery, (snapshot) => {
+            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SaleRecord));
+            setSalesHistory(items);
+            if (items.length > 0) {
+                const maxReceipt = Math.max(...items.map(s => s.receiptNumber));
+                setReceiptNumber(maxReceipt + 1);
+            }
         });
 
-        if (filteredProducts.length === 0) {
-            productGrid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">ไม่พบสินค้าที่ค้นหา</div>';
-            return;
+        return () => {
+            unsubInventory();
+            unsubReceive();
+            unsubSales();
+        };
+
+    }, [firestore, user]);
+
+
+    // Derived State & Calculations
+    const totalStock = inventory.reduce((sum, item) => sum + item.quantity, 0);
+
+    const today = new Date().toISOString().split('T')[0];
+    const todayTotal = salesHistory
+        .filter(sale => sale.date === today)
+        .reduce((sum, sale) => sum + sale.grandTotal, 0);
+
+    const categories = [...new Set(inventory.map(item => item.category))];
+
+    const filteredPOSProducts = inventory.filter(item => {
+        const searchTerm = posSearch.toLowerCase();
+        const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) ||
+                            item.partName.toLowerCase().includes(searchTerm);
+        const matchesCategory = !selectedCategory || item.category === selectedCategory;
+        const hasStock = item.quantity > 0;
+        return matchesSearch && matchesCategory && hasStock;
+    });
+    
+    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const cartDiscountAmount = cartSubtotal * (discountPercent / 100);
+    const cartAfterDiscount = cartSubtotal - cartDiscountAmount;
+    const cartTaxAmount = cartAfterDiscount * (taxPercent / 100);
+    const cartGrandTotal = cartAfterDiscount + cartTaxAmount;
+
+    const paymentChange = paymentReceived - cartGrandTotal;
+
+    const filteredInventory = inventory.filter(item => {
+        const searchTerm = invSearch.toLowerCase();
+        const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
+                            item.partName.toLowerCase().includes(searchTerm);
+        const matchesCategory = !invCategory || item.category === invCategory;
+        
+        const getStatusKey = (item: InventoryItem) => {
+            if (item.quantity === 0) return 'out';
+            // Assuming reorderPoint logic is removed or adapted
+            // if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'low';
+            return 'normal';
         }
+        const matchesStatus = !invStatus || getStatusKey(item) === invStatus;
 
-        productGrid.innerHTML = filteredProducts.map(item => `
-            <div id="pos-item-${item.id}" class="pos-item bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition-shadow">
-                <div class="cursor-pointer" id="pos-item-add-${item.id}">
-                    <div class="text-sm font-medium text-gray-900 mb-1">${item.partCode}</div>
-                    <div class="text-sm text-gray-600 mb-2 h-10">${item.partName}</div>
-                    <div class="flex justify-between items-center">
-                        <div class="text-lg font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                        <div class="text-xs text-gray-500">คงเหลือ: ${item.quantity}</div>
-                    </div>
-                </div>
-                <div class="border-t mt-3 pt-3">
-                     <button id="pos-item-details-${item.id}" class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ดูรายละเอียด</button>
-                </div>
-            </div>
-        `).join('');
+        return matchesSearch && matchesCategory && matchesStatus;
+    });
 
-        filteredProducts.forEach(item => {
-          document.getElementById(`pos-item-add-${item.id}`)?.addEventListener('click', () => addToCart(item.id));
-          document.getElementById(`pos-item-details-${item.id}`)?.addEventListener('click', () => viewItemDetails(item.partCode));
+    const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const salesData: {[key: string]: any} = {};
+    salesHistory
+        .filter(sale => new Date(sale.date) >= sevenDaysAgo)
+        .forEach(sale => {
+            sale.items.forEach((item: any) => {
+                if (!salesData[item.id]) {
+                    salesData[item.id] = {
+                        partCode: item.partCode,
+                        partName: item.partName,
+                        quantity: 0,
+                        amount: 0
+                    };
+                }
+                salesData[item.id].quantity += item.quantity;
+                salesData[item.id].amount += item.quantity * item.price;
+            });
         });
-    }
+    const bestSelling = Object.values(salesData)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
 
-    function viewItemDetails(partCode: string) {
-        // Switch to the inventory tab
-        switchTab('inventory');
+
+    // Functions
+    const showNotification = (message: string, type: 'success' | 'error') => {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
+        notification.textContent = message;
+        document.body.appendChild(notification);
         
-        // Set the search input value to the item's part code
-        const searchInput = document.getElementById('searchInput') as HTMLInputElement;
-        if (searchInput) {
-            searchInput.value = partCode;
-        }
-        
-        // Trigger the search/render for the inventory table
-        renderInventory();
-    }
+        setTimeout(() => {
+            notification.remove();
+        }, 3000);
+    };
 
+    const switchTab = (tabName: string) => {
+        setCurrentTab(tabName);
+    };
 
-    function clearPosSearch() {
-        (document.getElementById('posSearch') as HTMLInputElement).value = '';
-        renderPOSProducts();
-    }
+    const selectCategory = (category: string) => {
+        setSelectedCategory(category);
+    };
 
-    function addToCart(itemId: number) {
+    const addToCart = (itemId: string) => {
         const item = inventory.find(i => i.id === itemId);
         if (!item || item.quantity <= 0) {
             showNotification('สินค้าหมดสต๊อก', 'error');
@@ -187,61 +251,20 @@ export default function Home() {
                 showNotification('จำนวนในตะกร้าเกินสต๊อกที่มี', 'error');
                 return;
             }
-            existingCartItem.quantity += 1;
+            setCart(cart.map(c => c.id === itemId ? { ...c, quantity: c.quantity + 1 } : c));
         } else {
-            cart.push({
+            setCart([...cart, {
                 id: itemId,
                 partCode: item.partCode,
                 partName: item.partName,
                 price: item.price,
                 quantity: 1,
                 maxQuantity: item.quantity
-            });
+            }]);
         }
+    };
 
-        renderCart();
-        updateCartTotal();
-    }
-
-    function renderCart() {
-        const cartItems = document.getElementById('cartItems');
-        const cartCount = document.getElementById('cartCount');
-        if(!cartItems || !cartCount) return;
-        
-        cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0).toString();
-
-        if (cart.length === 0) {
-            cartItems.innerHTML = '<div class="text-center text-gray-500 py-4">ตะกร้าว่าง</div>';
-            (document.getElementById('checkoutBtn') as HTMLButtonElement).disabled = true;
-            return;
-        }
-
-        (document.getElementById('checkoutBtn') as HTMLButtonElement).disabled = false;
-
-        cartItems.innerHTML = cart.map(item => `
-            <div class="cart-item bg-gray-50 rounded-lg p-3 flex justify-between items-center">
-                <div class="flex-1">
-                    <div class="font-medium text-sm">${item.partCode}</div>
-                    <div class="text-xs text-gray-600">${item.partName}</div>
-                    <div class="text-sm font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                </div>
-                <div class="flex items-center space-x-2">
-                    <button id="cart-dec-${item.id}" class="bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded text-xs">-</button>
-                    <span class="w-8 text-center text-sm font-semibold">${item.quantity}</span>
-                    <button id="cart-inc-${item.id}" class="bg-green-500 hover:bg-green-600 text-white w-6 h-6 rounded text-xs" ${item.quantity >= item.maxQuantity ? 'disabled' : ''}>+</button>
-                    <button id="cart-rem-${item.id}" class="bg-gray-500 hover:bg-gray-600 text-white w-6 h-6 rounded text-xs ml-2">×</button>
-                </div>
-            </div>
-        `).join('');
-
-        cart.forEach(item => {
-          document.getElementById(`cart-dec-${item.id}`)?.addEventListener('click', () => updateCartQuantity(item.id, item.quantity - 1));
-          document.getElementById(`cart-inc-${item.id}`)?.addEventListener('click', () => updateCartQuantity(item.id, item.quantity + 1));
-          document.getElementById(`cart-rem-${item.id}`)?.addEventListener('click', () => removeFromCart(item.id));
-        });
-    }
-
-    function updateCartQuantity(itemId: number, newQuantity: number) {
+    const updateCartQuantity = (itemId: string, newQuantity: number) => {
         if (newQuantity <= 0) {
             removeFromCart(itemId);
             return;
@@ -249,593 +272,242 @@ export default function Home() {
 
         const cartItem = cart.find(c => c.id === itemId);
         if (cartItem && newQuantity <= cartItem.maxQuantity) {
-            cartItem.quantity = newQuantity;
-            renderCart();
-            updateCartTotal();
+            setCart(cart.map(c => c.id === itemId ? { ...c, quantity: newQuantity } : c));
         } else {
             showNotification('จำนวนเกินสต๊อกที่มี', 'error');
         }
-    }
-
-    function removeFromCart(itemId: number) {
-        cart = cart.filter(c => c.id !== itemId);
-        renderCart();
-        updateCartTotal();
-    }
-
-    function clearCart() {
-        cart = [];
-        renderCart();
-        updateCartTotal();
-    }
-
-    function updateCartTotal() {
-        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const discountPercent = parseFloat((document.getElementById('discountPercent') as HTMLInputElement).value) || 0;
-        const taxPercent = parseFloat((document.getElementById('taxPercent') as HTMLInputElement).value) || 0;
-        
-        const discountAmount = subtotal * (discountPercent / 100);
-        const afterDiscount = subtotal - discountAmount;
-        const taxAmount = afterDiscount * (taxPercent / 100);
-        const grandTotal = afterDiscount + taxAmount;
-
-        document.getElementById('subtotal')!.textContent = `฿${subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-        document.getElementById('discountAmount')!.textContent = `฿${discountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-        document.getElementById('taxAmount')!.textContent = `฿${taxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-        document.getElementById('grandTotal')!.textContent = `฿${grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-    }
-
-    function processPayment() {
-        if (cart.length === 0) return;
-
-        const grandTotal = parseFloat(document.getElementById('grandTotal')!.textContent!.replace('฿', '').replace(/,/g, ''));
-        document.getElementById('paymentTotal')!.textContent = `฿${grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-        (document.getElementById('receivedAmount') as HTMLInputElement).value = '';
-        document.getElementById('changeAmount')!.textContent = '฿0.00';
-        (document.getElementById('customerName') as HTMLInputElement).value = '';
-        
-        document.getElementById('paymentModal')!.classList.remove('hidden');
-        document.getElementById('paymentModal')!.classList.add('flex');
-        document.getElementById('receivedAmount')!.focus();
-    }
-
-    function completeSale() {
-        const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-        const discountPercent = parseFloat((document.getElementById('discountPercent') as HTMLInputElement).value) || 0;
-        const taxPercent = parseFloat((document.getElementById('taxPercent') as HTMLInputElement).value) || 0;
-        const discountAmount = subtotal * (discountPercent / 100);
-        const afterDiscount = subtotal - discountAmount;
-        const taxAmount = afterDiscount * (taxPercent / 100);
-        const grandTotal = afterDiscount + taxAmount;
-        const received = parseFloat((document.getElementById('receivedAmount') as HTMLInputElement).value);
-        const change = received - grandTotal;
-        const customerName = (document.getElementById('customerName') as HTMLInputElement).value || 'ลูกค้าทั่วไป';
-        
-        const saleRecord = {
-            id: Date.now(),
-            receiptNumber: receiptNumber,
-            items: [...cart],
-            subtotal: subtotal,
-            discountPercent: discountPercent,
-            discountAmount: discountAmount,
-            taxPercent: taxPercent,
-            taxAmount: taxAmount,
-            grandTotal: grandTotal,
-            received: received,
-            change: change,
-            customerName: customerName,
-            cashier: 'ผู้ดูแลระบบ',
-            date: new Date().toISOString().split('T')[0],
-            timestamp: new Date().toISOString()
-        };
-        
-        cart.forEach(cartItem => {
-            const inventoryItem = inventory.find(i => i.id === cartItem.id);
-            if (inventoryItem) {
-                inventoryItem.quantity -= cartItem.quantity;
-            }
-        });
-        
-        salesHistory.push(saleRecord);
-        receiptNumber++;
-        
-        saveData();
-        updateTotalStock();
-        updateTodayTotal();
-        renderPOSProducts();
-        
-        showReceipt(saleRecord);
-        
-        clearCart();
-        document.getElementById('paymentModal')!.classList.add('hidden');
-        document.getElementById('paymentModal')!.classList.remove('flex');
-        
-        showNotification('ขายสำเร็จแล้ว', 'success');
-    }
-
-    function showReceipt(saleRecord: any) {
-        const receiptContent = document.getElementById('receiptContent');
-        if (!receiptContent) return;
-        const now = new Date();
-        
-        receiptContent.innerHTML = `
-            <div class="text-center mb-4">
-                <h2 class="font-bold text-lg">ร้านอะไหล่รถยนต์</h2>
-                <p class="text-sm">Auto Parts Shop</p>
-                <p class="text-sm">โทร: 02-xxx-xxxx</p>
-                <hr class="my-2">
-            </div>
-            
-            <div class="mb-4">
-                <div class="flex justify-between text-sm">
-                    <span>ใบเสร็จเลขที่:</span>
-                    <span>${String(saleRecord.receiptNumber).padStart(6, '0')}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span>วันที่:</span>
-                    <span>${now.toLocaleDateString('th-TH')} ${now.toLocaleTimeString('th-TH')}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span>ลูกค้า:</span>
-                    <span>${saleRecord.customerName}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span>พนักงาน:</span>
-                    <span>${saleRecord.cashier}</span>
-                </div>
-            </div>
-            
-            <hr class="my-2">
-            
-            <div class="mb-4">
-                ${saleRecord.items.map((item: any) => `
-                    <div class="flex justify-between text-sm mb-1">
-                        <div class="flex-1">
-                            <div>${item.partCode}</div>
-                            <div class="text-xs text-gray-600">${item.partName}</div>
-                            <div class="text-xs">${item.quantity} x ฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                        </div>
-                        <div class="text-right">
-                            ฿${(item.quantity * item.price).toLocaleString('th-TH', {minimumFractionDigits: 2})}
-                        </div>
-                    </div>
-                `).join('')}
-            </div>
-            
-            <hr class="my-2">
-            
-            <div class="mb-4">
-                <div class="flex justify-between text-sm">
-                    <span>ยอดรวม:</span>
-                    <span>฿${saleRecord.subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                </div>
-                ${saleRecord.discountAmount > 0 ? `
-                    <div class="flex justify-between text-sm">
-                        <span>ส่วนลด (${saleRecord.discountPercent}%):</span>
-                        <span>-฿${saleRecord.discountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                    </div>
-                ` : ''}
-                ${saleRecord.taxAmount > 0 ? `
-                    <div class="flex justify-between text-sm">
-                        <span>ภาษี (${saleRecord.taxPercent}%):</span>
-                        <span>฿${saleRecord.taxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                    </div>
-                ` : ''}
-                <div class="flex justify-between font-bold">
-                    <span>ยอดชำระ:</span>
-                    <span>฿${saleRecord.grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span>รับเงิน:</span>
-                    <span>฿${saleRecord.received.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                </div>
-                <div class="flex justify-between text-sm">
-                    <span>เงินทอน:</span>
-                    <span>฿${saleRecord.change.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
-                </div>
-            </div>
-            
-            <hr class="my-2">
-            <div class="text-center text-xs">
-                <p>ขอบคุณที่ใช้บริการ</p>
-                <p>Thank you for your business</p>
-            </div>
-        `;
-        
-        document.getElementById('receiptModal')!.classList.remove('hidden');
-        document.getElementById('receiptModal')!.classList.add('flex');
-    }
-
-    function printReceipt() {
-        window.print();
-    }
-
-    function closeReceiptModal() {
-        document.getElementById('receiptModal')!.classList.add('hidden');
-        document.getElementById('receiptModal')!.classList.remove('flex');
-    }
-
-    function updateTodayTotal() {
-        const today = new Date().toISOString().split('T')[0];
-        const todayTotal = salesHistory
-            .filter(sale => sale.date === today)
-            .reduce((sum, sale) => sum + sale.grandTotal, 0);
-        
-        document.getElementById('todayTotal')!.textContent = todayTotal.toLocaleString('th-TH');
-    }
-
-    function updatePartSelects() {
-        const receiveSelect = document.getElementById('receivePartSelect') as HTMLSelectElement;
-        
-        if(!receiveSelect) return;
-
-        const options = inventory.map(item => 
-            `<option value="${item.id}">${item.partCode} - ${item.partName} (คงเหลือ: ${item.quantity})</option>`
-        ).join('');
-        
-        receiveSelect.innerHTML = '<option value="">เลือกอะไหล่</option>' + options;
-    }
-
-    function renderInventory() {
-        const tbody = document.getElementById('inventoryTable');
-        const emptyState = document.getElementById('emptyState');
-        if (!tbody || !emptyState) return;
-
-        if (inventory.length === 0) {
-            showEmptyState();
-            return;
-        }
-
-        emptyState.classList.add('hidden');
-        
-        let filteredInventory = filterInventory();
-        
-        tbody.innerHTML = filteredInventory.map(item => {
-            const status = getStockStatus(item);
-            const statusClass: {[key: string]: string} = {
-                'ปกติ': 'bg-green-100 text-green-800',
-                'สต๊อกต่ำ': 'bg-yellow-100 text-yellow-800',
-                'หมดสต๊อก': 'bg-red-100 text-red-800'
-            };
-
-            return `
-                <tr class="hover:bg-gray-50 fade-in">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.partCode}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.partName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${item.category}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${item.quantity.toLocaleString()}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass[status]}">
-                            ${status}
-                        </span>
-                    </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button id="edit-item-${item.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">แก้ไข</button>
-                        <button id="delete-item-${item.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ลบ</button>
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        filteredInventory.forEach(item => {
-          document.getElementById(`edit-item-${item.id}`)?.addEventListener('click', () => editItem(item.id));
-          document.getElementById(`delete-item-${item.id}`)?.addEventListener('click', () => deleteItem(item.id));
-        });
-    }
-
-    function renderReceiveHistory() {
-        const tbody = document.getElementById('receiveHistoryTable');
-        if (!tbody) return;
-        
-        tbody.innerHTML = receiveHistory.slice(-20).reverse().map(record => `
-            <tr class="hover:bg-gray-50 fade-in">
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${new Date(record.date).toLocaleDateString('th-TH')}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${record.partCode}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${record.partName}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${record.quantity.toLocaleString()}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿${record.cost.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.supplier}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${record.note || '-'}</td>
-            </tr>
-        `).join('');
-    }
-
-    function updateReports() {
-        // Today's sales
-        const today = new Date().toISOString().split('T')[0];
-        const todaySales = salesHistory
-            .filter(sale => sale.date === today)
-            .reduce((sum, sale) => sum + sale.grandTotal, 0);
-        document.getElementById('todaySales')!.textContent = `฿${todaySales.toLocaleString('th-TH')}`;
-        
-        // Total items
-        document.getElementById('totalItems')!.textContent = inventory.length.toString();
-        
-        // Stock value
-        const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
-        document.getElementById('stockValue')!.textContent = `฿${stockValue.toLocaleString('th-TH')}`;
-        
-        // Best selling items (last 7 days)
-        const sevenDaysAgo = new Date();
-        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-        
-        const salesData: {[key: number]: any} = {};
-        salesHistory
-            .filter(sale => new Date(sale.date) >= sevenDaysAgo)
-            .forEach(sale => {
-                sale.items.forEach((item: any) => {
-                    if (!salesData[item.id]) {
-                        salesData[item.id] = {
-                            partCode: item.partCode,
-                            partName: item.partName,
-                            quantity: 0,
-                            amount: 0
-                        };
-                    }
-                    salesData[item.id].quantity += item.quantity;
-                    salesData[item.id].amount += item.quantity * item.price;
-                });
-            });
-        
-        const bestSelling = Object.values(salesData)
-            .sort((a, b) => b.quantity - a.quantity)
-            .slice(0, 10);
-        
-        const bestSellingTable = document.getElementById('bestSellingTable');
-        if (!bestSellingTable) return;
-        if (bestSelling.length === 0) {
-            bestSellingTable.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูลการขายใน 7 วันที่ผ่านมา</td></tr>';
-        } else {
-            bestSellingTable.innerHTML = bestSelling.map((item, index) => `
-                <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${index + 1}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.partCode}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.partName}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">${item.quantity}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿${item.amount.toLocaleString('th-TH')}</td>
-                </tr>
-            `).join('');
-        }
-    }
-
-    function filterInventory() {
-        const searchTerm = (document.getElementById('searchInput') as HTMLInputElement).value.toLowerCase();
-        const categoryFilter = (document.getElementById('filterCategory') as HTMLSelectElement).value;
-        const statusFilter = (document.getElementById('filterStatus') as HTMLSelectElement).value;
-
-        return inventory.filter(item => {
-            const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
-                                item.partName.toLowerCase().includes(searchTerm);
-            const matchesCategory = !categoryFilter || item.category === categoryFilter;
-            const matchesStatus = !statusFilter || getStatusKey(item) === statusFilter;
-
-            return matchesSearch && matchesCategory && matchesStatus;
-        });
-    }
-
-    function getStockStatus(item: any) {
-        if (item.quantity === 0) return 'หมดสต๊อก';
-        if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'สต๊อกต่ำ';
-        return 'ปกติ';
-    }
-
-    function getStatusKey(item: any) {
-        if (item.quantity === 0) return 'out';
-        if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'low';
-        return 'normal';
-    }
-
-    function editItem(id: number) {
-        const item = inventory.find(i => i.id === id);
-        if (item) {
-            editingId = id;
-            (document.getElementById('editQuantity') as HTMLInputElement).value = item.quantity;
-            document.getElementById('editModal')!.classList.remove('hidden');
-            document.getElementById('editModal')!.classList.add('flex');
-        }
-    }
-
-    function deleteItem(id: number) {
-        const confirmDiv = document.createElement('div');
-        confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        confirmDiv.innerHTML = `
-            <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">ยืนยันการลบ</h3>
-                <p class="text-gray-600 mb-6">คุณแน่ใจหรือไม่ที่จะลบอะไหล่นี้? การกระทำนี้ไม่สามารถยกเลิกได้</p>
-                <div class="flex space-x-3">
-                    <button id="confirm-delete-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ลบ</button>
-                    <button id="cancel-delete-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(confirmDiv);
-
-        document.getElementById('confirm-delete-btn')!.addEventListener('click', () => confirmDelete(id));
-        document.getElementById('cancel-delete-btn')!.addEventListener('click', cancelDelete);
-    }
-
-    function confirmDelete(id: number) {
-        inventory = inventory.filter(item => item.id !== id);
-        saveData();
-        renderInventory();
-        updateTotalStock();
-        updatePartSelects();
-        cancelDelete();
-        showNotification('ลบอะไหล่เรียบร้อยแล้ว', 'success');
-    }
-
-    function cancelDelete() {
-        const confirmDiv = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50');
-        if (confirmDiv) {
-            confirmDiv.remove();
-        }
-    }
-
-    function closeModal() {
-        document.getElementById('editModal')!.classList.add('hidden');
-        document.getElementById('editModal')!.classList.remove('flex');
-        editingId = null;
-    }
-
-    function updateTotalStock() {
-        const total = inventory.reduce((sum, item) => sum + item.quantity, 0);
-        document.getElementById('totalStock')!.textContent = total.toLocaleString();
-    }
-
-    function showEmptyState() {
-        document.getElementById('inventoryTable')!.innerHTML = '';
-        document.getElementById('emptyState')!.classList.remove('hidden');
-    }
-
-    function showNotification(message: string, type: 'success' | 'error') {
-        const notification = document.createElement('div');
-        notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg text-white font-semibold z-50 fade-in ${type === 'success' ? 'bg-green-500' : 'bg-red-500'}`;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
-    }
+    };
     
-    // Attaching event listeners
-    document.getElementById('addItemForm')?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const newItem = {
-          id: Date.now(),
-          partCode: (document.getElementById('partCode') as HTMLInputElement).value.toUpperCase(),
-          partName: (document.getElementById('partName') as HTMLInputElement).value,
-          category: (document.getElementById('category') as HTMLSelectElement).value,
-          quantity: parseInt((document.getElementById('quantity') as HTMLInputElement).value),
-          price: parseFloat((document.getElementById('price') as HTMLInputElement).value),
-          createdAt: new Date().toISOString()
-      };
+    const removeFromCart = (itemId: string) => {
+        setCart(cart.filter(c => c.id !== itemId));
+    };
 
-      if (inventory.some(item => item.partCode === newItem.partCode)) {
-          showNotification('รหัสอะไหล่นี้มีอยู่แล้วในระบบ', 'error');
-          return;
-      }
-
-      inventory.push(newItem);
-      saveData();
-      renderInventory();
-      updateTotalStock();
-      updatePartSelects();
-      (this as HTMLFormElement).reset();
-      
-      showNotification('เพิ่มอะไหล่เรียบร้อยแล้ว', 'success');
-    });
-
-    document.getElementById('receiveForm')?.addEventListener('submit', function(e) {
-      e.preventDefault();
-      
-      const partId = parseInt((document.getElementById('receivePartSelect') as HTMLSelectElement).value);
-      const quantity = parseInt((document.getElementById('receiveQuantity') as HTMLInputElement).value);
-      const cost = parseFloat((document.getElementById('receiveCost') as HTMLInputElement).value);
-      const supplier = (document.getElementById('supplier') as HTMLInputElement).value;
-      const date = (document.getElementById('receiveDate') as HTMLInputElement).value;
-      const note = (document.getElementById('receiveNote') as HTMLInputElement).value;
-      
-      const item = inventory.find(i => i.id === partId);
-      if (!item) return;
-      
-      item.quantity += quantity;
-      
-      receiveHistory.push({
-          id: Date.now(),
-          partId: partId,
-          partCode: item.partCode,
-          partName: item.partName,
-          quantity: quantity,
-          cost: cost,
-          supplier: supplier,
-          date: date,
-          note: note,
-          timestamp: new Date().toISOString()
-      });
-      
-      saveData();
-      renderInventory();
-      updateTotalStock();
-      renderReceiveHistory();
-      (this as HTMLFormElement).reset();
-      
-      const today = new Date().toISOString().split('T')[0];
-      (document.getElementById('receiveDate') as HTMLInputElement).value = today;
-      
-      showNotification(`รับสินค้า ${item.partName} จำนวน ${quantity} ชิ้น เรียบร้อยแล้ว`, 'success');
-    });
-
-    document.getElementById('receivedAmount')?.addEventListener('input', function() {
-        const received = parseFloat((this as HTMLInputElement).value) || 0;
-        const total = parseFloat(document.getElementById('paymentTotal')!.textContent!.replace('฿', '').replace(/,/g, ''));
-        const change = received - total;
-        
-        document.getElementById('changeAmount')!.textContent = `฿${Math.max(0, change).toLocaleString('th-TH', {minimumFractionDigits: 2})}`;
-    });
-
-    document.getElementById('confirmPayment')?.addEventListener('click', function() {
-        const received = parseFloat((document.getElementById('receivedAmount') as HTMLInputElement).value) || 0;
-        const total = parseFloat(document.getElementById('paymentTotal')!.textContent!.replace('฿', '').replace(/,/g, ''));
-        
-        if (received < total) {
+    const clearCart = () => {
+        setCart([]);
+    };
+    
+    const processPayment = () => {
+        if (cart.length === 0) return;
+        setPaymentReceived(0);
+        setPaymentCustomerName('');
+        setPaymentModalOpen(true);
+    };
+    
+    const completeSale = async () => {
+        if (!firestore) return;
+        if (paymentReceived < cartGrandTotal) {
             showNotification('จำนวนเงินที่รับไม่เพียงพอ', 'error');
             return;
         }
-        
-        completeSale();
-    });
 
-    document.getElementById('tab-pos')?.addEventListener('click', () => switchTab('pos'));
-    document.getElementById('tab-inventory')?.addEventListener('click', () => switchTab('inventory'));
-    document.getElementById('tab-receive')?.addEventListener('click', () => switchTab('receive'));
-    document.getElementById('tab-reports')?.addEventListener('click', () => switchTab('reports'));
-    document.getElementById('clearPosSearchBtn')?.addEventListener('click', clearPosSearch);
-    document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
-    document.getElementById('checkoutBtn')?.addEventListener('click', processPayment);
-    document.getElementById('cancelPayment')?.addEventListener('click', () => {
-        document.getElementById('paymentModal')!.classList.add('hidden');
-        document.getElementById('paymentModal')!.classList.remove('flex');
-    });
-    document.getElementById('printReceiptBtn')?.addEventListener('click', printReceipt);
-    document.getElementById('closeReceiptBtn')?.addEventListener('click', closeReceiptModal);
-    document.getElementById('saveEdit')?.addEventListener('click', () => {
-        if (editingId) {
-            const item = inventory.find(i => i.id === editingId);
-            const newQuantity = parseInt((document.getElementById('editQuantity') as HTMLInputElement).value);
+        const saleRecord: Omit<SaleRecord, 'id'> = {
+            receiptNumber: receiptNumber,
+            items: cart,
+            subtotal: cartSubtotal,
+            discountPercent: discountPercent,
+            discountAmount: cartDiscountAmount,
+            taxPercent: taxPercent,
+            taxAmount: cartTaxAmount,
+            grandTotal: cartGrandTotal,
+            received: paymentReceived,
+            change: paymentChange,
+            customerName: paymentCustomerName || 'ลูกค้าทั่วไป',
+            cashier: user?.displayName || user?.email || 'ผู้ดูแลระบบ',
+            date: new Date().toISOString().split('T')[0],
+            timestamp: serverTimestamp()
+        };
+        
+        try {
+            const batch = writeBatch(firestore);
             
-            if (item && newQuantity >= 0) {
-                item.quantity = newQuantity;
-                saveData();
-                renderInventory();
-                updateTotalStock();
-                updatePartSelects();
-                closeModal();
+            // Add sale record
+            const salesRef = collection(firestore, 'salesHistory');
+            batch.set(doc(salesRef), saleRecord);
+
+            // Update inventory stock
+            cart.forEach(cartItem => {
+                const invItemRef = doc(firestore, 'inventory', cartItem.id);
+                const inventoryItem = inventory.find(i => i.id === cartItem.id);
+                if (inventoryItem) {
+                    batch.update(invItemRef, { quantity: inventoryItem.quantity - cartItem.quantity });
+                }
+            });
+
+            await batch.commit();
+
+            setReceiptToShow({ ...saleRecord, id: 'temp-id', timestamp: new Date() });
+            setReceiptModalOpen(true);
+
+            clearCart();
+            setPaymentModalOpen(false);
+            setReceiptNumber(receiptNumber + 1);
+            showNotification('ขายสำเร็จแล้ว', 'success');
+
+        } catch (error) {
+            console.error("Error completing sale: ", error);
+            showNotification('เกิดข้อผิดพลาดในการบันทึกการขาย', 'error');
+        }
+    };
+
+    const handleAddItemSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!firestore) return;
+
+        if (inventory.some(item => item.partCode === addItemPartCode)) {
+            showNotification('รหัสอะไหล่นี้มีอยู่แล้วในระบบ', 'error');
+            return;
+        }
+
+        const newItem = {
+            partCode: addItemPartCode.toUpperCase(),
+            partName: addItemPartName,
+            category: addItemCategory,
+            quantity: Number(addItemQuantity),
+            price: Number(addItemPrice),
+            createdAt: serverTimestamp()
+        };
+
+        try {
+            await addDoc(collection(firestore, 'inventory'), newItem);
+            showNotification('เพิ่มอะไหล่เรียบร้อยแล้ว', 'success');
+            // Reset form
+            setAddItemPartCode('');
+            setAddItemPartName('');
+            setAddItemCategory('');
+            setAddItemQuantity(0);
+            setAddItemPrice(0);
+        } catch (error) {
+            console.error("Error adding item: ", error);
+            showNotification('เกิดข้อผิดพลาดในการเพิ่มอะไหล่', 'error');
+        }
+    };
+
+    const handleReceiveSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!firestore) return;
+
+        const item = inventory.find(i => i.id === receivePartId);
+        if (!item) {
+            showNotification('ไม่พบอะไหล่ที่เลือก', 'error');
+            return;
+        };
+
+        const receiveRecord = {
+            partId: receivePartId,
+            partCode: item.partCode,
+            partName: item.partName,
+            quantity: Number(receiveQuantity),
+            cost: Number(receiveCost),
+            supplier: receiveSupplier,
+            date: receiveDate,
+            note: receiveNote,
+            timestamp: serverTimestamp()
+        };
+
+        try {
+            const batch = writeBatch(firestore);
+
+            // Add to receive history
+            const historyRef = collection(firestore, 'receiveHistory');
+            batch.set(doc(historyRef), receiveRecord);
+            
+            // Update inventory
+            const itemRef = doc(firestore, 'inventory', receivePartId);
+            batch.update(itemRef, { quantity: item.quantity + Number(receiveQuantity) });
+            
+            await batch.commit();
+
+            showNotification(`รับสินค้า ${item.partName} จำนวน ${receiveQuantity} ชิ้น เรียบร้อยแล้ว`, 'success');
+            // Reset form
+            setReceivePartId('');
+            setReceiveQuantity(1);
+            setReceiveCost(0);
+            setReceiveSupplier('');
+            setReceiveDate(new Date().toISOString().split('T')[0]);
+            setReceiveNote('');
+
+        } catch (error) {
+            console.error("Error receiving item: ", error);
+            showNotification('เกิดข้อผิดพลาดในการรับสินค้า', 'error');
+        }
+    };
+
+    const handleEditItem = (item: InventoryItem) => {
+        setEditingId(item.id);
+        setEditQuantity(item.quantity);
+        setEditModalOpen(true);
+    };
+
+    const handleSaveEdit = async () => {
+        if (editingId && firestore) {
+            try {
+                const itemRef = doc(firestore, 'inventory', editingId);
+                await updateDoc(itemRef, { quantity: Number(editQuantity) });
                 showNotification('อัปเดตจำนวนสต๊อกเรียบร้อยแล้ว', 'success');
+                setEditModalOpen(false);
+                setEditingId(null);
+            } catch (error) {
+                console.error("Error updating stock: ", error);
+                showNotification('เกิดข้อผิดพลาดในการอัปเดตสต๊อก', 'error');
             }
         }
-    });
-    document.getElementById('cancelEdit')?.addEventListener('click', closeModal);
-    document.getElementById('searchInput')?.addEventListener('input', renderInventory);
-    document.getElementById('filterCategory')?.addEventListener('change', renderInventory);
-    document.getElementById('filterStatus')?.addEventListener('change', renderInventory);
-    document.getElementById('posSearch')?.addEventListener('input', renderPOSProducts);
-    document.getElementById('discountPercent')?.addEventListener('change', updateCartTotal);
-    document.getElementById('taxPercent')?.addEventListener('change', updateCartTotal);
+    };
 
+    const handleDeleteItem = (id: string) => {
+        const confirmDelete = window.confirm('คุณแน่ใจหรือไม่ที่จะลบอะไหล่นี้? การกระทำนี้ไม่สามารถยกเลิกได้');
+        if (confirmDelete && firestore) {
+            deleteDoc(doc(firestore, 'inventory', id))
+            .then(() => {
+                showNotification('ลบอะไหล่เรียบร้อยแล้ว', 'success');
+            })
+            .catch((error) => {
+                console.error("Error deleting item: ", error);
+                showNotification('เกิดข้อผิดพลาดในการลบอะไหล่', 'error');
+            });
+        }
+    };
+    
+    const viewItemDetails = (partCode: string) => {
+        switchTab('inventory');
+        setInvSearch(partCode);
+    }
+    
+    const getStockStatus = (item: InventoryItem) => {
+        if (item.quantity === 0) return 'หมดสต๊อก';
+        // Reorder point logic removed
+        return 'ปกติ';
+    };
 
-    // Initial setup
-    loadData();
-    // Re-assign because loadData clears them
-    document.getElementById('clearPosSearchBtn')?.addEventListener('click', clearPosSearch);
-    document.getElementById('clearCartBtn')?.addEventListener('click', clearCart);
+    const getStatusClass = (item: InventoryItem) => {
+        const status = getStockStatus(item);
+        const statusClass: {[key: string]: string} = {
+            'ปกติ': 'bg-green-100 text-green-800',
+            'สต๊อกต่ำ': 'bg-yellow-100 text-yellow-800',
+            'หมดสต๊อก': 'bg-red-100 text-red-800'
+        };
+        return statusClass[status];
+    }
 
-  }, []);
+    const printReceipt = () => {
+        window.print();
+    }
+  
+    if (loading) {
+      return (
+          <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+              <div className="text-center">
+                  <svg className="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <p className="mt-4 text-lg font-semibold text-gray-700">กำลังโหลดข้อมูล...</p>
+              </div>
+          </div>
+      );
+    }
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-full">
+    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
     {/* Header */}
     <header className="bg-white shadow-lg border-b-4 border-blue-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -853,13 +525,13 @@ export default function Home() {
                 </div>
                 <div className="flex items-center space-x-4">
                     <div className="bg-green-100 px-4 py-2 rounded-lg">
-                        <span className="text-green-800 font-semibold">สินค้าทั้งหมด: <span id="totalStock">0</span> ชิ้น</span>
+                        <span className="text-green-800 font-semibold">สินค้าทั้งหมด: <span id="totalStock">{totalStock.toLocaleString()}</span> ชิ้น</span>
                     </div>
                     <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                        <span className="text-yellow-800 font-semibold">ยอดขายวันนี้: ฿<span id="todayTotal">0</span></span>
+                        <span className="text-yellow-800 font-semibold">ยอดขายวันนี้: ฿<span id="todayTotal">{todayTotal.toLocaleString('th-TH')}</span></span>
                     </div>
                     <div className="bg-blue-100 px-4 py-2 rounded-lg">
-                        <span className="text-blue-800 font-semibold">ผู้ใช้: <span id="currentUser">Admin</span></span>
+                        <span className="text-blue-800 font-semibold">ผู้ใช้: <span id="currentUser">{user?.displayName || user?.email || 'Admin'}</span></span>
                     </div>
                 </div>
             </div>
@@ -870,25 +542,25 @@ export default function Home() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="bg-white rounded-xl shadow-lg p-2">
             <nav className="flex space-x-2 overflow-x-auto">
-                <button id="tab-pos" className="tab-active px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
+                <button onClick={() => switchTab('pos')} className={`${currentTab === 'pos' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                     </svg>
                     หน้าจอขาย (POS)
                 </button>
-                <button id="tab-inventory" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
+                <Link href="/stock" className={`${currentTab === 'inventory' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
                     จัดการสินค้า
-                </button>
-                <button id="tab-receive" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
+                </Link>
+                <button onClick={() => switchTab('receive')} className={`${currentTab === 'receive' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     รับสินค้าเข้า
                 </button>
-                <button id="tab-reports" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
+                <button onClick={() => switchTab('reports')} className={`${currentTab === 'reports' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
@@ -902,7 +574,7 @@ export default function Home() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
         {/* POS Tab */}
-        <div id="content-pos" className="tab-content">
+        <div id="content-pos" className={currentTab === 'pos' ? 'tab-content' : 'tab-content hidden'}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Left Side - Product Search & Selection */}
                 <div className="lg:col-span-2 space-y-6">
@@ -910,9 +582,9 @@ export default function Home() {
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <div className="flex space-x-4">
                             <div className="flex-1">
-                                <input type="text" id="posSearch" className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ค้นหาด้วยรหัส, ชื่อ, หรือ Barcode..."/>
+                                <input type="text" value={posSearch} onChange={(e) => setPosSearch(e.target.value)} className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ค้นหาด้วยรหัส, ชื่อ..."/>
                             </div>
-                            <button id="clearPosSearchBtn" className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
+                            <button onClick={() => setPosSearch('')} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
                                 ล้าง
                             </button>
                         </div>
@@ -921,16 +593,39 @@ export default function Home() {
                     {/* Category Filter */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">หมวดหมู่สินค้า</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3" id="categoryButtons">
-                            {/* Category buttons will be populated here */}
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                           <button onClick={() => selectCategory('')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                                ทั้งหมด
+                            </button>
+                            {categories.map(category => (
+                                <button key={category} onClick={() => selectCategory(category)} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
+                                    {category}
+                                </button>
+                            ))}
                         </div>
                     </div>
 
                     {/* Product Grid */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">รายการสินค้า</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="productGrid">
-                            {/* Products will be populated here */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                            {filteredPOSProducts.length > 0 ? filteredPOSProducts.map(item => (
+                                <div key={item.id} className="pos-item bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition-shadow">
+                                    <div className="cursor-pointer" onClick={() => addToCart(item.id)}>
+                                        <div className="text-sm font-medium text-gray-900 mb-1">{item.partCode}</div>
+                                        <div className="text-sm text-gray-600 mb-2 h-10">{item.partName}</div>
+                                        <div className="flex justify-between items-center">
+                                            <div className="text-lg font-bold text-blue-600">฿{item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                            <div className="text-xs text-gray-500">คงเหลือ: {item.quantity}</div>
+                                        </div>
+                                    </div>
+                                    <div className="border-t mt-3 pt-3">
+                                        <button onClick={() => viewItemDetails(item.partCode)} className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ดูรายละเอียด</button>
+                                    </div>
+                                </div>
+                            )) : (
+                                <div className="col-span-full text-center py-8 text-gray-500">ไม่พบสินค้าที่ค้นหา</div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -943,49 +638,65 @@ export default function Home() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                             </svg>
-                            ตะกร้าสินค้า (<span id="cartCount">0</span>)
+                            ตะกร้าสินค้า ({cartCount})
                         </h3>
                         
-                        <div id="cartItems" className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-                            {/* Cart items will be populated here */}
+                        <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
+                           {cart.length > 0 ? cart.map(item => (
+                                <div key={item.id} className="cart-item bg-gray-50 rounded-lg p-3 flex justify-between items-center">
+                                    <div className="flex-1">
+                                        <div className="font-medium text-sm">{item.partCode}</div>
+                                        <div className="text-xs text-gray-600">{item.partName}</div>
+                                        <div className="text-sm font-bold text-blue-600">฿{item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                    </div>
+                                    <div className="flex items-center space-x-2">
+                                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded text-xs">-</button>
+                                        <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
+                                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="bg-green-500 hover:bg-green-600 text-white w-6 h-6 rounded text-xs" disabled={item.quantity >= item.maxQuantity}>+</button>
+                                        <button onClick={() => removeFromCart(item.id)} className="bg-gray-500 hover:bg-gray-600 text-white w-6 h-6 rounded text-xs ml-2">×</button>
+                                    </div>
+                                </div>
+                           )) : (
+                                <div className="text-center text-gray-500 py-4">ตะกร้าว่าง</div>
+                           )}
                         </div>
 
                         {/* Cart Summary */}
                         <div className="border-t pt-4 space-y-3">
                             <div className="flex justify-between text-sm">
                                 <span>ยอดรวม:</span>
-                                <span id="subtotal">฿0.00</span>
+                                <span id="subtotal">฿{cartSubtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm">ส่วนลด (%):</span>
-                                <input type="number" id="discountPercent" className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" defaultValue="0"/>
+                                <input type="number" value={discountPercent} onChange={(e) => setDiscountPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" />
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span>ส่วนลด:</span>
-                                <span id="discountAmount">฿0.00</span>
+                                <span id="discountAmount">฿{cartDiscountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                             </div>
                             <div className="flex justify-between items-center">
                                 <span className="text-sm">ภาษี (%):</span>
-                                <input type="number" id="taxPercent" className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" defaultValue="7"/>
+                                <input type="number" value={taxPercent} onChange={(e) => setTaxPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100"/>
                             </div>
                             <div className="flex justify-between text-sm">
                                 <span>ภาษี:</span>
-                                <span id="taxAmount">฿0.00</span>
+                                <span id="taxAmount">฿{cartTaxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                             </div>
                             <div className="border-t pt-2">
                                 <div className="flex justify-between text-lg font-bold">
                                     <span>ยอดชำระ:</span>
-                                    <span id="grandTotal">฿0.00</span>
+                                    <span id="grandTotal">฿{cartGrandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Action Buttons */}
                         <div className="space-y-3 mt-6">
-                            <button id="clearCartBtn" className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200">
+                            <button onClick={clearCart} className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200">
                                 ล้างตะกร้า
                             </button>
-                            <button id="checkoutBtn" className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200 disabled:bg-gray-300" disabled>
+                            <button onClick={processPayment} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200 disabled:bg-gray-300" disabled={cart.length === 0}>
                                 ชำระเงิน
                             </button>
                         </div>
@@ -995,147 +706,57 @@ export default function Home() {
         </div>
 
         {/* Inventory Tab */}
-        <div id="content-inventory" className="tab-content hidden">
-            {/* Add New Item Form */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">เพิ่มอะไหล่ใหม่</h2>
-                <form id="addItemForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสอะไหล่</label>
-                        <input type="text" id="partCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น ENG001" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่ออะไหล่</label>
-                        <input type="text" id="partName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น กรองอากาศ" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
-                        <select id="category" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกหมวดหมู่</option>
-                            <option value="เครื่องยนต์">เครื่องยนต์</option>
-                            <option value="เบรก">เบรก</option>
-                            <option value="ช่วงล่าง">ช่วงล่าง</option>
-                            <option value="ไฟฟ้า">ไฟฟ้า</option>
-                            <option value="ตัวถัง">ตัวถัง</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเริ่มต้น</label>
-                        <input type="number" id="quantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="0" required/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ราคาขาย (บาท)</label>
-                        <input type="number" id="price" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
-                    </div>
-                    <div className="md:col-span-2">
-                        <button type="submit" className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            เพิ่มอะไหล่
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            {/* Search and Filter */}
-            <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">ค้นหาและกรอง</h2>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
-                        <input type="text" id="searchInput" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส, ชื่อ"/>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
-                        <select id="filterCategory" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกหมวดหมู่</option>
-                            <option value="เครื่องยนต์">เครื่องยนต์</option>
-                            <option value="เบรก">เบรก</option>
-                            <option value="ช่วงล่าง">ช่วงล่าง</option>
-                            <option value="ไฟฟ้า">ไฟฟ้า</option>
-                            <option value="ตัวถัง">ตัวถัง</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">สถานะสต๊อก</label>
-                        <select id="filterStatus" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกสถานะ</option>
-                            <option value="normal">ปกติ</option>
-                            <option value="low">สต๊อกต่ำ</option>
-                            <option value="out">หมดสต๊อก</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            {/* Inventory Table */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">รายการสต๊อกอะไหล่</h2>
-                </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมวดหมู่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ราคา</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inventoryTable" className="bg-white divide-y divide-gray-200">
-                            {/* Items will be populated here */}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            {/* Empty State */}
-            <div id="emptyState" className="text-center py-12 hidden">
-                <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+        <div id="content-inventory" className={currentTab === 'inventory' ? 'tab-content' : 'tab-content hidden'}>
+           {/* This content is now in /stock page */}
+            <div className="text-center py-12 bg-white rounded-xl shadow-lg">
+                 <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                 </svg>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">ยังไม่มีอะไหล่ในระบบ</h3>
-                <p className="mt-2 text-gray-500">เริ่มต้นโดยการเพิ่มอะไหล่รายการแรกของคุณ</p>
+                <h3 className="mt-4 text-lg font-medium text-gray-900">ส่วนจัดการสินค้าถูกย้ายไปที่หน้าใหม่</h3>
+                <p className="mt-2 text-gray-500">กรุณาใช้เมนู "จัดการสินค้า" เพื่อเข้าถึงสต็อกสินค้า</p>
+                <div className="mt-6">
+                    <Link href="/stock" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        ไปที่หน้าจัดการสินค้า
+                    </Link>
+                </div>
             </div>
         </div>
 
         {/* Receive Tab */}
-        <div id="content-receive" className="tab-content hidden">
+        <div id="content-receive" className={currentTab === 'receive' ? 'tab-content' : 'tab-content hidden'}>
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
                 <h2 className="text-xl font-semibold text-gray-900 mb-4">รับสินค้าเข้าคลัง</h2>
-                <form id="receiveForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <form onSubmit={handleReceiveSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">เลือกอะไหล่</label>
-                        <select id="receivePartSelect" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                        <select value={receivePartId} onChange={e => setReceivePartId(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
                             <option value="">เลือกอะไหล่</option>
+                            {inventory.map(item => (
+                                <option key={item.id} value={item.id}>
+                                    {item.partCode} - {item.partName} (คงเหลือ: {item.quantity})
+                                </option>
+                            ))}
                         </select>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนที่รับเข้า</label>
-                        <input type="number" id="receiveQuantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="1" required/>
+                        <input type="number" value={receiveQuantity} onChange={e => setReceiveQuantity(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="1" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ราคาต้นทุน/ชิ้น</label>
-                        <input type="number" id="receiveCost" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
+                        <input type="number" value={receiveCost} onChange={e => setReceiveCost(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ซัพพลายเออร์</label>
-                        <input type="text" id="supplier" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อร้านค้า/ซัพพลายเออร์" required/>
+                        <input type="text" value={receiveSupplier} onChange={e => setReceiveSupplier(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อร้านค้า/ซัพพลายเออร์" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">วันที่รับ</label>
-                        <input type="date" id="receiveDate" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required/>
+                        <input type="date" value={receiveDate} onChange={e => setReceiveDate(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
-                        <input type="text" id="receiveNote" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="หมายเหตุเพิ่มเติม"/>
+                        <input type="text" value={receiveNote} onChange={e => setReceiveNote(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="หมายเหตุเพิ่มเติม"/>
                     </div>
                     <div className="md:col-span-2">
                         <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
@@ -1166,18 +787,26 @@ export default function Home() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมายเหตุ</th>
                             </tr>
                         </thead>
-                        <tbody id="receiveHistoryTable" className="bg-white divide-y divide-gray-200">
-                            {/* History will be populated here */}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {[...receiveHistory].reverse().slice(0, 20).map(record => (
+                                <tr key={record.id} className="hover:bg-gray-50 fade-in">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(record.date).toLocaleDateString('th-TH')}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.partCode}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.partName}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{record.quantity.toLocaleString()}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿{record.cost.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.supplier}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.note || '-'}</td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>
             </div>
         </div>
 
-
-
         {/* Reports Tab */}
-        <div id="content-reports" className="tab-content hidden">
+        <div id="content-reports" className={currentTab === 'reports' ? 'tab-content' : 'tab-content hidden'}>
             {/* Summary Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div className="bg-white rounded-xl shadow-lg p-6">
@@ -1189,20 +818,20 @@ export default function Home() {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-gray-600">ยอดขายวันนี้</p>
-                            <p className="text-2xl font-bold text-gray-900" id="todaySales">0</p>
+                            <p className="text-2xl font-bold text-gray-900">{`฿${todayTotal.toLocaleString('th-TH')}`}</p>
                         </div>
                     </div>
                 </div>
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center">
                         <div className="bg-blue-100 p-3 rounded-lg">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="ूं 0 0 24 24">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                             </svg>
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-gray-600">รายการทั้งหมด</p>
-                            <p className="text-2xl font-bold text-gray-900" id="totalItems">0</p>
+                            <p className="text-2xl font-bold text-gray-900">{inventory.length}</p>
                         </div>
                     </div>
                 </div>
@@ -1215,7 +844,7 @@ export default function Home() {
                         </div>
                         <div className="ml-4">
                             <p className="text-sm font-medium text-gray-600">มูลค่าสต๊อก</p>
-                            <p className="text-2xl font-bold text-gray-900" id="stockValue">฿0</p>
+                            <p className="text-2xl font-bold text-gray-900">{`฿${stockValue.toLocaleString('th-TH')}`}</p>
                         </div>
                     </div>
                 </div>
@@ -1235,8 +864,20 @@ export default function Home() {
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยอดขาย</th>
                             </tr>
                         </thead>
-                        <tbody id="bestSellingTable" className="bg-white divide-y divide-gray-200">
-                            {/* Best selling items will be populated here */}
+                        <tbody className="bg-white divide-y divide-gray-200">
+                            {bestSelling.length === 0 ? (
+                                <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูลการขายใน 7 วันที่ผ่านมา</td></tr>
+                            ) : (
+                                bestSelling.map((item, index) => (
+                                    <tr key={item.partCode} className="hover:bg-gray-50">
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{index + 1}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.partCode}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.partName}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{item.quantity}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿{item.amount.toLocaleString('th-TH')}</td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -1245,73 +886,155 @@ export default function Home() {
     </div>
 
     {/* Payment Modal */}
-    <div id="paymentModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-            <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">ชำระเงิน</h3>
-            </div>
-            <div className="p-6">
-                <div className="mb-4">
-                    <div className="text-center mb-4">
-                        <p className="text-2xl font-bold text-gray-900">ยอดชำระ: <span id="paymentTotal">฿0.00</span></p>
+    {isPaymentModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">ชำระเงิน</h3>
+                </div>
+                <div className="p-6">
+                    <div className="mb-4">
+                        <div className="text-center mb-4">
+                            <p className="text-2xl font-bold text-gray-900">ยอดชำระ: <span>฿{cartGrandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span></p>
+                        </div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเงินที่รับ</label>
+                        <input type="number" value={paymentReceived} onChange={e => setPaymentReceived(parseFloat(e.target.value))} className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" min="0"/>
                     </div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเงินที่รับ</label>
-                    <input type="number" id="receivedAmount" className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" min="0"/>
-                </div>
-                <div className="mb-4">
-                    <div className="flex justify-between text-lg">
-                        <span>เงินทอน:</span>
-                        <span id="changeAmount" className="font-bold">฿0.00</span>
+                    <div className="mb-4">
+                        <div className="flex justify-between text-lg">
+                            <span>เงินทอน:</span>
+                            <span className="font-bold">฿{Math.max(0, paymentChange).toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                        </div>
                     </div>
-                </div>
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อลูกค้า (ไม่บังคับ)</label>
-                    <input type="text" id="customerName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อลูกค้า"/>
-                </div>
-                <div className="flex space-x-3">
-                    <button id="confirmPayment" className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยืนยันการชำระ</button>
-                    <button id="cancelPayment" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อลูกค้า (ไม่บังคับ)</label>
+                        <input type="text" value={paymentCustomerName} onChange={e => setPaymentCustomerName(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อลูกค้า"/>
+                    </div>
+                    <div className="flex space-x-3">
+                        <button onClick={completeSale} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยืนยันการชำระ</button>
+                        <button onClick={() => setPaymentModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    )}
 
     {/* Receipt Modal */}
-    <div id="receiptModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-            <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">ใบเสร็จรับเงิน</h3>
-            </div>
-            <div className="p-6">
-                <div id="receiptContent" className="receipt-print">
-                    {/* Receipt content will be populated here */}
+    {isReceiptModalOpen && receiptToShow && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">ใบเสร็จรับเงิน</h3>
                 </div>
-                <div className="flex space-x-3 mt-6">
-                    <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>CHI
-                    <button id="closeReceiptBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
+                <div className="p-6">
+                    <div className="receipt-print">
+                        <div className="text-center mb-4">
+                            <h2 className="font-bold text-lg">ร้านอะไหล่รถยนต์</h2>
+                            <p className="text-sm">Auto Parts Shop</p>
+                            <p className="text-sm">โทร: 02-xxx-xxxx</p>
+                            <hr className="my-2"/>
+                        </div>
+                        <div className="mb-4">
+                            <div className="flex justify-between text-sm">
+                                <span>ใบเสร็จเลขที่:</span>
+                                <span>{String(receiptToShow.receiptNumber).padStart(6, '0')}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>วันที่:</span>
+                                <span>{new Date().toLocaleDateString('th-TH')} {new Date().toLocaleTimeString('th-TH')}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>ลูกค้า:</span>
+                                <span>{receiptToShow.customerName}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>พนักงาน:</span>
+                                <span>{receiptToShow.cashier}</span>
+                            </div>
+                        </div>
+                        <hr className="my-2"/>
+                        <div className="mb-4">
+                            {receiptToShow.items.map((item: any) => `
+                                <div class="flex justify-between text-sm mb-1">
+                                    <div class="flex-1">
+                                        <div>${item.partCode}</div>
+                                        <div class="text-xs text-gray-600">${item.partName}</div>
+                                        <div class="text-xs">${item.quantity} x ฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                    </div>
+                                    <div class="text-right">
+                                        ฿${(item.quantity * item.price).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <hr className="my-2"/>
+                        <div className="mb-4">
+                            <div className="flex justify-between text-sm">
+                                <span>ยอดรวม:</span>
+                                <span>฿{receiptToShow.subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            {receiptToShow.discountAmount > 0 ? `
+                                <div class="flex justify-between text-sm">
+                                    <span>ส่วนลด (${receiptToShow.discountPercent}%):</span>
+                                    <span>-฿${receiptToShow.discountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                </div>
+                            ` : ''}
+                            {receiptToShow.taxAmount > 0 ? `
+                                <div class="flex justify-between text-sm">
+                                    <span>ภาษี (${receiptToShow.taxPercent}%):</span>
+                                    <span>฿${receiptToShow.taxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                </div>
+                            ` : ''}
+                            <div className="flex justify-between font-bold">
+                                <span>ยอดชำระ:</span>
+                                <span>฿{receiptToShow.grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>รับเงิน:</span>
+                                <span>฿{receiptToShow.received.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span>เงินทอน:</span>
+                                <span>฿{receiptToShow.change.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            </div>
+                        </div>
+                        <hr className="my-2"/>
+                        <div className="text-center text-xs">
+                            <p>ขอบคุณที่ใช้บริการ</p>
+                            <p>Thank you for your business</p>
+                        </div>
+                    </div>
+                    <div className="flex space-x-3 mt-6">
+                        <button onClick={printReceipt} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>
+                        <button onClick={() => setReceiptModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    )}
 
     {/* Edit Modal */}
-    <div id="editModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
-        <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-            <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">แก้ไขจำนวนสต๊อก</h3>
-            </div>
-            <div className="p-6">
-                <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนใหม่</label>
-                    <input type="number" id="editQuantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0"/>
+    {isEditModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
+                <div className="px-6 py-4 border-b border-gray-200">
+                    <h3 className="text-lg font-semibold text-gray-900">แก้ไขจำนวนสต๊อก</h3>
                 </div>
-                <div className="flex space-x-3">
-                    <button id="saveEdit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">บันทึก</button>
-                    <button id="cancelEdit" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                <div className="p-6">
+                    <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนใหม่</label>
+                        <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0"/>
+                    </div>
+                    <div className="flex space-x-3">
+                        <button onClick={handleSaveEdit} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">บันทึก</button>
+                        <button onClick={() => setEditModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    )}
   </div>
   );
 }
+
+    

@@ -9,7 +9,10 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@radix-ui/react-slot": "^1.0.2",
     "clsx": "^2.1.1",
+    "firebase": "^10.12.2",
+    "lucide-react": "^0.395.0",
     "next": "14.2.3",
     "react": "^18",
     "react-dom": "^18",
@@ -32,3 +35,5 @@
     "caniuse-lite": "1.0.30001611"
   }
 }
+
+    
