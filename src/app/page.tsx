@@ -562,7 +562,6 @@ export default function Home() {
                         <button id="toggle-user-${user.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">
                             ${user.status === 'active' ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
                         </button>
-                        ${user.username !== 'admin' ? `<button id="delete-user-${user.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ลบ</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -570,9 +569,6 @@ export default function Home() {
 
         users.forEach(user => {
           document.getElementById(`toggle-user-${user.id}`)?.addEventListener('click', () => toggleUserStatus(user.id));
-          if (user.username !== 'admin') {
-            document.getElementById(`delete-user-${user.id}`)?.addEventListener('click', () => deleteUser(user.id));
-          }
         });
     }
 
@@ -584,36 +580,6 @@ export default function Home() {
             renderUsers();
             showNotification(`${user.status === 'active' ? 'เปิด' : 'ปิด'}ใช้งานผู้ใช้ ${user.fullName} แล้ว`, 'success');
         }
-    }
-
-    function deleteUser(userId: number) {
-        const user = users.find(u => u.id === userId);
-        if (user && user.username !== 'admin') {
-            const confirmDiv = document.createElement('div');
-            confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            confirmDiv.innerHTML = `
-                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ยืนยันการลบผู้ใช้</h3>
-                    <p class="text-gray-600 mb-6">คุณแน่ใจหรือไม่ที่จะลบผู้ใช้ "${user.fullName}"? การกระทำนี้ไม่สามารถยกเลิกได้</p>
-                    <div class="flex space-x-3">
-                        <button id="confirm-delete-user-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ลบ</button>
-                        <button id="cancel-delete-user-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(confirmDiv);
-
-            document.getElementById('confirm-delete-user-btn')!.addEventListener('click', () => confirmDeleteUser(userId));
-            document.getElementById('cancel-delete-user-btn')!.addEventListener('click', () => confirmDiv.remove());
-        }
-    }
-
-    function confirmDeleteUser(userId: number) {
-        users = users.filter(u => u.id !== userId);
-        saveData();
-        renderUsers();
-        document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50')?.remove();
-        showNotification('ลบผู้ใช้สำเร็จแล้ว', 'success');
     }
 
     function updateTodayTotal() {
