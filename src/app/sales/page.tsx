@@ -1,51 +1,91 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
 import type { Sale } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, DollarSign, FileText } from 'lucide-react';
 import { Timestamp } from 'firebase/firestore';
 
 export default function SalesReportPage() {
-  const [sales, setSales] = useState<Sale[]>([]);
+  const [allSales, setAllSales] = useState<Sale[]>([]);
+  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
+  
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
   const [salesToday, setSalesToday] = useState(0);
   const [salesThisMonth, setSalesThisMonth] = useState(0);
   const [salesThisYear, setSalesThisYear] = useState(0);
 
   useEffect(() => {
     const unsubscribe = listenToSales(salesData => {
-      setSales(salesData);
-      calculateStats(salesData);
+      setAllSales(salesData);
+      setFilteredSales(salesData);
     });
     return () => unsubscribe();
   }, []);
+  
+  const availableYears = useMemo(() => {
+    const years = new Set(allSales.map(sale => sale.saleDate.toDate().getFullYear().toString()));
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [allSales]);
+
+  useEffect(() => {
+    let salesToFilter = allSales;
+
+    if (selectedYear !== 'all') {
+      salesToFilter = salesToFilter.filter(sale => sale.saleDate.toDate().getFullYear().toString() === selectedYear);
+    }
+
+    if (selectedMonth !== 'all') {
+      salesToFilter = salesToFilter.filter(sale => (sale.saleDate.toDate().getMonth() + 1).toString() === selectedMonth);
+    }
+    
+    setFilteredSales(salesToFilter);
+    calculateStats(salesToFilter);
+
+  }, [selectedYear, selectedMonth, allSales]);
 
   const calculateStats = (salesData: Sale[]) => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    
+    // Adjust start of month and year based on filter
+    const yearForStats = selectedYear === 'all' ? now.getFullYear() : parseInt(selectedYear);
+    const monthForStats = selectedMonth === 'all' ? now.getMonth() : parseInt(selectedMonth) - 1;
+
+    const startOfMonth = new Date(yearForStats, monthForStats, 1);
+    const startOfYear = new Date(yearForStats, 0, 1);
+    
+    const endOfMonth = new Date(yearForStats, monthForStats + 1, 0);
+    const endOfYear = new Date(yearForStats, 11, 31);
 
     let today = 0;
     let month = 0;
     let year = 0;
+    
+    // Base today's sales on all sales, not filtered
+    allSales.forEach(sale => {
+        const saleDate = sale.saleDate.toDate();
+        if (saleDate >= startOfToday) {
+            today += sale.totalAmount;
+        }
+    });
 
     salesData.forEach(sale => {
       const saleDate = sale.saleDate.toDate();
-      if (saleDate >= startOfToday) {
-        today += sale.totalAmount;
-      }
-      if (saleDate >= startOfMonth) {
-        month += sale.totalAmount;
-      }
-      if (saleDate >= startOfYear) {
+      if (saleDate >= startOfYear && saleDate <= endOfYear) {
         year += sale.totalAmount;
+      }
+      if (saleDate >= startOfMonth && saleDate <= endOfMonth) {
+        month += sale.totalAmount;
       }
     });
 
@@ -53,6 +93,11 @@ export default function SalesReportPage() {
     setSalesThisMonth(month);
     setSalesThisYear(year);
   };
+  
+  const handleResetFilters = () => {
+    setSelectedYear('all');
+    setSelectedMonth('all');
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -85,20 +130,49 @@ export default function SalesReportPage() {
             icon={<DollarSign className="h-5 w-5 text-green-500" />}
           />
           <StatCard
-            title="ຍອດຂາຍເດືອນນີ້"
+            title={`ຍອດຂາຍ${selectedMonth !== 'all' ? `ເດືອນ ${selectedMonth}` : 'ເດືອນນີ້'}`}
             value={formatCurrency(salesThisMonth)}
             icon={<Calendar className="h-5 w-5 text-orange-500" />}
           />
           <StatCard
-            title="ຍອດຂາຍປີນີ້"
+            title={`ຍອດຂາຍ${selectedYear !== 'all' ? `ປີ ${selectedYear}` : 'ປີນີ້'}`}
             value={formatCurrency(salesThisYear)}
             icon={<Calendar className="h-5 w-5 text-blue-500" />}
           />
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>ປະຫວັດການຂາຍ</CardTitle>
-            <CardDescription>ລາຍການໃບເກັບເງິນທັງໝົດທີ່ໄດ້ບັນທຶກໄວ້</CardDescription>
+             <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+              <div>
+                <CardTitle>ປະຫວັດການຂາຍ</CardTitle>
+                <CardDescription>ລາຍການໃບເກັບເງິນທັງໝົດທີ່ໄດ້ບັນທຶກໄວ້</CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                 <Select value={selectedYear} onValueChange={setSelectedYear}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="ເລືອກປີ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ທຸກໆປີ</SelectItem>
+                    {availableYears.map(year => (
+                      <SelectItem key={year} value={year}>{year}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                 <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="ເລືອກເດືອນ" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
+                    {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                      <SelectItem key={month} value={month.toString()}>{`ເດືອນ ${month}`}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={handleResetFilters}>ລ້າງຕົວກອງ</Button>
+              </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -111,7 +185,7 @@ export default function SalesReportPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {sales.length > 0 ? sales.map(sale => (
+                {filteredSales.length > 0 ? filteredSales.map(sale => (
                   <TableRow key={sale.id}>
                     <TableCell className="font-medium">{sale.invoiceNumber}</TableCell>
                     <TableCell>{sale.customerName || '-'}</TableCell>
@@ -120,7 +194,7 @@ export default function SalesReportPage() {
                   </TableRow>
                 )) : (
                   <TableRow>
-                    <TableCell colSpan={4} className="h-24 text-center">-- ຍັງບໍ່ມີຂໍ້ມູນການຂາຍ --</TableCell>
+                    <TableCell colSpan={4} className="h-24 text-center">-- ບໍ່ພົບຂໍ້ມູນການຂາຍທີ່ກົງກັບການກັ່ນຕອງ --</TableCell>
                   </TableRow>
                 )}
               </TableBody>
