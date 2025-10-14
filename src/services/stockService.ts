@@ -16,7 +16,6 @@ import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
 const stockCollectionRef = collection(db, "stockReceive");
-const staticUserId = "default-user";
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
   const q = query(stockCollectionRef, orderBy("createdAt", "desc"));

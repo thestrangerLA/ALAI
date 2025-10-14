@@ -14,7 +14,7 @@ import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
 
 const salesCollectionRef = collection(db, "sales");
-const stockCollectionRef = collection(db, "stockReceive"); // Changed to stockReceive
+const stockCollectionRef = collection(db, "stockReceive"); 
 
 export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
   const batch = writeBatch(db);
