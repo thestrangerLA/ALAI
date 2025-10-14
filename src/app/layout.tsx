@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Noto_Serif_Lao } from "next/font/google";
+import { Noto_Sans_Lao } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const fontSans = Noto_Serif_Lao({
+const fontSans = Noto_Sans_Lao({
   subsets: ["lao"],
   variable: "--font-sans",
   weight: ["400", "700"],
