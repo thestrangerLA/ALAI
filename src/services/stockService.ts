@@ -39,7 +39,10 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>): P
         console.error(errorMessage);
         return errorMessage;
     }
+    
+    // This was the missing part. Now it will add the document.
     await addDoc(stockCollectionRef, { ...item, createdAt: serverTimestamp() });
+
   } catch (e) {
     console.error("Error adding document: ", e);
     if (e instanceof Error) {
