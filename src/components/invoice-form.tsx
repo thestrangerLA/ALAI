@@ -60,15 +60,21 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     }
   }, [searchQuery, allItems]);
   
-  const handleAddItem = (item: StockItem) => {
+  const handleAddItem = (item: StockItem, selectedPrice: number) => {
     setInvoiceItems(prev => {
       const existingItem = prev.find(i => i.id === item.id);
       if (existingItem) {
         return prev.map(i =>
-          i.id === item.id ? { ...i, sellQuantity: i.sellQuantity + 1 } : i
+          i.id === item.id ? { ...i, sellQuantity: i.sellQuantity + 1, price: selectedPrice } : i
         );
       } else {
-        return [...prev, { ...item, sellQuantity: 1 }];
+        // Create a new invoice item, overriding the default price with the selected one
+        const newItem: InvoiceItemType = { 
+          ...item, 
+          sellQuantity: 1,
+          price: selectedPrice // Set the price to the one chosen by the user
+        };
+        return [...prev, newItem];
       }
     });
     setSearchQuery('');
@@ -119,6 +125,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
   }, [invoiceItems]);
 
   const formatCurrency = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value)) return '0 ₭';
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   };
 
@@ -145,11 +152,18 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                         {searchResults.map(item => (
                         <div
                             key={item.id}
-                            onClick={() => handleAddItem(item)}
-                            className="p-3 hover:bg-gray-100 cursor-pointer"
+                            className="p-3 hover:bg-gray-100 border-b"
                         >
-                            <p className="font-semibold">{item.partName}</p>
-                            <p className="text-sm text-gray-500">{item.partCode} - ຄົງເຫຼືອ: {item.quantity}</p>
+                            <p className="font-semibold">{item.partName} ({item.partCode})</p>
+                            <p className="text-sm text-gray-500">ຄົງເຫຼືອ: {item.quantity}</p>
+                            <div className="flex gap-2 mt-2">
+                                <Button size="sm" variant="outline" onClick={() => handleAddItem(item, item.wholesalePrice)}>
+                                  ລາຄາສົ່ງ: {formatCurrency(item.wholesalePrice)}
+                                </Button>
+                                <Button size="sm" onClick={() => handleAddItem(item, item.price)}>
+                                  ລາຄາຍ່ອຍ: {formatCurrency(item.price)}
+                                </Button>
+                            </div>
                         </div>
                         ))}
                     </div>
