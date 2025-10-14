@@ -1,69 +1,9 @@
-/**
- * @description This ruleset enforces a strict user-ownership model for both User profiles and Ideas, ensuring that only authenticated users can access and modify their own data.
- * @dataStructure
- * - Users: User profiles are stored in `/users/{userId}`, where `{userId}` corresponds to the Firebase Auth UID.
- * - Ideas: Ideas are stored as subcollections under each user's document at `/users/{userId}/ideas/{ideaId}`.
- * @keySecurityDecisions
- * - User Listing Disabled: Listing all users is explicitly denied for privacy.
- * - Ownership Denormalization: The `Idea` documents contain a `userId` field, denormalizing user ownership for simplified and performant security rules.
- * - Self-Creation: Users can create their own profile document at `/users/{userId}` if the `userId` matches their Firebase Auth UID.
- * - Data Validation: While the data shape is not strictly validated, the rules enforce the integrity of the `userId` relationship in the `Idea` documents by ensuring it matches the parent path.
- */
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    /**
-     * @description Controls access to user profile information.
-     * @path /users/{userId}
-     * @allow (create) Authenticated user can create their own profile if the userId matches their auth UID.
-     * @allow (get, update, delete) Authenticated user can get, update, and delete their own profile.
-     * @deny (list) Listing all users is not allowed.
-     * @deny (create) User cannot create a profile with a userId that does not match their auth UID.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
-     */
-    match /users/{userId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if false;
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.id == request.auth.uid;
-      allow update: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
-      allow delete: if isSignedIn() && isOwner(userId) && resource.data.id == userId;
-    }
-
-    /**
-     * @description Controls access to ideas created by a specific user.
-     * @path /users/{userId}/ideas/{ideaId}
-     * @allow (create) Authenticated user can create an idea under their profile.
-     * @allow (get, list, update, delete) Authenticated user can get, list, update, and delete their own ideas.
-     * @deny (create) User cannot create an idea with a userId that does not match the parent userId.
-     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
-     */
-    match /users/{userId}/ideas/{ideaId} {
-      function isSignedIn() {
-        return request.auth != null;
-      }
-
-      function isOwner(userId) {
-        return request.auth.uid == userId;
-      }
-
-      function isExistingOwner(userId) {
-        return isOwner(userId) && resource != null;
-      }
-
-      allow get: if isOwner(userId);
-      allow list: if isOwner(userId);
-      allow create: if isSignedIn() && isOwner(userId) && request.resource.data.userId == userId;
-      allow update: if isExistingOwner(userId) && request.resource.data.userId == userId;
-      allow delete: if isExistingOwner(userId);
+    // Warning: This rule allows open access and should be secured before production.
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }
