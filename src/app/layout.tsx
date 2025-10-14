@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 const fontSans = Noto_Sans_Thai({
   subsets: ["thai"],
@@ -27,7 +28,7 @@ export default function RootLayout({
           fontSans.variable
         )}
       >
-        {children}
+        <FirebaseClientProvider>{children}</FirebaseClientProvider>
       </body>
     </html>
   );
