@@ -1,28 +1,38 @@
-import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
+import { getAuth, connectAuthEmulator, Auth } from 'firebase/auth';
+import { getFirestore, connectFirestoreEmulator, Firestore } from 'firebase/firestore';
 
 import { firebaseConfig } from './config';
 
-export function initializeFirebase() {
-  const isConfigured = getApps().length > 0;
-  const firebaseApp = initializeApp(firebaseConfig);
-  const auth = getAuth(firebaseApp);
-  const firestore = getFirestore(firebaseApp);
-  
-  if (!isConfigured) {
-    if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
-      const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
-      console.log(`Connecting to Firebase emulators on ${host}`);
-      // Set up emulators
-      connectAuthEmulator(auth, `http://${host}:9099`, {
-        disableWarnings: true,
-      });
-      connectFirestoreEmulator(firestore, host, 8080);
-    }
-  }
+let app: FirebaseApp;
+let auth: Auth;
+let firestore: Firestore;
 
-  return { firebaseApp, auth, firestore };
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  firestore = getFirestore(app);
+
+  if (process.env.NEXT_PUBLIC_EMULATOR_HOST) {
+    const host = process.env.NEXT_PUBLIC_EMULATOR_HOST;
+    console.log(`Connecting to Firebase emulators on ${host}`);
+    connectAuthEmulator(auth, `http://${host}:9099`, {
+      disableWarnings: true,
+    });
+    connectFirestoreEmulator(firestore, host, 8080);
+  }
+} else {
+  app = getApps()[0];
+  auth = getAuth(app);
+  firestore = getFirestore(app);
+}
+
+export const firebaseApp = app;
+export const firebaseAuth = auth;
+export const db = firestore;
+
+export function initializeFirebase() {
+  return { firebaseApp: app, auth, firestore };
 }
 
 export { FirebaseProvider, useFirebase, useFirebaseApp, useFirestore, useAuth } from './provider';

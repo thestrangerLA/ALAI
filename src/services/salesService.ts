@@ -11,14 +11,13 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import type { Sale, InvoiceItem } from "@/lib/types";
-import { initializeFirebase } from "@/firebase";
+import { db } from "@/firebase";
 
-const { firestore } = initializeFirebase();
-const salesCollectionRef = collection(firestore, "sales");
-const stockCollectionRef = collection(firestore, "inventory");
+const salesCollectionRef = collection(db, "sales");
+const stockCollectionRef = collection(db, "inventory");
 
 export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
-  const batch = writeBatch(firestore);
+  const batch = writeBatch(db);
 
   // 1. Create a new sale document
   const saleRef = doc(salesCollectionRef);

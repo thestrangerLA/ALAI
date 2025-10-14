@@ -15,10 +15,9 @@ import {
   where
 } from "firebase/firestore";
 import type { StockItem } from "@/lib/types";
-import { initializeFirebase } from "@/firebase";
+import { db } from "@/firebase";
 
-const { firestore } = initializeFirebase();
-const stockCollectionRef = collection(firestore, "inventory");
+const stockCollectionRef = collection(db, "inventory");
 
 const initialProductNames: string[] = [];
 
@@ -28,7 +27,7 @@ export async function seedInitialData() {
   const snapshot = await getDocs(q);
   if (snapshot.empty) {
     console.log("Inventory is empty, seeding initial data...");
-    const batch = writeBatch(firestore);
+    const batch = writeBatch(db);
     const uniqueProductNames = [...new Set(initialProductNames)];
 
     uniqueProductNames.forEach((name, index) => {
@@ -86,7 +85,7 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>): P
 }
 
 export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
-  const itemDoc = doc(firestore, "inventory", id);
+  const itemDoc = doc(db, "inventory", id);
   try {
     await updateDoc(itemDoc, updatedFields);
   } catch (e) {
@@ -95,11 +94,10 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(firestore, "inventory", id);
+  const itemDoc = doc(db, "inventory", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {
     console.error("Error deleting document: ", e);
   }
 }
-
