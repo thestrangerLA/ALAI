@@ -23,13 +23,6 @@ import {
   DialogFooter,
   DialogClose,
 } from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { PlusCircle, MoreHorizontal, FilePen, Trash2 } from "lucide-react";
 import {
@@ -42,7 +35,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 interface StockTableProps {
     data: StockItem[];
-    categories: string[];
     onAddItem: (item: Omit<StockItem, 'id' | 'createdAt'>) => void;
     onUpdateItem: (id: string, updatedFields: Partial<StockItem>) => void;
     onDeleteItem: (id: string) => void;
@@ -50,7 +42,7 @@ interface StockTableProps {
     onSearchQueryChange: (query: string) => void;
 }
 
-export function StockTable({ data, categories, onAddItem, onUpdateItem, onDeleteItem, searchQuery, onSearchQueryChange }: StockTableProps) {
+export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, searchQuery, onSearchQueryChange }: StockTableProps) {
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [currentItem, setCurrentItem] = useState<Partial<StockItem>>({});
@@ -64,9 +56,10 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
             setCurrentItem({
                 partCode: '',
                 partName: '',
-                category: '',
                 quantity: 0,
-                price: 0
+                price: 0,
+                costPrice: 0,
+                wholesalePrice: 0,
             });
         }
         setDialogOpen(true);
@@ -79,17 +72,6 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
             onAddItem(currentItem as Omit<StockItem, 'id' | 'createdAt'>);
         }
         setDialogOpen(false);
-    };
-
-    const handleCategoryChange = (value: string) => {
-        if (value === 'add_new_category') {
-            const newCategory = prompt('ກະລຸນາໃສ່ຊື່ໝວດໝູ່ໃໝ່:');
-            if (newCategory) {
-                setCurrentItem({ ...currentItem, category: newCategory });
-            }
-        } else {
-            setCurrentItem({ ...currentItem, category: value });
-        }
     };
 
     const getStockStatus = (item: StockItem) => {
@@ -140,7 +122,8 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                         <TableRow>
                             <TableHead>ລະຫັດສິ້ນສ່ວນ</TableHead>
                             <TableHead>ຊື່ສິ້ນສ່ວນ</TableHead>
-                            <TableHead>ໝວດໝູ່</TableHead>
+                            <TableHead className="text-right">ລາຄາຕົ້ນທຶນ</TableHead>
+                            <TableHead className="text-right">ລາຄາສົ່ງ</TableHead>
                             <TableHead className="text-right">ລາຄາຂາຍ</TableHead>
                             <TableHead className="text-right">ຈຳນວນຄົງເຫຼືອ</TableHead>
                             <TableHead>ສະຖານະ</TableHead>
@@ -152,7 +135,8 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                             <TableRow key={item.id}>
                                 <TableCell className="font-medium">{item.partCode}</TableCell>
                                 <TableCell>{item.partName}</TableCell>
-                                <TableCell>{item.category}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.costPrice)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.wholesalePrice)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                                 <TableCell className="text-right font-medium">{item.quantity.toLocaleString('lo-LA')}</TableCell>
                                 <TableCell>
@@ -183,7 +167,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                             </TableRow>
                         )) : (
                              <TableRow>
-                                <TableCell colSpan={7} className="h-24 text-center">
+                                <TableCell colSpan={8} className="h-24 text-center">
                                     ບໍ່ພົບຂໍ້ມູນສິນຄ້າ
                                 </TableCell>
                             </TableRow>
@@ -193,7 +177,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
             </CardContent>
 
              <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle>{isEdit ? 'ແກ້ໄຂຂໍ້ມູນສິນຄ້າ' : 'ເພີ່ມສິນຄ້າໃໝ່'}</DialogTitle>
                         <DialogDescription>
@@ -210,27 +194,16 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                             <Input id="partName" value={currentItem.partName || ''} onChange={e => setCurrentItem({...currentItem, partName: e.target.value})} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                             <Label htmlFor="category" className="text-right">ໝວດໝູ່</Label>
-                             <Select
-                                value={currentItem.category || ''}
-                                onValueChange={handleCategoryChange}
-                            >
-                                <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="ເລືອກໝວດໝູ່" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.filter(Boolean).map(cat => (
-                                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                    ))}
-                                    <SelectItem value="add_new_category" className="text-blue-600 font-semibold">
-                                        + ເພີ່ມໝວດໝູ່ໃໝ່
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="quantity" className="text-right">ຈຳນວນ</Label>
                             <Input id="quantity" type="number" value={currentItem.quantity ?? ''} onChange={e => setCurrentItem({...currentItem, quantity: Number(e.target.value)})} className="col-span-3" />
+                        </div>
+                         <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="costPrice" className="text-right">ລາຄາຕົ້ນທຶນ</Label>
+                            <Input id="costPrice" type="number" value={currentItem.costPrice ?? ''} onChange={e => setCurrentItem({...currentItem, costPrice: Number(e.target.value)})} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="wholesalePrice" className="text-right">ລາຄາສົ່ງ</Label>
+                            <Input id="wholesalePrice" type="number" value={currentItem.wholesalePrice ?? ''} onChange={e => setCurrentItem({...currentItem, wholesalePrice: Number(e.target.value)})} className="col-span-3" />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="price" className="text-right">ລາຄາຂາຍ</Label>
@@ -248,5 +221,3 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
         </Card>
     );
 }
-
-    

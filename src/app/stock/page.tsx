@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { DollarSign, Package, Tags } from "lucide-react"
+import { DollarSign, Package } from "lucide-react"
 import type { StockItem } from "@/lib/types"
 import { StatCard } from "@/components/stat-card"
 import { StockTable } from "@/components/stock-table"
@@ -26,7 +26,7 @@ export default function StockPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleAddItem = async (newItem: Omit<StockItem, 'id'>) => {
+  const handleAddItem = async (newItem: Omit<StockItem, 'id' | 'createdAt'>) => {
     await addStockItem(newItem);
   };
 
@@ -43,8 +43,6 @@ export default function StockPage() {
   const totalValue = stockItems.reduce((acc, item) => {
     return acc + item.quantity * item.price;
   }, 0);
-
-  const categories = [...new Set(stockItems.map(item => item.category))];
 
   const filteredStockItems = stockItems.filter(item =>
     item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -77,7 +75,7 @@ export default function StockPage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
             <StatCard 
                 title="ມູນຄ່າສະຕັອກທັງໝົດ"
                 value={formatCurrency(totalValue)}
@@ -90,17 +88,10 @@ export default function StockPage() {
                 icon={<Package className="h-5 w-5 text-blue-500" />}
                 description={`ຈາກ ${stockItems.length} ລາຍການ`}
             />
-             <StatCard 
-                title="ຈຳນວນໝວດໝູ່"
-                value={`${categories.length} ໝວດໝູ່`}
-                icon={<Tags className="h-5 w-5 text-orange-500" />}
-                description="ໝວດໝູ່ສິນຄ້າທັງໝົດໃນລະບົບ"
-            />
         </div>
         <div className="grid grid-cols-1">
             <StockTable 
               data={filteredStockItems} 
-              categories={categories}
               onAddItem={handleAddItem}
               onUpdateItem={handleUpdateItem}
               onDeleteItem={handleDeleteItem}

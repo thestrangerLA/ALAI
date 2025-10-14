@@ -22,9 +22,10 @@ interface InventoryItem {
   id: string;
   partCode: string;
   partName: string;
-  category: string;
   quantity: number;
   price: number;
+  costPrice: number;
+  wholesalePrice: number;
 }
 
 interface SaleItem {
@@ -76,7 +77,6 @@ export default function Home() {
     const [cart, setCart] = useState<SaleItem[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
     const [currentTab, setCurrentTab] = useState('pos');
-    const [selectedCategory, setSelectedCategory] = useState('');
     const [receiptNumber, setReceiptNumber] = useState(1);
 
     const [posSearch, setPosSearch] = useState('');
@@ -94,7 +94,6 @@ export default function Home() {
 
     const [addItemPartCode, setAddItemPartCode] = useState('');
     const [addItemPartName, setAddItemPartName] = useState('');
-    const [addItemCategory, setAddItemCategory] = useState('');
     const [addItemQuantity, setAddItemQuantity] = useState(0);
     const [addItemPrice, setAddItemPrice] = useState(0);
 
@@ -106,7 +105,6 @@ export default function Home() {
     const [receiveNote, setReceiveNote] = useState('');
 
     const [invSearch, setInvSearch] = useState('');
-    const [invCategory, setInvCategory] = useState('');
     const [invStatus, setInvStatus] = useState('');
     
     const { user } = useUser();
@@ -153,15 +151,12 @@ export default function Home() {
         .filter(sale => sale.date === today)
         .reduce((sum, sale) => sum + sale.grandTotal, 0);
 
-    const categories = [...new Set(inventory.map(item => item.category))].filter(Boolean);
-
     const filteredPOSProducts = inventory.filter(item => {
         const searchTerm = posSearch.toLowerCase();
         const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) ||
                             item.partName.toLowerCase().includes(searchTerm);
-        const matchesCategory = !selectedCategory || item.category === selectedCategory;
         const hasStock = item.quantity > 0;
-        return matchesSearch && matchesCategory && hasStock;
+        return matchesSearch && hasStock;
     });
     
     const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
@@ -177,7 +172,6 @@ export default function Home() {
         const searchTerm = invSearch.toLowerCase();
         const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
                             item.partName.toLowerCase().includes(searchTerm);
-        const matchesCategory = !invCategory || item.category === invCategory;
         
         const getStatusKey = (item: InventoryItem) => {
             if (item.quantity === 0) return 'out';
@@ -187,7 +181,7 @@ export default function Home() {
         }
         const matchesStatus = !invStatus || getStatusKey(item) === invStatus;
 
-        return matchesSearch && matchesCategory && matchesStatus;
+        return matchesSearch && matchesStatus;
     });
 
     const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
@@ -230,10 +224,6 @@ export default function Home() {
 
     const switchTab = (tabName: string) => {
         setCurrentTab(tabName);
-    };
-
-    const selectCategory = (category: string) => {
-        setSelectedCategory(category);
     };
 
     const addToCart = (itemId: string) => {
@@ -359,7 +349,6 @@ export default function Home() {
         const newItem = {
             partCode: addItemPartCode.toUpperCase(),
             partName: addItemPartName,
-            category: addItemCategory,
             quantity: Number(addItemQuantity),
             price: Number(addItemPrice),
             createdAt: serverTimestamp()
@@ -371,7 +360,6 @@ export default function Home() {
             // Reset form
             setAddItemPartCode('');
             setAddItemPartName('');
-            setAddItemCategory('');
             setAddItemQuantity(0);
             setAddItemPrice(0);
         } catch (error) {
@@ -571,21 +559,6 @@ export default function Home() {
                             <button onClick={() => setPosSearch('')} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
                                 ລ້າງ
                             </button>
-                        </div>
-                    </div>
-
-                    {/* Category Filter */}
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ໝວດໝູ່ສິນຄ້າ</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                           <button onClick={() => selectCategory('')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                                ທັງໝົດ
-                            </button>
-                            {categories.map(category => (
-                                <button key={category} onClick={() => selectCategory(category)} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                                    {category}
-                                </button>
-                            ))}
                         </div>
                     </div>
 
@@ -1020,7 +993,3 @@ export default function Home() {
   </div>
   );
 }
-
-    
-
-    
