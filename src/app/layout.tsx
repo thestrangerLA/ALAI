@@ -1,12 +1,12 @@
 
 import type { Metadata } from "next";
-import { Prompt } from "next/font/google";
+import { Noto_Sans_Lao } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-const fontSans = Prompt({
-  subsets: ["thai", "latin"],
+const fontSans = Noto_Sans_Lao({
+  subsets: ["lao", "latin"],
   variable: "--font-sans",
   weight: ["400", "700"],
 });
