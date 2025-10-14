@@ -1,14 +1,14 @@
 
 import type { Metadata } from "next";
-import { Noto_Sans_Lao } from "next/font/google";
+import { Mitr } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-const fontSans = Noto_Sans_Lao({
-  subsets: ["lao", "latin"],
+const fontSans = Mitr({
+  subsets: ["latin", "thai", "vietnamese"],
   variable: "--font-sans",
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
