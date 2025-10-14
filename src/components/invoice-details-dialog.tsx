@@ -1,0 +1,106 @@
+
+'use client';
+
+import type { Sale } from '@/lib/types';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Button } from './ui/button';
+import { Printer } from 'lucide-react';
+
+interface InvoiceDetailsDialogProps {
+  sale: Sale;
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}
+
+export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDetailsDialogProps) {
+
+  const formatCurrency = (value: number) => {
+    if (typeof value !== 'number' || isNaN(value)) return '0 ₭';
+    return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
+  };
+  
+  const handlePrint = () => {
+    // A bit of a hack to print the dialog content
+    const printContents = document.getElementById('invoice-details-content')?.innerHTML;
+    const originalContents = document.body.innerHTML;
+    if (printContents) {
+        document.body.innerHTML = printContents;
+        window.print();
+        document.body.innerHTML = originalContents;
+        // We need to reload to re-attach React components and event listeners
+        window.location.reload();
+    }
+  }
+
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl" id="invoice-details-content">
+        <DialogHeader>
+          <DialogTitle>ລາຍລະອຽດໃບເກັບເງິນ</DialogTitle>
+          <DialogDescription>
+             ທົບທວນລາຍລະອຽດຂອງການຂາຍສຳລັບ Invoice #{sale.invoiceNumber}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="py-4">
+            <div className="flex justify-between items-center mb-6 p-4 bg-slate-50 rounded-lg">
+                <div>
+                    <p><strong>ຊື່ລູກຄ້າ:</strong> {sale.customerName || 'ບໍ່ໄດ້ລະບຸ'}</p>
+                    <p><strong>ເລກທີ່ Invoice:</strong> {sale.invoiceNumber}</p>
+                </div>
+                <div className="text-right">
+                    <p><strong>ວັນທີຂາຍ:</strong> {sale.saleDate.toDate().toLocaleDateString('lo-LA')}</p>
+                    <p><strong>ເວລາ:</strong> {sale.saleDate.toDate().toLocaleTimeString('lo-LA')}</p>
+                </div>
+            </div>
+
+            <Table>
+                <TableHeader>
+                    <TableRow>
+                        <TableHead>ລາຍການ</TableHead>
+                        <TableHead className="text-center">ຈຳນວນ</TableHead>
+                        <TableHead>ປະເພດລາຄາ</TableHead>
+                        <TableHead className="text-right">ລາຄາ/ໜ່ວຍ</TableHead>
+                        <TableHead className="text-right">ລວມ</TableHead>
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {sale.items.map((item, index) => (
+                        <TableRow key={`${item.id}-${index}`}>
+                            <TableCell>{item.productName} ({item.productCode})</TableCell>
+                            <TableCell className="text-center">{item.sellQuantity}</TableCell>
+                            <TableCell>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${item.priceType === 'sell' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                    {item.priceType === 'sell' ? 'ຂາຍ' : 'ສົ່ງ'}
+                                </span>
+                            </TableCell>
+                            <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item.price * item.sellQuantity)}</TableCell>
+                        </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+
+            <div className="mt-6 flex justify-end">
+                <div className="w-full max-w-xs space-y-2 text-right">
+                     <div className="flex justify-between items-center text-xl font-bold">
+                        <span>ລວມເປັນເງິນທັງໝົດ:</span>
+                        <span>{formatCurrency(sale.totalAmount)}</span>
+                    </div>
+                </div>
+            </div>
+             <div className="mt-8 flex justify-end gap-2 no-print">
+                <Button variant="outline" onClick={handlePrint}><Printer className="mr-2 h-4 w-4"/>ພິມຄືນ</Button>
+            </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
