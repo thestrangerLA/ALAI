@@ -15,8 +15,8 @@ import {
 import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
-const staticUserId = "default-user";
-const stockCollectionRef = collection(db, "users", staticUserId, "stockReceive"); 
+// Use a simple root collection name
+const stockCollectionRef = collection(db, "stockReceive"); 
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
   const q = query(stockCollectionRef, orderBy("createdAt", "desc"));
@@ -43,6 +43,7 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'u
       ...item,
       date: item.date || new Date().toISOString().split('T')[0],
       note: item.note || '',
+      supplier: item.supplier || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp() 
     });
@@ -57,7 +58,7 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'u
 }
 
 export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
-  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
+  const itemDoc = doc(db, "stockReceive", id);
   try {
      if (updatedFields.productCode) {
       const existingItemQuery = query(
@@ -88,7 +89,7 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
+  const itemDoc = doc(db, "stockReceive", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {

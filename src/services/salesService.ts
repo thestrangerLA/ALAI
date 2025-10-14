@@ -13,9 +13,9 @@ import {
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
 
-const staticUserId = "default-user";
-const salesCollectionRef = collection(db, "users", staticUserId, "sales");
-const stockCollectionRef = collection(db, "users", staticUserId, "stockReceive"); 
+// Use a simple root collection name
+const salesCollectionRef = collection(db, "sales");
+const stockCollectionRef = collection(db, "stockReceive"); 
 
 export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
   const batch = writeBatch(db);
