@@ -234,3 +234,5 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
         </Card>
     );
 }
+
+    
