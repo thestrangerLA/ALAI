@@ -15,7 +15,8 @@ import {
 import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
-const stockCollectionRef = collection(db, "stockReceive");
+const staticUserId = "default-user";
+const stockCollectionRef = collection(db, "users", staticUserId, "stockReceive");
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
   const q = query(stockCollectionRef, orderBy("createdAt", "desc"));
@@ -27,13 +28,13 @@ export function listenToStockItems(callback: (items: StockItem[]) => void) {
   });
 }
 
-export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>): Promise<string | void> {
+export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | void> {
   try {
-    const existingItemQuery = query(stockCollectionRef, where("partCode", "==", item.partCode));
+    const existingItemQuery = query(stockCollectionRef, where("productCode", "==", item.productCode));
     const existingItemSnapshot = await getDocs(existingItemQuery);
 
     if (!existingItemSnapshot.empty) {
-        const errorMessage = "Error: Part code already exists.";
+        const errorMessage = "Error: Product code already exists.";
         console.error(errorMessage);
         return errorMessage;
     }
@@ -53,19 +54,19 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>): P
   }
 }
 
-export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id' | 'createdAt'>>) {
-  const itemDoc = doc(db, "stockReceive", id);
+export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
+  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
   try {
-     if (updatedFields.partCode) {
+     if (updatedFields.productCode) {
       const existingItemQuery = query(
         stockCollectionRef, 
-        where("partCode", "==", updatedFields.partCode)
+        where("productCode", "==", updatedFields.productCode)
       );
       const existingItemSnapshot = await getDocs(existingItemQuery);
       const isDuplicate = existingItemSnapshot.docs.some(doc => doc.id !== id);
       
       if (isDuplicate) {
-        const errorMessage = "Error: Part code already exists.";
+        const errorMessage = "Error: Product code already exists.";
         console.error(errorMessage);
         return errorMessage;
       }
@@ -84,7 +85,7 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(db, "stockReceive", id);
+  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {

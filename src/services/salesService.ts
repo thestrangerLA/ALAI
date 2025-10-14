@@ -13,20 +13,21 @@ import {
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
 
-const salesCollectionRef = collection(db, "sales");
-const stockCollectionRef = collection(db, "stockReceive"); 
+const staticUserId = "default-user";
+const salesCollectionRef = collection(db, "users", staticUserId, "sales");
+const stockCollectionRef = collection(db, "users", staticUserId, "stockReceive"); 
 
 export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
   const batch = writeBatch(db);
 
-  // 1. Create a new sale document in the root 'sales' collection
+  // 1. Create a new sale document
   const saleRef = doc(salesCollectionRef);
   batch.set(saleRef, {
       ...saleData,
       saleDate: Timestamp.fromDate(saleData.saleDate),
   });
 
-  // 2. Update stock quantities for each item sold in the 'stockReceive' collection
+  // 2. Update stock quantities for each item sold
   for (const item of saleData.items) {
     const itemRef = doc(stockCollectionRef, item.id);
     const itemDoc = await getDoc(itemRef);

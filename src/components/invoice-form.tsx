@@ -52,8 +52,8 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
       if (searchQuery.length > 0) {
         const results = allItems.filter(
           item =>
-            item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.partCode.toLowerCase().includes(searchQuery.toLowerCase())
+            item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.productCode.toLowerCase().includes(searchQuery.toLowerCase())
         ).slice(0, 5); // Limit results to 5 for performance
         setSearchResults(results);
       } else {
@@ -66,19 +66,19 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     };
   }, [searchQuery, allItems]);
   
-  const handleAddItem = (item: StockItem, selectedPrice: number) => {
+  const handleAddItem = (item: StockItem) => {
     setInvoiceItems(prev => {
       const existingItem = prev.find(i => i.id === item.id);
       if (existingItem) {
         return prev.map(i =>
-          i.id === item.id ? { ...i, sellQuantity: i.sellQuantity + 1, price: selectedPrice } : i
+          i.id === item.id ? { ...i, sellQuantity: i.sellQuantity + 1 } : i
         );
       } else {
-        // Create a new invoice item, overriding the default price with the selected one
+        // Create a new invoice item, using sellPrice as the price
         const newItem: InvoiceItemType = { 
           ...item, 
           sellQuantity: 1,
-          price: selectedPrice // Set the price to the one chosen by the user
+          price: item.sellPrice // Use sellPrice for invoice
         };
         return [...prev, newItem];
       }
@@ -158,17 +158,13 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                         {searchResults.map(item => (
                         <div
                             key={item.id}
-                            className="p-3 hover:bg-gray-100 border-b"
+                            onClick={() => handleAddItem(item)}
+                            className="p-3 hover:bg-gray-100 border-b cursor-pointer"
                         >
-                            <p className="font-semibold">{item.partName} ({item.partCode})</p>
-                            <p className="text-sm text-gray-500">ຄົງເຫຼືອ: {item.quantity}</p>
-                            <div className="flex gap-2 mt-2">
-                                <Button size="sm" variant="outline" onClick={() => handleAddItem(item, item.wholesalePrice)}>
-                                  ລາຄາສົ່ງ: {formatCurrency(item.wholesalePrice)}
-                                </Button>
-                                <Button size="sm" onClick={() => handleAddItem(item, item.price)}>
-                                  ລາຄາຍ່ອຍ: {formatCurrency(item.price)}
-                                </Button>
+                            <p className="font-semibold">{item.productName} ({item.productCode})</p>
+                            <div className="flex justify-between text-sm text-gray-500 mt-1">
+                                <span>ຄົງເຫຼືອ: {item.quantity}</span>
+                                <span className="font-bold text-blue-600">ລາຄາ: {formatCurrency(item.sellPrice)}</span>
                             </div>
                         </div>
                         ))}
@@ -234,7 +230,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                         {invoiceItems.length > 0 ? invoiceItems.map((item, index) => (
                             <TableRow key={item.id}>
                                 <TableCell className="text-center">{index + 1}</TableCell>
-                                <TableCell>{item.partName} ({item.partCode})</TableCell>
+                                <TableCell>{item.productName} ({item.productCode})</TableCell>
                                 <TableCell className="text-center w-24">
                                      <Input 
                                         type="number" 
@@ -282,5 +278,3 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
 });
 
 InvoiceForm.displayName = 'InvoiceForm';
-
-    

@@ -26,7 +26,7 @@ export default function StockPage() {
     return () => unsubscribe();
   }, []);
 
-  const handleAddItem = async (newItem: Omit<StockItem, 'id' | 'createdAt'>) => {
+  const handleAddItem = async (newItem: Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'>) => {
     const result = await addStockItem(newItem);
     if (result) {
       alert(result); // Show the error message from the service
@@ -51,8 +51,8 @@ export default function StockPage() {
   }, 0);
 
   const filteredStockItems = stockItems.filter(item =>
-    item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    item.partCode.toLowerCase().includes(searchQuery.toLowerCase())
+    item.productName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    item.productCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
   const totalItems = stockItems.reduce((acc, item) => acc + item.quantity, 0);

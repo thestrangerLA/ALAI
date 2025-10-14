@@ -3,17 +3,22 @@ import { Timestamp } from "firebase/firestore";
 
 export interface StockItem {
   id: string;
-  partCode: string;
-  partName: string;
-  quantity: number;
-  price: number;
+  date: string;
+  productCode: string;
+  productName: string;
   costPrice: number;
-  wholesalePrice: number;
+  sellPrice: number;
+  quantity: number;
+  note: string;
+  supplier: string;
   createdAt: any;
+  updatedAt?: any;
 }
 
 export interface InvoiceItem extends StockItem {
   sellQuantity: number;
+  // Use sellPrice for invoice calculations
+  price: number; 
 }
 
 export interface Sale {
@@ -21,6 +26,6 @@ export interface Sale {
   invoiceNumber: string;
   customerName: string;
   saleDate: Timestamp;
-  items: InvoiceItem[];
+  items: (Omit<InvoiceItem, 'price'> & { price: number })[];
   totalAmount: number;
 }

@@ -1,5 +1,4 @@
 
-
 'use client';
 import { useState } from "react";
 import type { StockItem } from "@/lib/types";
@@ -35,7 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 interface StockTableProps {
     data: StockItem[];
-    onAddItem: (item: Omit<StockItem, 'id' | 'createdAt'>) => void;
+    onAddItem: (item: Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'>) => void;
     onUpdateItem: (id: string, updatedFields: Partial<StockItem>) => void;
     onDeleteItem: (id: string) => void;
     searchQuery: string;
@@ -54,12 +53,14 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
         } else {
             setIsEdit(false);
             setCurrentItem({
-                partCode: '',
-                partName: '',
+                date: new Date().toISOString().split('T')[0],
+                productCode: '',
+                productName: '',
                 quantity: 0,
-                price: 0,
+                sellPrice: 0,
                 costPrice: 0,
-                wholesalePrice: 0,
+                note: '',
+                supplier: ''
             });
         }
         setDialogOpen(true);
@@ -69,7 +70,7 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
         if (isEdit && currentItem.id) {
             onUpdateItem(currentItem.id, currentItem);
         } else {
-            onAddItem(currentItem as Omit<StockItem, 'id' | 'createdAt'>);
+            onAddItem(currentItem as Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'>);
         }
         setDialogOpen(false);
     };
@@ -120,30 +121,30 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
                 <Table className="table-fixed w-full">
                     <TableHeader>
                         <TableRow>
-                            <TableHead className="w-[10%]">ລະຫັດສິ້ນສ່ວນ</TableHead>
-                            <TableHead className="w-[25%]">ຊື່ສິ້ນສ່ວນ</TableHead>
+                            <TableHead className="w-[10%]">ລະຫັດສິນຄ້າ</TableHead>
+                            <TableHead className="w-[25%]">ຊື່ສິນຄ້າ</TableHead>
                             <TableHead className="w-[12%] text-right">ລາຄາຕົ້ນທຶນ</TableHead>
-                            <TableHead className="w-[12%] text-right">ລາຄາສົ່ງ</TableHead>
                             <TableHead className="w-[12%] text-right">ລາຄາຂາຍ</TableHead>
                             <TableHead className="w-[10%] text-right">ຈຳນວນຄົງເຫຼືອ</TableHead>
                             <TableHead className="w-[10%]">ສະຖານະ</TableHead>
+                            <TableHead className="w-[12%]">ຜູ້ສະໜອງ</TableHead>
                             <TableHead className="w-[9%] text-right">ຈັດການ</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {data.length > 0 ? data.map(item => (
                             <TableRow key={item.id}>
-                                <TableCell className="font-medium truncate">{item.partCode}</TableCell>
-                                <TableCell className="truncate">{item.partName}</TableCell>
+                                <TableCell className="font-medium truncate">{item.productCode}</TableCell>
+                                <TableCell className="truncate">{item.productName}</TableCell>
                                 <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.costPrice)}</TableCell>
-                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.wholesalePrice)}</TableCell>
-                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.price)}</TableCell>
+                                <TableCell className="text-right whitespace-nowrap">{formatCurrency(item.sellPrice)}</TableCell>
                                 <TableCell className="text-right font-medium">{item.quantity.toLocaleString('lo-LA')}</TableCell>
                                 <TableCell>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(item)}`}>
                                         {getStockStatus(item)}
                                     </span>
                                 </TableCell>
+                                <TableCell className="truncate">{item.supplier}</TableCell>
                                 <TableCell className="text-right">
                                      <DropdownMenu>
                                         <DropdownMenuTrigger asChild>
@@ -186,12 +187,16 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="partCode" className="text-right">ລະຫັດສິ້ນສ່ວນ</Label>
-                            <Input id="partCode" value={currentItem.partCode || ''} onChange={e => setCurrentItem({...currentItem, partCode: e.target.value.toUpperCase()})} className="col-span-3" />
+                            <Label htmlFor="date" className="text-right">ວັນທີ</Label>
+                            <Input id="date" type="date" value={currentItem.date || ''} onChange={e => setCurrentItem({...currentItem, date: e.target.value})} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="partName" className="text-right">ຊື່ສິ້ນສ່ວນ</Label>
-                            <Input id="partName" value={currentItem.partName || ''} onChange={e => setCurrentItem({...currentItem, partName: e.target.value})} className="col-span-3" />
+                            <Label htmlFor="productCode" className="text-right">ລະຫັດສິນຄ້າ</Label>
+                            <Input id="productCode" value={currentItem.productCode || ''} onChange={e => setCurrentItem({...currentItem, productCode: e.target.value.toUpperCase()})} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="productName" className="text-right">ຊື່ສິນຄ້າ</Label>
+                            <Input id="productName" value={currentItem.productName || ''} onChange={e => setCurrentItem({...currentItem, productName: e.target.value})} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
                             <Label htmlFor="quantity" className="text-right">ຈຳນວນ</Label>
@@ -201,13 +206,17 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
                             <Label htmlFor="costPrice" className="text-right">ລາຄາຕົ້ນທຶນ</Label>
                             <Input id="costPrice" type="number" value={currentItem.costPrice ?? ''} onChange={e => setCurrentItem({...currentItem, costPrice: Number(e.target.value)})} className="col-span-3" />
                         </div>
-                        <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="wholesalePrice" className="text-right">ລາຄາສົ່ງ</Label>
-                            <Input id="wholesalePrice" type="number" value={currentItem.wholesalePrice ?? ''} onChange={e => setCurrentItem({...currentItem, wholesalePrice: Number(e.target.value)})} className="col-span-3" />
-                        </div>
                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">ລາຄາຂາຍ</Label>
-                            <Input id="price" type="number" value={currentItem.price ?? ''} onChange={e => setCurrentItem({...currentItem, price: Number(e.target.value)})} className="col-span-3" />
+                            <Label htmlFor="sellPrice" className="text-right">ລາຄາຂາຍ</Label>
+                            <Input id="sellPrice" type="number" value={currentItem.sellPrice ?? ''} onChange={e => setCurrentItem({...currentItem, sellPrice: Number(e.target.value)})} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="supplier" className="text-right">ຜູ້ສະໜອງ</Label>
+                            <Input id="supplier" value={currentItem.supplier || ''} onChange={e => setCurrentItem({...currentItem, supplier: e.target.value})} className="col-span-3" />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="note" className="text-right">ໝາຍເຫດ</Label>
+                            <Input id="note" value={currentItem.note || ''} onChange={e => setCurrentItem({...currentItem, note: e.target.value})} className="col-span-3" />
                         </div>
                     </div>
                     <DialogFooter>
