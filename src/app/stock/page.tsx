@@ -13,7 +13,7 @@ import { StatCard } from "@/components/stat-card"
 import { StockTable } from "@/components/stock-table"
 import { useState, useEffect } from "react"
 import { useSearchParams } from 'next/navigation'
-import { listenToStockItems, addStockItem, updateStockItem, deleteStockItem, seedInitialData } from "@/services/stockService"
+import { listenToStockItems, addStockItem, updateStockItem, deleteStockItem } from "@/services/stockService"
 import Link from "next/link"
 import { ArrowLeft, HardHat } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -24,9 +24,6 @@ export default function StockPage() {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    // Seed data if inventory is empty
-    seedInitialData();
-
     const unsubscribe = listenToStockItems(setStockItems);
     
     const searchFromUrl = searchParams.get('search');
@@ -38,7 +35,10 @@ export default function StockPage() {
   }, [searchParams]);
 
   const handleAddItem = async (newItem: Omit<StockItem, 'id' | 'createdAt'>) => {
-    await addStockItem(newItem);
+    const result = await addStockItem(newItem);
+    if (result) {
+      alert(result); // Show the error message from the service
+    }
   };
 
   const handleUpdateItem = async (id: string, updatedFields: Partial<StockItem>) => {
