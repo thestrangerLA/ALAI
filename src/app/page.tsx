@@ -184,7 +184,7 @@ export default function Home() {
         return matchesSearch && matchesStatus;
     });
 
-    const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.price), 0);
+    const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.costPrice), 0);
     
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
@@ -300,7 +300,7 @@ export default function Home() {
             received: paymentReceived,
             change: paymentChange,
             customerName: paymentCustomerName || 'ລູກຄ້າທົ່ວໄປ',
-            cashier: user?.displayName || user?.email || 'ຜູ້ດູແລລະບົບ',
+            cashier: user?.displayName || user?.email || 'ผู้ดູແລລະບົບ',
             date: new Date().toISOString().split('T')[0],
             timestamp: serverTimestamp()
         };

@@ -41,7 +41,7 @@ export default function StockPage() {
   };
 
   const totalValue = stockItems.reduce((acc, item) => {
-    return acc + item.quantity * item.price;
+    return acc + item.quantity * item.costPrice;
   }, 0);
 
   const filteredStockItems = stockItems.filter(item =>
@@ -80,7 +80,7 @@ export default function StockPage() {
                 title="ມູນຄ່າສະຕັອກທັງໝົດ"
                 value={formatCurrency(totalValue)}
                 icon={<DollarSign className="h-5 w-5 text-green-500" />}
-                description="ມູນຄ່າລວມຂອງສິນຄ້າທັງໝົດໃນຄັງ"
+                description="ມູນຄ່າລວມຂອງສິນຄ້າທັງໝົດໃນຄັງ (ຕົ້ນທຶນ * ຈຳນວນ)"
             />
              <StatCard 
                 title="ຈຳນວນສິນຄ້າທັງໝົດ"
