@@ -8,9 +8,8 @@ export interface StockItem {
   productName: string;
   costPrice: number;
   sellPrice: number;
+  wholesalePrice: number;
   quantity: number;
-  note: string;
-  supplier: string;
   createdAt: any;
   updatedAt?: any;
 }

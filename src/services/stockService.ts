@@ -15,7 +15,6 @@ import {
 import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
-// Use a simple root collection name
 const stockCollectionRef = collection(db, "stockReceive"); 
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
@@ -42,8 +41,6 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'u
     await addDoc(stockCollectionRef, { 
       ...item,
       date: item.date || new Date().toISOString().split('T')[0],
-      note: item.note || '',
-      supplier: item.supplier || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp() 
     });
