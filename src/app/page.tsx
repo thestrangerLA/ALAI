@@ -133,20 +133,41 @@ export default function Home() {
         }
 
         productGrid.innerHTML = filteredProducts.map(item => `
-            <div id="pos-item-${item.id}" class="pos-item bg-white border border-gray-200 rounded-lg p-4 cursor-pointer hover:shadow-lg">
-                <div class="text-sm font-medium text-gray-900 mb-1">${item.partCode}</div>
-                <div class="text-sm text-gray-600 mb-2">${item.partName}</div>
-                <div class="flex justify-between items-center">
-                    <div class="text-lg font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                    <div class="text-xs text-gray-500">คงเหลือ: ${item.quantity}</div>
+            <div id="pos-item-${item.id}" class="pos-item bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition-shadow">
+                <div class="cursor-pointer" id="pos-item-add-${item.id}">
+                    <div class="text-sm font-medium text-gray-900 mb-1">${item.partCode}</div>
+                    <div class="text-sm text-gray-600 mb-2 h-10">${item.partName}</div>
+                    <div class="flex justify-between items-center">
+                        <div class="text-lg font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                        <div class="text-xs text-gray-500">คงเหลือ: ${item.quantity}</div>
+                    </div>
+                </div>
+                <div class="border-t mt-3 pt-3">
+                     <button id="pos-item-details-${item.id}" class="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ดูรายละเอียด</button>
                 </div>
             </div>
         `).join('');
 
         filteredProducts.forEach(item => {
-          document.getElementById(`pos-item-${item.id}`)?.addEventListener('click', () => addToCart(item.id));
+          document.getElementById(`pos-item-add-${item.id}`)?.addEventListener('click', () => addToCart(item.id));
+          document.getElementById(`pos-item-details-${item.id}`)?.addEventListener('click', () => viewItemDetails(item.partCode));
         });
     }
+
+    function viewItemDetails(partCode: string) {
+        // Switch to the inventory tab
+        switchTab('inventory');
+        
+        // Set the search input value to the item's part code
+        const searchInput = document.getElementById('searchInput') as HTMLInputElement;
+        if (searchInput) {
+            searchInput.value = partCode;
+        }
+        
+        // Trigger the search/render for the inventory table
+        renderInventory();
+    }
+
 
     function clearPosSearch() {
         (document.getElementById('posSearch') as HTMLInputElement).value = '';
@@ -1175,7 +1196,7 @@ export default function Home() {
                 <div className="bg-white rounded-xl shadow-lg p-6">
                     <div className="flex items-center">
                         <div className="bg-blue-100 p-3 rounded-lg">
-                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="ूं 0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                             </svg>
                         </div>
@@ -1266,7 +1287,7 @@ export default function Home() {
                     {/* Receipt content will be populated here */}
                 </div>
                 <div className="flex space-x-3 mt-6">
-                    <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>
+                    <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>CHI
                     <button id="closeReceiptBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
                 </div>
             </div>
