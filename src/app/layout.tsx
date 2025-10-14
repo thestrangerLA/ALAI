@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Thai } from "next/font/google";
+import { Noto_Sans_Lao } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-const fontSans = Noto_Sans_Thai({
-  subsets: ["thai"],
+const fontSans = Noto_Sans_Lao({
+  subsets: ["lao"],
   variable: "--font-sans",
   weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "POS ระบบขายอะไหล่",
-  description: "ระบบขายอะไหล่รถยนต์",
+  title: "POS ລະບົບຂາຍສິ້ນສ່ວນ",
+  description: "ລະບົບຂາຍສິ້ນສ່ວນລົດຍົນ",
 };
 
 export default function RootLayout({
@@ -21,7 +21,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="th">
+    <html lang="lo">
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",

@@ -35,13 +35,13 @@ export default function StockPage() {
   };
 
   const handleDeleteItem = async (id: string) => {
-    if (window.confirm('คุณแน่ใจหรือไม่ว่าต้องการลบสินค้านี้?')) {
+    if (window.confirm('ເຈົ້າແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບລາຍການນີ້?')) {
       await deleteStockItem(id);
     }
   };
 
   const totalValue = stockItems.reduce((acc, item) => {
-    return acc + item.currentStock * item.price;
+    return acc + item.quantity * item.price;
   }, 0);
 
   const categories = [...new Set(stockItems.map(item => item.category))];
@@ -51,10 +51,10 @@ export default function StockPage() {
     item.partCode.toLowerCase().includes(searchQuery.toLowerCase())
   );
   
-  const totalItems = stockItems.reduce((acc, item) => acc + item.currentStock, 0);
+  const totalItems = stockItems.reduce((acc, item) => acc + item.quantity, 0);
 
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(value);
+    return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   }
 
   return (
@@ -63,7 +63,7 @@ export default function StockPage() {
         <Button variant="outline" size="icon" className="h-10 w-10" asChild>
             <Link href="/">
                 <ArrowLeft className="h-5 w-5" />
-                <span className="sr-only">กลับไปหน้าหลัก</span>
+                <span className="sr-only">ກັບໄປໜ້າຫຼັກ</span>
             </Link>
         </Button>
         <div className="flex items-center gap-3">
@@ -71,30 +71,30 @@ export default function StockPage() {
                 <HardHat className="h-6 w-6 text-white" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">จัดการสต๊อกสินค้า</h1>
-                <p className="text-sm text-muted-foreground">เพิ่ม, แก้ไข, และดูสินค้าคงคลังทั้งหมด</p>
+                <h1 className="text-2xl font-bold tracking-tight">ຈັດການສະຕັອກສິນຄ້າ</h1>
+                <p className="text-sm text-muted-foreground">ເພີ່ມ, ແກ້ໄຂ, ແລະເບິ່ງສິນຄ້າຄົງຄັງທັງໝົດ</p>
             </div>
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
         <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-4">
             <StatCard 
-                title="มูลค่าสต๊อกทั้งหมด"
+                title="ມູນຄ່າສະຕັອກທັງໝົດ"
                 value={formatCurrency(totalValue)}
                 icon={<DollarSign className="h-5 w-5 text-green-500" />}
-                description="มูลค่ารวมของสินค้าทั้งหมดในคลัง"
+                description="ມູນຄ່າລວມຂອງສິນຄ້າທັງໝົດໃນຄັງ"
             />
              <StatCard 
-                title="จำนวนสินค้าทั้งหมด"
-                value={`${totalItems.toLocaleString()} ชิ้น`}
+                title="ຈຳນວນສິນຄ້າທັງໝົດ"
+                value={`${totalItems.toLocaleString('lo-LA')} ອັນ`}
                 icon={<Package className="h-5 w-5 text-blue-500" />}
-                description={`จาก ${stockItems.length} รายการ`}
+                description={`ຈາກ ${stockItems.length} ລາຍການ`}
             />
              <StatCard 
-                title="จำนวนหมวดหมู่"
-                value={`${categories.length} หมวดหมู่`}
+                title="ຈຳນວນໝວດໝູ່"
+                value={`${categories.length} ໝວດໝູ່`}
                 icon={<Tags className="h-5 w-5 text-orange-500" />}
-                description="หมวดหมู่สินค้าทั้งหมดในระบบ"
+                description="ໝວດໝູ່ສິນຄ້າທັງໝົດໃນລະບົບ"
             />
         </div>
         <div className="grid grid-cols-1">

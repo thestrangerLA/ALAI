@@ -83,7 +83,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
 
     const handleCategoryChange = (value: string) => {
         if (value === 'add_new_category') {
-            const newCategory = prompt('กรุณาใส่ชื่อหมวดหมู่ใหม่:');
+            const newCategory = prompt('ກະລຸນາໃສ່ຊື່ໝວດໝູ່ໃໝ່:');
             if (newCategory) {
                 setCurrentItem({ ...currentItem, category: newCategory });
             }
@@ -93,22 +93,22 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
     };
 
     const getStockStatus = (item: StockItem) => {
-        if (item.quantity === 0) return 'หมดสต๊อก';
-        return 'ปกติ';
+        if (item.quantity === 0) return 'ໝົດສະຕັອກ';
+        return 'ປົກກະຕິ';
     };
 
     const getStatusClass = (item: StockItem) => {
         const status = getStockStatus(item);
         const statusClass: {[key: string]: string} = {
-            'ปกติ': 'bg-green-100 text-green-800',
-            'หมดสต๊อก': 'bg-red-100 text-red-800'
+            'ປົກກະຕິ': 'bg-green-100 text-green-800',
+            'ໝົດສະຕັອກ': 'bg-red-100 text-red-800'
         };
         return statusClass[status];
     };
 
     const formatCurrency = (value?: number) => {
         if (typeof value !== 'number') return 'N/A';
-        return new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(value);
+        return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
     }
     
     return (
@@ -116,20 +116,20 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
             <CardHeader>
                 <div className="flex justify-between items-center">
                     <div>
-                        <CardTitle>รายการสินค้าในคลัง</CardTitle>
+                        <CardTitle>ລາຍການສິນຄ້າໃນຄັງ</CardTitle>
                         <CardDescription>
-                            พบสินค้าทั้งหมด {data.length} รายการ
+                            ພົບສິນຄ້າທັງໝົດ {data.length} ລາຍການ
                         </CardDescription>
                     </div>
                     <div className="flex items-center gap-2">
                          <Input
-                            placeholder="ค้นหาสินค้า (รหัส, ชื่อ)..."
+                            placeholder="ຄົ້ນຫາສິນຄ້າ (ລະຫັດ, ຊື່)..."
                             value={searchQuery}
                             onChange={(e) => onSearchQueryChange(e.target.value)}
                             className="w-full max-w-sm"
                         />
                         <Button onClick={() => handleOpenDialog()} className="whitespace-nowrap">
-                            <PlusCircle className="mr-2 h-4 w-4" /> เพิ่มสินค้าใหม่
+                            <PlusCircle className="mr-2 h-4 w-4" /> ເພີ່ມສິນຄ້າໃໝ່
                         </Button>
                     </div>
                 </div>
@@ -138,13 +138,13 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            <TableHead>รหัสอะไหล่</TableHead>
-                            <TableHead>ชื่ออะไหล่</TableHead>
-                            <TableHead>หมวดหมู่</TableHead>
-                            <TableHead className="text-right">ราคาขาย</TableHead>
-                            <TableHead className="text-right">จำนวนคงเหลือ</TableHead>
-                            <TableHead>สถานะ</TableHead>
-                            <TableHead className="text-right">จัดการ</TableHead>
+                            <TableHead>ລະຫັດສິ້ນສ່ວນ</TableHead>
+                            <TableHead>ຊື່ສິ້ນສ່ວນ</TableHead>
+                            <TableHead>ໝວດໝູ່</TableHead>
+                            <TableHead className="text-right">ລາຄາຂາຍ</TableHead>
+                            <TableHead className="text-right">ຈຳນວນຄົງເຫຼືອ</TableHead>
+                            <TableHead>ສະຖານະ</TableHead>
+                            <TableHead className="text-right">ຈັດການ</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -154,7 +154,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                                 <TableCell>{item.partName}</TableCell>
                                 <TableCell>{item.category}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                                <TableCell className="text-right font-medium">{item.quantity.toLocaleString()}</TableCell>
+                                <TableCell className="text-right font-medium">{item.quantity.toLocaleString('lo-LA')}</TableCell>
                                 <TableCell>
                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusClass(item)}`}>
                                         {getStockStatus(item)}
@@ -171,11 +171,11 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                                         <DropdownMenuContent align="end">
                                         <DropdownMenuItem onClick={() => handleOpenDialog(item)}>
                                             <FilePen className="mr-2 h-4 w-4" />
-                                            <span>แก้ไข</span>
+                                            <span>ແກ້ໄຂ</span>
                                         </DropdownMenuItem>
                                         <DropdownMenuItem onClick={() => onDeleteItem(item.id)} className="text-red-600">
                                             <Trash2 className="mr-2 h-4 w-4" />
-                                            <span>ลบ</span>
+                                            <span>ລົບ</span>
                                         </DropdownMenuItem>
                                         </DropdownMenuContent>
                                     </DropdownMenu>
@@ -184,7 +184,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                         )) : (
                              <TableRow>
                                 <TableCell colSpan={7} className="h-24 text-center">
-                                    ไม่พบข้อมูลสินค้า
+                                    ບໍ່ພົບຂໍ້ມູນສິນຄ້າ
                                 </TableCell>
                             </TableRow>
                         )}
@@ -195,53 +195,53 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
              <Dialog open={isDialogOpen} onOpenChange={setDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
                     <DialogHeader>
-                        <DialogTitle>{isEdit ? 'แก้ไขข้อมูลสินค้า' : 'เพิ่มสินค้าใหม่'}</DialogTitle>
+                        <DialogTitle>{isEdit ? 'ແກ້ໄຂຂໍ້ມູນສິນຄ້າ' : 'ເພີ່ມສິນຄ້າໃໝ່'}</DialogTitle>
                         <DialogDescription>
-                            {isEdit ? 'อัปเดตรายละเอียดของสินค้าในคลัง' : 'กรอกข้อมูลเพื่อเพิ่มสินค้าใหม่เข้าคลัง'}
+                            {isEdit ? 'ອັບເດດລາຍລະອຽດຂອງສິນຄ້າໃນຄັງ' : 'ກະລຸນາຕື່ມຂໍ້ມູນເພື່ອເພີ່ມສິນຄ້າໃໝ່ເຂົ້າຄັງ'}
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="partCode" className="text-right">รหัสอะไหล่</Label>
+                            <Label htmlFor="partCode" className="text-right">ລະຫັດສິ້ນສ່ວນ</Label>
                             <Input id="partCode" value={currentItem.partCode || ''} onChange={e => setCurrentItem({...currentItem, partCode: e.target.value.toUpperCase()})} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="partName" className="text-right">ชื่ออะไหล่</Label>
+                            <Label htmlFor="partName" className="text-right">ຊື່ສິ້ນສ່ວນ</Label>
                             <Input id="partName" value={currentItem.partName || ''} onChange={e => setCurrentItem({...currentItem, partName: e.target.value})} className="col-span-3" />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                             <Label htmlFor="category" className="text-right">หมวดหมู่</Label>
+                             <Label htmlFor="category" className="text-right">ໝວດໝູ່</Label>
                              <Select
                                 value={currentItem.category || ''}
                                 onValueChange={handleCategoryChange}
                             >
                                 <SelectTrigger className="col-span-3">
-                                    <SelectValue placeholder="เลือกหมวดหมู่" />
+                                    <SelectValue placeholder="ເລືອກໝວດໝູ່" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {categories.filter(Boolean).map(cat => (
                                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                     ))}
                                     <SelectItem value="add_new_category" className="text-blue-600 font-semibold">
-                                        + เพิ่มหมวดหมู่ใหม่
+                                        + ເພີ່ມໝວດໝູ່ໃໝ່
                                     </SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="quantity" className="text-right">จำนวน</Label>
+                            <Label htmlFor="quantity" className="text-right">ຈຳນວນ</Label>
                             <Input id="quantity" type="number" value={currentItem.quantity ?? ''} onChange={e => setCurrentItem({...currentItem, quantity: Number(e.target.value)})} className="col-span-3" />
                         </div>
                          <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">ราคาขาย</Label>
+                            <Label htmlFor="price" className="text-right">ລາຄາຂາຍ</Label>
                             <Input id="price" type="number" value={currentItem.price ?? ''} onChange={e => setCurrentItem({...currentItem, price: Number(e.target.value)})} className="col-span-3" />
                         </div>
                     </div>
                     <DialogFooter>
                         <DialogClose asChild>
-                            <Button type="button" variant="secondary">ยกเลิก</Button>
+                            <Button type="button" variant="secondary">ຍົກເລີກ</Button>
                         </DialogClose>
-                        <Button type="submit" onClick={handleSave}>บันทึก</Button>
+                        <Button type="submit" onClick={handleSave}>ບັນທຶກ</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

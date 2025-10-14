@@ -81,7 +81,7 @@ export default function Home() {
 
     const [posSearch, setPosSearch] = useState('');
     const [discountPercent, setDiscountPercent] = useState(0);
-    const [taxPercent, setTaxPercent] = useState(7);
+    const [taxPercent, setTaxPercent] = useState(0);
     const [paymentReceived, setPaymentReceived] = useState(0);
     const [paymentCustomerName, setPaymentCustomerName] = useState('');
     
@@ -239,14 +239,14 @@ export default function Home() {
     const addToCart = (itemId: string) => {
         const item = inventory.find(i => i.id === itemId);
         if (!item || item.quantity <= 0) {
-            showNotification('สินค้าหมดสต๊อก', 'error');
+            showNotification('ສິນຄ້າໝົດສະຕັອກ', 'error');
             return;
         }
 
         const existingCartItem = cart.find(c => c.id === itemId);
         if (existingCartItem) {
             if (existingCartItem.quantity >= item.quantity) {
-                showNotification('จำนวนในตะกร้าเกินสต๊อกที่มี', 'error');
+                showNotification('ຈຳນວນໃນກະຕ່າເກີນສະຕັອກທີ່ມີ', 'error');
                 return;
             }
             setCart(cart.map(c => c.id === itemId ? { ...c, quantity: c.quantity + 1 } : c));
@@ -272,7 +272,7 @@ export default function Home() {
         if (cartItem && newQuantity <= cartItem.maxQuantity) {
             setCart(cart.map(c => c.id === itemId ? { ...c, quantity: newQuantity } : c));
         } else {
-            showNotification('จำนวนเกินสต๊อกที่มี', 'error');
+            showNotification('ຈຳນວນເກີນສະຕັອກທີ່ມີ', 'error');
         }
     };
     
@@ -294,7 +294,7 @@ export default function Home() {
     const completeSale = async () => {
         if (!firestore) return;
         if (paymentReceived < cartGrandTotal) {
-            showNotification('จำนวนเงินที่รับไม่เพียงพอ', 'error');
+            showNotification('ຈຳນວນເງິນທີ່ຮັບບໍ່ພຽງພໍ', 'error');
             return;
         }
 
@@ -309,8 +309,8 @@ export default function Home() {
             grandTotal: cartGrandTotal,
             received: paymentReceived,
             change: paymentChange,
-            customerName: paymentCustomerName || 'ลูกค้าทั่วไป',
-            cashier: user?.displayName || user?.email || 'ผู้ดูแลระบบ',
+            customerName: paymentCustomerName || 'ລູກຄ້າທົ່ວໄປ',
+            cashier: user?.displayName || user?.email || 'ຜູ້ດູແລລະບົບ',
             date: new Date().toISOString().split('T')[0],
             timestamp: serverTimestamp()
         };
@@ -339,11 +339,11 @@ export default function Home() {
             clearCart();
             setPaymentModalOpen(false);
             setReceiptNumber(receiptNumber + 1);
-            showNotification('ขายสำเร็จแล้ว', 'success');
+            showNotification('ຂາຍສຳເລັດແລ້ວ', 'success');
 
         } catch (error) {
             console.error("Error completing sale: ", error);
-            showNotification('เกิดข้อผิดพลาดในการบันทึกการขาย', 'error');
+            showNotification('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກການຂາຍ', 'error');
         }
     };
 
@@ -352,7 +352,7 @@ export default function Home() {
         if (!firestore) return;
 
         if (inventory.some(item => item.partCode === addItemPartCode)) {
-            showNotification('รหัสอะไหล่นี้มีอยู่แล้วในระบบ', 'error');
+            showNotification('ລະຫັດສິ້ນສ່ວນນີ້ມີຢູ່ແລ້ວໃນລະບົບ', 'error');
             return;
         }
 
@@ -367,7 +367,7 @@ export default function Home() {
 
         try {
             await addDoc(collection(firestore, 'inventory'), newItem);
-            showNotification('เพิ่มอะไหล่เรียบร้อยแล้ว', 'success');
+            showNotification('ເພີ່ມສິ້ນສ່ວນສຳເລັດແລ້ວ', 'success');
             // Reset form
             setAddItemPartCode('');
             setAddItemPartName('');
@@ -376,7 +376,7 @@ export default function Home() {
             setAddItemPrice(0);
         } catch (error) {
             console.error("Error adding item: ", error);
-            showNotification('เกิดข้อผิดพลาดในการเพิ่มอะไหล่', 'error');
+            showNotification('ເກີດຂໍ້ຜິດພາດໃນການເພີ່ມສິ້ນສ່ວນ', 'error');
         }
     };
 
@@ -386,7 +386,7 @@ export default function Home() {
 
         const item = inventory.find(i => i.id === receivePartId);
         if (!item) {
-            showNotification('ไม่พบอะไหล่ที่เลือก', 'error');
+            showNotification('ບໍ່ພົບສິ້ນສ່ວນທີ່ເລືອກ', 'error');
             return;
         };
 
@@ -415,7 +415,7 @@ export default function Home() {
             
             await batch.commit();
 
-            showNotification(`รับสินค้า ${item.partName} จำนวน ${receiveQuantity} ชิ้น เรียบร้อยแล้ว`, 'success');
+            showNotification(`ຮັບສິນຄ້າ ${item.partName} ຈຳນວນ ${receiveQuantity} ອັນ ສຳເລັດແລ້ວ`, 'success');
             // Reset form
             setReceivePartId('');
             setReceiveQuantity(1);
@@ -426,7 +426,7 @@ export default function Home() {
 
         } catch (error) {
             console.error("Error receiving item: ", error);
-            showNotification('เกิดข้อผิดพลาดในการรับสินค้า', 'error');
+            showNotification('ເກີດຂໍ້ຜິດພາດໃນການຮັບສິນຄ້າ', 'error');
         }
     };
 
@@ -441,26 +441,26 @@ export default function Home() {
             try {
                 const itemRef = doc(firestore, 'inventory', editingId);
                 await updateDoc(itemRef, { quantity: Number(editQuantity) });
-                showNotification('อัปเดตจำนวนสต๊อกเรียบร้อยแล้ว', 'success');
+                showNotification('ອັບເດດຈຳນວນສະຕັອກສຳເລັດແລ້ວ', 'success');
                 setEditModalOpen(false);
                 setEditingId(null);
             } catch (error) {
                 console.error("Error updating stock: ", error);
-                showNotification('เกิดข้อผิดพลาดในการอัปเดตสต๊อก', 'error');
+                showNotification('ເກີດຂໍ້ຜິດພາດໃນການອັບເດດສະຕັອກ', 'error');
             }
         }
     };
 
     const handleDeleteItem = (id: string) => {
-        const confirmDelete = window.confirm('คุณแน่ใจหรือไม่ที่จะลบอะไหล่นี้? การกระทำนี้ไม่สามารถยกเลิกได้');
+        const confirmDelete = window.confirm('ທ່ານແນ່ໃຈບໍ່ວ່າຈະລົບສິ້ນສ່ວນນີ້? ການກະທຳນີ້ບໍ່ສາມາດຍົກເລີກໄດ້');
         if (confirmDelete && firestore) {
             deleteDoc(doc(firestore, 'inventory', id))
             .then(() => {
-                showNotification('ลบอะไหล่เรียบร้อยแล้ว', 'success');
+                showNotification('ລົບສິ້ນສ່ວນສຳເລັດແລ້ວ', 'success');
             })
             .catch((error) => {
                 console.error("Error deleting item: ", error);
-                showNotification('เกิดข้อผิดพลาดในการลบอะไหล่', 'error');
+                showNotification('ເກີດຂໍ້ຜິດພາດໃນການລົບສິ້ນສ່ວນ', 'error');
             });
         }
     };
@@ -471,17 +471,17 @@ export default function Home() {
     }
     
     const getStockStatus = (item: InventoryItem) => {
-        if (item.quantity === 0) return 'หมดสต๊อก';
+        if (item.quantity === 0) return 'ໝົດສະຕັອກ';
         // Reorder point logic removed
-        return 'ปกติ';
+        return 'ປົກກະຕິ';
     };
 
     const getStatusClass = (item: InventoryItem) => {
         const status = getStockStatus(item);
         const statusClass: {[key: string]: string} = {
-            'ปกติ': 'bg-green-100 text-green-800',
-            'สต๊อกต่ำ': 'bg-yellow-100 text-yellow-800',
-            'หมดสต๊อก': 'bg-red-100 text-red-800'
+            'ປົກກະຕິ': 'bg-green-100 text-green-800',
+            'ສະຕັອກຕ່ຳ': 'bg-yellow-100 text-yellow-800',
+            'ໝົດສະຕັອກ': 'bg-red-100 text-red-800'
         };
         return statusClass[status];
     }
@@ -503,19 +503,19 @@ export default function Home() {
                         </svg>
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">POS ระบบขายอะไหล่</h1>
-                        <p className="text-gray-600">ระบบจุดขายอะไหล่รถยนต์</p>
+                        <h1 className="text-2xl font-bold text-gray-900">POS ລະບົບຂາຍສິ້ນສ່ວນ</h1>
+                        <p className="text-gray-600">ລະບົບຈຸດຂາຍສິ້ນສ່ວນລົດຍົນ</p>
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">
                     <div className="bg-green-100 px-4 py-2 rounded-lg">
-                        <span className="text-green-800 font-semibold">สินค้าทั้งหมด: <span id="totalStock">{totalStock.toLocaleString()}</span> ชิ้น</span>
+                        <span className="text-green-800 font-semibold">ສິນຄ້າທັງໝົດ: <span id="totalStock">{totalStock.toLocaleString()}</span> ອັນ</span>
                     </div>
                     <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                        <span className="text-yellow-800 font-semibold">ยอดขายวันนี้: ฿<span id="todayTotal">{todayTotal.toLocaleString('th-TH')}</span></span>
+                        <span className="text-yellow-800 font-semibold">ຍອດຂາຍມື້ນີ້: ₭<span id="todayTotal">{todayTotal.toLocaleString('lo-LA')}</span></span>
                     </div>
                     <div className="bg-blue-100 px-4 py-2 rounded-lg">
-                        <span className="text-blue-800 font-semibold">ผู้ใช้: <span id="currentUser">{user?.displayName || user?.email || 'Admin'}</span></span>
+                        <span className="text-blue-800 font-semibold">ຜູ້ໃຊ້: <span id="currentUser">{user?.displayName || user?.email || 'Admin'}</span></span>
                     </div>
                 </div>
             </div>
@@ -530,25 +530,25 @@ export default function Home() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                     </svg>
-                    หน้าจอขาย (POS)
+                    ໜ້າຈໍຂາຍ (POS)
                 </button>
                 <Link href="/stock" className={`${currentTab === 'inventory' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
-                    จัดการสินค้า
+                    ຈັດການສິນຄ້າ
                 </Link>
                 <button onClick={() => switchTab('receive')} className={`${currentTab === 'receive' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    รับสินค้าเข้า
+                    ຮັບສິນຄ້າເຂົ້າ
                 </button>
                 <button onClick={() => switchTab('reports')} className={`${currentTab === 'reports' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
-                    รายงาน
+                    ລາຍງານ
                 </button>
             </nav>
         </div>
@@ -566,20 +566,20 @@ export default function Home() {
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <div className="flex space-x-4">
                             <div className="flex-1">
-                                <input type="text" value={posSearch} onChange={(e) => setPosSearch(e.target.value)} className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ค้นหาด้วยรหัส, ชื่อ..."/>
+                                <input type="text" value={posSearch} onChange={(e) => setPosSearch(e.target.value)} className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຄົ້ນຫາດ້ວຍລະຫັດ, ຊື່..."/>
                             </div>
                             <button onClick={() => setPosSearch('')} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ล้าง
+                                ລ້າງ
                             </button>
                         </div>
                     </div>
 
                     {/* Category Filter */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">หมวดหมู่สินค้า</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ໝວດໝູ່ສິນຄ້າ</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                            <button onClick={() => selectCategory('')} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
-                                ทั้งหมด
+                                ທັງໝົດ
                             </button>
                             {categories.map(category => (
                                 <button key={category} onClick={() => selectCategory(category)} className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}>
@@ -591,7 +591,7 @@ export default function Home() {
 
                     {/* Product Grid */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">รายการสินค้า</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ລາຍການສິນຄ້າ</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                             {filteredPOSProducts.length > 0 ? filteredPOSProducts.map(item => (
                                 <div key={item.id} className="pos-item bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition-shadow">
@@ -599,16 +599,16 @@ export default function Home() {
                                         <div className="text-sm font-medium text-gray-900 mb-1">{item.partCode}</div>
                                         <div className="text-sm text-gray-600 mb-2 h-10">{item.partName}</div>
                                         <div className="flex justify-between items-center">
-                                            <div className="text-lg font-bold text-blue-600">฿{item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                                            <div className="text-xs text-gray-500">คงเหลือ: {item.quantity}</div>
+                                            <div className="text-lg font-bold text-blue-600">₭{item.price.toLocaleString('lo-LA')}</div>
+                                            <div className="text-xs text-gray-500">ຄົງເຫຼືອ: {item.quantity}</div>
                                         </div>
                                     </div>
                                     <div className="border-t mt-3 pt-3">
-                                        <button onClick={() => viewItemDetails(item.partCode)} className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ดูรายละเอียด</button>
+                                        <button onClick={() => viewItemDetails(item.partCode)} className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ເບິ່ງລາຍລະອຽດ</button>
                                     </div>
                                 </div>
                             )) : (
-                                <div className="col-span-full text-center py-8 text-gray-500">ไม่พบสินค้าที่ค้นหา</div>
+                                <div className="col-span-full text-center py-8 text-gray-500">ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ</div>
                             )}
                         </div>
                     </div>
@@ -622,7 +622,7 @@ export default function Home() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                             </svg>
-                            ตะกร้าสินค้า ({cartCount})
+                            ກະຕ່າສິນຄ້າ ({cartCount})
                         </h3>
                         
                         <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
@@ -631,7 +631,7 @@ export default function Home() {
                                     <div className="flex-1">
                                         <div className="font-medium text-sm">{item.partCode}</div>
                                         <div className="text-xs text-gray-600">{item.partName}</div>
-                                        <div className="text-sm font-bold text-blue-600">฿{item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                        <div className="text-sm font-bold text-blue-600">₭{item.price.toLocaleString('lo-LA')}</div>
                                     </div>
                                     <div className="flex items-center space-x-2">
                                         <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded text-xs">-</button>
@@ -641,36 +641,36 @@ export default function Home() {
                                     </div>
                                 </div>
                            )) : (
-                                <div className="text-center text-gray-500 py-4">ตะกร้าว่าง</div>
+                                <div className="text-center text-gray-500 py-4">ກະຕ່າວ່າງ</div>
                            )}
                         </div>
 
                         {/* Cart Summary */}
                         <div className="border-t pt-4 space-y-3">
                             <div className="flex justify-between text-sm">
-                                <span>ยอดรวม:</span>
-                                <span id="subtotal">฿{cartSubtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ຍອດລວມ:</span>
+                                <span id="subtotal">₭{cartSubtotal.toLocaleString('lo-LA')}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm">ส่วนลด (%):</span>
+                                <span className="text-sm">ສ່ວນຫຼຸດ (%):</span>
                                 <input type="number" value={discountPercent} onChange={(e) => setDiscountPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" />
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>ส่วนลด:</span>
-                                <span id="discountAmount">฿{cartDiscountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ສ່ວນຫຼຸດ:</span>
+                                <span id="discountAmount">₭{cartDiscountAmount.toLocaleString('lo-LA')}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm">ภาษี (%):</span>
+                                <span className="text-sm">ອາກອນ (%):</span>
                                 <input type="number" value={taxPercent} onChange={(e) => setTaxPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100"/>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>ภาษี:</span>
-                                <span id="taxAmount">฿{cartTaxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ອາກອນ:</span>
+                                <span id="taxAmount">₭{cartTaxAmount.toLocaleString('lo-LA')}</span>
                             </div>
                             <div className="border-t pt-2">
                                 <div className="flex justify-between text-lg font-bold">
-                                    <span>ยอดชำระ:</span>
-                                    <span id="grandTotal">฿{cartGrandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                    <span>ຍອດຊຳລະ:</span>
+                                    <span id="grandTotal">₭{cartGrandTotal.toLocaleString('lo-LA')}</span>
                                 </div>
                             </div>
                         </div>
@@ -678,10 +678,10 @@ export default function Home() {
                         {/* Action Buttons */}
                         <div className="space-y-3 mt-6">
                             <button onClick={clearCart} className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ล้างตะกร้า
+                                ລ້າງກະຕ່າ
                             </button>
                             <button onClick={processPayment} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200 disabled:bg-gray-300" disabled={cart.length === 0}>
-                                ชำระเงิน
+                                ຊຳລະເງິນ
                             </button>
                         </div>
                     </div>
@@ -696,11 +696,11 @@ export default function Home() {
                  <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                 </svg>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">ส่วนจัดการสินค้าถูกย้ายไปที่หน้าใหม่</h3>
-                <p className="mt-2 text-gray-500">กรุณาใช้เมนู "จัดการสินค้า" เพื่อเข้าถึงสต็อกสินค้า</p>
+                <h3 className="mt-4 text-lg font-medium text-gray-900">ສ່ວນຈັດການສິນຄ້າຖືກຍ້າຍໄປທີ່ໜ້າໃໝ່</h3>
+                <p className="mt-2 text-gray-500">ກະລຸນາໃຊ້ເມນູ "ຈັດການສິນຄ້າ" ເພື່ອເຂົ້າເຖິງສະຕັອກສິນຄ້າ</p>
                 <div className="mt-6">
                     <Link href="/stock" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        ไปที่หน้าจัดการสินค้า
+                        ໄປທີ່ໜ້າຈັດການສິນຄ້າ
                     </Link>
                 </div>
             </div>
@@ -709,45 +709,45 @@ export default function Home() {
         {/* Receive Tab */}
         <div id="content-receive" className={currentTab === 'receive' ? 'tab-content' : 'tab-content hidden'}>
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">รับสินค้าเข้าคลัง</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">ຮັບສິນຄ້າເຂົ້າຄັງ</h2>
                 <form onSubmit={handleReceiveSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">เลือกอะไหล่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ເລືອກສິ້ນສ່ວນ</label>
                         <select value={receivePartId} onChange={e => setReceivePartId(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกอะไหล่</option>
+                            <option value="">ເລືອກສິ້ນສ່ວນ</option>
                             {inventory.map(item => (
                                 <option key={item.id} value={item.id}>
-                                    {item.partCode} - {item.partName} (คงเหลือ: {item.quantity})
+                                    {item.partCode} - {item.partName} (ຄົງເຫຼືອ: {item.quantity})
                                 </option>
                             ))}
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนที่รับเข้า</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນທີ່ຮັບເຂົ້າ</label>
                         <input type="number" value={receiveQuantity} onChange={e => setReceiveQuantity(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="1" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ราคาต้นทุน/ชิ้น</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລາຄາຕົ້ນทุน/ອັນ</label>
                         <input type="number" value={receiveCost} onChange={e => setReceiveCost(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ซัพพลายเออร์</label>
-                        <input type="text" value={receiveSupplier} onChange={e => setReceiveSupplier(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อร้านค้า/ซัพพลายเออร์" required/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຜູ້ສະໜອງ</label>
+                        <input type="text" value={receiveSupplier} onChange={e => setReceiveSupplier(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ຮ້ານຄ້າ/ຜູ້ສະໜອງ" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">วันที่รับ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ວັນທີຮັບ</label>
                         <input type="date" value={receiveDate} onChange={e => setReceiveDate(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
-                        <input type="text" value={receiveNote} onChange={e => setReceiveNote(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="หมายเหตุเพิ่มเติม"/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ໝາຍເຫດ</label>
+                        <input type="text" value={receiveNote} onChange={e => setReceiveNote(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ໝາຍເຫດເພີ່ມເຕີມ"/>
                     </div>
                     <div className="md:col-span-2">
                         <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            บันทึกการรับสินค้า
+                            ບັນທຶກການຮັບສິນຄ້າ
                         </button>
                     </div>
                 </form>
@@ -756,29 +756,29 @@ export default function Home() {
             {/* Receive History */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">ประวัติการรับสินค้า</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">ປະຫວັດການຮັບສິນຄ້າ</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสอะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ต้นทุน/ชิ้น</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ซัพพลายเออร์</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมายเหตุ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ວັນທີ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລະຫັດສິ້ນສ່ວນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ສິ້ນສ່ວນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈຳນວນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຕົ້ນทุน/ອັນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຜູ້ສະໜອງ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ໝາຍເຫດ</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {[...receiveHistory].reverse().slice(0, 20).map(record => (
                                 <tr key={record.id} className="hover:bg-gray-50 fade-in">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(record.date).toLocaleDateString('th-TH')}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{new Date(record.date).toLocaleDateString('lo-LA')}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{record.partCode}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{record.partName}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{record.quantity.toLocaleString()}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿{record.cost.toLocaleString('th-TH', {minimumFractionDigits: 2})}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₭{record.cost.toLocaleString('lo-LA')}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.supplier}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{record.note || '-'}</td>
                                 </tr>
@@ -801,8 +801,8 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">ยอดขายวันนี้</p>
-                            <p className="text-2xl font-bold text-gray-900">{`฿${todayTotal.toLocaleString('th-TH')}`}</p>
+                            <p className="text-sm font-medium text-gray-600">ຍອດຂາຍມື້ນີ້</p>
+                            <p className="text-2xl font-bold text-gray-900">{`₭${todayTotal.toLocaleString('lo-LA')}`}</p>
                         </div>
                     </div>
                 </div>
@@ -814,7 +814,7 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">รายการทั้งหมด</p>
+                            <p className="text-sm font-medium text-gray-600">ລາຍການທັງໝົດ</p>
                             <p className="text-2xl font-bold text-gray-900">{inventory.length}</p>
                         </div>
                     </div>
@@ -827,8 +827,8 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">มูลค่าสต๊อก</p>
-                            <p className="text-2xl font-bold text-gray-900">{`฿${stockValue.toLocaleString('th-TH')}`}</p>
+                            <p className="text-sm font-medium text-gray-600">ມູນຄ່າສະຕັອກ</p>
+                            <p className="text-2xl font-bold text-gray-900">{`₭${stockValue.toLocaleString('lo-LA')}`}</p>
                         </div>
                     </div>
                 </div>
@@ -836,21 +836,21 @@ export default function Home() {
 
             {/* Best Selling Items */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">🏆 อะไหล่ขายดี (7 วันที่ผ่านมา)</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">🏆 ສິ້ນສ່ວນຂາຍດີ (7 ມື້ທີ່ຜ່ານມາ)</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อันดับ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวนขาย</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยอดขาย</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ອັນດັບ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລະຫັດ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ສິ້ນສ່ວນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈຳນວນຂາຍ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຍອດຂາຍ</th>
                             </tr>
                         </thead>
                         <tbody className="bg-white divide-y divide-gray-200">
                             {bestSelling.length === 0 ? (
-                                <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูลการขายใน 7 วันที่ผ่านมา</td></tr>
+                                <tr><td colSpan={5} className="px-6 py-4 text-center text-gray-500">ບໍ່ມີຂໍ້ມູນການຂາຍໃນ 7 ມື້ທີ່ຜ່ານມາ</td></tr>
                             ) : (
                                 bestSelling.map((item, index) => (
                                     <tr key={item.partCode} className="hover:bg-gray-50">
@@ -858,7 +858,7 @@ export default function Home() {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.partCode}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{item.partName}</td>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-semibold">{item.quantity}</td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">฿{item.amount.toLocaleString('th-TH')}</td>
+                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₭{item.amount.toLocaleString('lo-LA')}</td>
                                     </tr>
                                 ))
                             )}
@@ -874,29 +874,29 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">ชำระเงิน</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">ຊຳລະເງິນ</h3>
                 </div>
                 <div className="p-6">
                     <div className="mb-4">
                         <div className="text-center mb-4">
-                            <p className="text-2xl font-bold text-gray-900">ยอดชำระ: <span>฿{cartGrandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span></p>
+                            <p className="text-2xl font-bold text-gray-900">ຍອດຊຳລະ: <span>₭{cartGrandTotal.toLocaleString('lo-LA')}</span></p>
                         </div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเงินที่รับ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນເງິນທີ່ຮັບ</label>
                         <input type="number" value={paymentReceived} onChange={e => setPaymentReceived(parseFloat(e.target.value))} className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" min="0"/>
                     </div>
                     <div className="mb-4">
                         <div className="flex justify-between text-lg">
-                            <span>เงินทอน:</span>
-                            <span className="font-bold">฿{Math.max(0, paymentChange).toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                            <span>ເງິນທອນ:</span>
+                            <span className="font-bold">₭{Math.max(0, paymentChange).toLocaleString('lo-LA')}</span>
                         </div>
                     </div>
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อลูกค้า (ไม่บังคับ)</label>
-                        <input type="text" value={paymentCustomerName} onChange={e => setPaymentCustomerName(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อลูกค้า"/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ລູກຄ້າ (ບໍ່ບັງຄັບ)</label>
+                        <input type="text" value={paymentCustomerName} onChange={e => setPaymentCustomerName(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ລູກຄ້າ"/>
                     </div>
                     <div className="flex space-x-3">
-                        <button onClick={completeSale} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยืนยันการชำระ</button>
-                        <button onClick={() => setPaymentModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                        <button onClick={completeSale} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຢືນຢັນການຊຳລະ</button>
+                        <button onClick={() => setPaymentModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                     </div>
                 </div>
             </div>
@@ -908,31 +908,31 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">ใบเสร็จรับเงิน</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">ໃບຮັບເງິນ</h3>
                 </div>
                 <div className="p-6">
                     <div className="receipt-print">
                         <div className="text-center mb-4">
-                            <h2 className="font-bold text-lg">ร้านอะไหล่รถยนต์</h2>
+                            <h2 className="font-bold text-lg">ຮ້ານສິ້ນສ່ວນລົດຍົນ</h2>
                             <p className="text-sm">Auto Parts Shop</p>
-                            <p className="text-sm">โทร: 02-xxx-xxxx</p>
+                            <p className="text-sm">ໂທ: 02-xxx-xxxx</p>
                             <hr className="my-2"/>
                         </div>
                         <div className="mb-4">
                             <div className="flex justify-between text-sm">
-                                <span>ใบเสร็จเลขที่:</span>
+                                <span>ໃບຮັບເງິນເລກທີ:</span>
                                 <span>{String(receiptToShow.receiptNumber).padStart(6, '0')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>วันที่:</span>
-                                <span>{new Date().toLocaleDateString('th-TH')} {new Date().toLocaleTimeString('th-TH')}</span>
+                                <span>ວັນທີ:</span>
+                                <span>{new Date().toLocaleDateString('lo-LA')} {new Date().toLocaleTimeString('lo-LA')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>ลูกค้า:</span>
+                                <span>ລູກຄ້າ:</span>
                                 <span>{receiptToShow.customerName}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>พนักงาน:</span>
+                                <span>ພະນັກງານ:</span>
                                 <span>{receiptToShow.cashier}</span>
                             </div>
                         </div>
@@ -943,10 +943,10 @@ export default function Home() {
                                     <div class="flex-1">
                                         <div>${item.partCode}</div>
                                         <div class="text-xs text-gray-600">${item.partName}</div>
-                                        <div class="text-xs">${item.quantity} x ฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
+                                        <div class="text-xs">${item.quantity} x ₭${item.price.toLocaleString('lo-LA')}</div>
                                     </div>
                                     <div class="text-right">
-                                        ฿${(item.quantity * item.price).toLocaleString('th-TH', {minimumFractionDigits: 2})}
+                                        ₭${(item.quantity * item.price).toLocaleString('lo-LA')}
                                     </div>
                                 </div>
                             `).join('')}
@@ -954,43 +954,43 @@ export default function Home() {
                         <hr className="my-2"/>
                         <div className="mb-4">
                             <div className="flex justify-between text-sm">
-                                <span>ยอดรวม:</span>
-                                <span>฿{receiptToShow.subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ຍອດລວມ:</span>
+                                <span>₭{receiptToShow.subtotal.toLocaleString('lo-LA')}</span>
                             </div>
                             {receiptToShow.discountAmount > 0 ? `
                                 <div class="flex justify-between text-sm">
-                                    <span>ส่วนลด (${receiptToShow.discountPercent}%):</span>
-                                    <span>-฿${receiptToShow.discountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                    <span>ສ່ວນຫຼຸດ (${receiptToShow.discountPercent}%):</span>
+                                    <span>-₭${receiptToShow.discountAmount.toLocaleString('lo-LA')}</span>
                                 </div>
                             ` : ''}
                             {receiptToShow.taxAmount > 0 ? `
                                 <div class="flex justify-between text-sm">
-                                    <span>ภาษี (${receiptToShow.taxPercent}%):</span>
-                                    <span>฿${receiptToShow.taxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                    <span>ອາກອນ (${receiptToShow.taxPercent}%):</span>
+                                    <span>₭${receiptToShow.taxAmount.toLocaleString('lo-LA')}</span>
                                 </div>
                             ` : ''}
                             <div className="flex justify-between font-bold">
-                                <span>ยอดชำระ:</span>
-                                <span>฿{receiptToShow.grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ຍອດຊຳລະ:</span>
+                                <span>₭{receiptToShow.grandTotal.toLocaleString('lo-LA')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>รับเงิน:</span>
-                                <span>฿{receiptToShow.received.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ຮັບເງິນ:</span>
+                                <span>₭{receiptToShow.received.toLocaleString('lo-LA')}</span>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>เงินทอน:</span>
-                                <span>฿{receiptToShow.change.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
+                                <span>ເງິນທອນ:</span>
+                                <span>₭{receiptToShow.change.toLocaleString('lo-LA')}</span>
                             </div>
                         </div>
                         <hr className="my-2"/>
                         <div className="text-center text-xs">
-                            <p>ขอบคุณที่ใช้บริการ</p>
+                            <p>ຂອບໃຈທີ່ໃຊ້ບໍລິການ</p>
                             <p>Thank you for your business</p>
                         </div>
                     </div>
                     <div className="flex space-x-3 mt-6">
-                        <button onClick={printReceipt} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>
-                        <button onClick={() => setReceiptModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
+                        <button onClick={printReceipt} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ພິມໃບຮັບເງິນ</button>
+                        <button onClick={() => setReceiptModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ປິດ</button>
                     </div>
                 </div>
             </div>
@@ -1002,16 +1002,16 @@ export default function Home() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">แก้ไขจำนวนสต๊อก</h3>
+                    <h3 className="text-lg font-semibold text-gray-900">ແກ້ໄຂຈຳນວນສະຕັອກ</h3>
                 </div>
                 <div className="p-6">
                     <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนใหม่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນໃໝ່</label>
                         <input type="number" value={editQuantity} onChange={(e) => setEditQuantity(Number(e.target.value))} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0"/>
                     </div>
                     <div className="flex space-x-3">
-                        <button onClick={handleSaveEdit} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">บันทึก</button>
-                        <button onClick={() => setEditModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                        <button onClick={handleSaveEdit} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ບັນທຶກ</button>
+                        <button onClick={() => setEditModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                     </div>
                 </div>
             </div>
