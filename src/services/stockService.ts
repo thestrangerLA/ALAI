@@ -15,7 +15,8 @@ import {
 import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
-const stockCollectionRef = collection(db, "stockReceive");
+const staticUserId = "default-user";
+const stockCollectionRef = collection(db, "users", staticUserId, "stockReceive"); 
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
   const q = query(stockCollectionRef, orderBy("createdAt", "desc"));
@@ -39,7 +40,9 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'u
     }
     
     await addDoc(stockCollectionRef, { 
-      ...item, 
+      ...item,
+      date: item.date || new Date().toISOString().split('T')[0],
+      note: item.note || '',
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp() 
     });
@@ -54,7 +57,7 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt' | 'u
 }
 
 export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
-  const itemDoc = doc(db, "stockReceive", id);
+  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
   try {
      if (updatedFields.productCode) {
       const existingItemQuery = query(
@@ -62,7 +65,7 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
         where("productCode", "==", updatedFields.productCode)
       );
       const existingItemSnapshot = await getDocs(existingItemQuery);
-      // Check if any document found with the same product code is not the one we are currently editing
+      
       const isDuplicate = existingItemSnapshot.docs.some(document => document.id !== id);
       
       if (isDuplicate) {
@@ -85,7 +88,7 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(db, "stockReceive", id);
+  const itemDoc = doc(db, "users", staticUserId, "stockReceive", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {

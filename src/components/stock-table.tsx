@@ -70,7 +70,17 @@ export function StockTable({ data, onAddItem, onUpdateItem, onDeleteItem, search
         if (isEdit && currentItem.id) {
             onUpdateItem(currentItem.id, currentItem);
         } else {
-            onAddItem(currentItem as Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'>);
+            const newItem: Omit<StockItem, 'id' | 'createdAt' | 'updatedAt'> = {
+              date: currentItem.date || new Date().toISOString().split('T')[0],
+              productCode: currentItem.productCode || '',
+              productName: currentItem.productName || '',
+              quantity: currentItem.quantity || 0,
+              costPrice: currentItem.costPrice || 0,
+              sellPrice: currentItem.sellPrice || 0,
+              supplier: currentItem.supplier || '',
+              note: currentItem.note || '',
+            };
+            onAddItem(newItem);
         }
         setDialogOpen(false);
     };
