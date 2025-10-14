@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useAuth, useUser, useFirestore, useCollection } from '@/firebase';
+import { useAuth, useUser, useFirestore, useCollection, useMemoFirebase } from '@/firebase';
 import { collection, query, orderBy, addDoc, serverTimestamp } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -23,14 +23,14 @@ export default function PartsDashboard() {
 
   const [searchTerm, setSearchTerm] = useState('');
 
-  const partsQuery = useMemo(() => {
+  const partsQuery = useMemoFirebase(() => {
     if (!user) return null;
     return query(collection(firestore, 'users', user.uid, 'parts'), orderBy('name', 'asc'));
   }, [user, firestore]);
 
   const { data: parts, loading: partsLoading } = useCollection(partsQuery);
 
-  const filteredParts = useMemo(() => {
+  const filteredParts = useMemoFirebase(() => {
     if (!parts) return [];
     return parts.filter((part) =>
       part.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

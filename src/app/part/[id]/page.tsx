@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
-import { useAuth, useUser, useFirestore, useDoc } from '@/firebase';
+import { useAuth, useUser, useFirestore, useDoc, useMemoFirebase } from '@/firebase';
 import { doc, setDoc, addDoc, deleteDoc, serverTimestamp, collection } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
@@ -39,7 +39,7 @@ export default function PartEditPage() {
   const auth = useAuth();
   const firestore = useFirestore();
 
-  const partDocRef = useMemo(() => {
+  const partDocRef = useMemoFirebase(() => {
     if (!user || !firestore || !id) return null;
     return doc(firestore, 'users', user.uid, 'parts', id);
   }, [user, firestore, id]);
