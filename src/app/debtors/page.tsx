@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, Users, DollarSign, CheckCircle, Calendar, Eye } from 'lucide-react';
@@ -54,6 +55,19 @@ export default function DebtorsPage() {
     setFilteredDebtors(debtorsToFilter);
 
   }, [selectedYear, selectedMonth, allDebtors]);
+  
+  const groupedDebtors = useMemo(() => {
+    const groups: { [key: string]: Debtor[] } = {};
+    filteredDebtors.forEach(debtor => {
+      const dateString = debtor.saleDate.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      if (!groups[dateString]) {
+        groups[dateString] = [];
+      }
+      groups[dateString].push(debtor);
+    });
+    return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
+  }, [filteredDebtors]);
+
 
   const calculateStats = (debtorsData: Debtor[]) => {
     const now = new Date();
@@ -171,39 +185,56 @@ export default function DebtorsPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>ວັນທີ</TableHead>
-                  <TableHead>ເລກທີ່ Invoice</TableHead>
-                  <TableHead>ຊື່ລູກຄ້າ</TableHead>
-                  <TableHead className="text-right">ຍອດຄ້າງຊຳລະ</TableHead>
-                  <TableHead className="text-center">ຈັດການ</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredDebtors.length > 0 ? filteredDebtors.map(debtor => (
-                  <TableRow key={debtor.id}>
-                    <TableCell>{debtor.saleDate.toDate().toLocaleDateString('lo-LA')}</TableCell>
-                    <TableCell className="font-medium">{debtor.invoiceNumber}</TableCell>
-                    <TableCell>{debtor.customerName || '-'}</TableCell>
-                    <TableCell className="text-right font-semibold text-red-600">{formatCurrency(debtor.totalAmount)}</TableCell>
-                    <TableCell className="text-center space-x-2">
-                      <Button variant="outline" size="sm" onClick={() => setSelectedDebtor(debtor)}>
-                        <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
-                      </Button>
-                      <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleMarkAsPaid(debtor)}>
-                         <CheckCircle className="h-4 w-4 mr-1"/> ບັນທຶກການຈ່າຍເງິນ
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                )) : (
-                  <TableRow>
-                    <TableCell colSpan={5} className="h-24 text-center">-- ບໍ່ມີລາຍການລູກໜີ້ --</TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+            {groupedDebtors.length > 0 ? (
+                 <Accordion type="multiple" className="w-full">
+                    {groupedDebtors.map(([date, debtors]) => {
+                       const dailyTotal = debtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+                        return (
+                             <AccordionItem value={date} key={date}>
+                                <AccordionTrigger>
+                                    <div className='flex justify-between w-full pr-4'>
+                                        <span>{new Date(date).toLocaleDateString('lo-LA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                        <span className='font-semibold text-red-600'>{formatCurrency(dailyTotal)}</span>
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead>ເລກທີ່ Invoice</TableHead>
+                                                <TableHead>ຊື່ລູກຄ້າ</TableHead>
+                                                <TableHead>ເວລາ</TableHead>
+                                                <TableHead className="text-right">ຍອດຄ້າງຊຳລະ</TableHead>
+                                                <TableHead className="text-center">ຈັດການ</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                        {debtors.map(debtor => (
+                                            <TableRow key={debtor.id}>
+                                                <TableCell className="font-medium">{debtor.invoiceNumber}</TableCell>
+                                                <TableCell>{debtor.customerName || '-'}</TableCell>
+                                                <TableCell>{debtor.saleDate.toDate().toLocaleTimeString('lo-LA')}</TableCell>
+                                                <TableCell className="text-right font-semibold text-red-600">{formatCurrency(debtor.totalAmount)}</TableCell>
+                                                <TableCell className="text-center space-x-2">
+                                                    <Button variant="outline" size="sm" onClick={() => setSelectedDebtor(debtor)}>
+                                                        <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
+                                                    </Button>
+                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleMarkAsPaid(debtor)}>
+                                                        <CheckCircle className="h-4 w-4 mr-1"/> ບັນທຶກການຈ່າຍເງິນ
+                                                    </Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                        </TableBody>
+                                    </Table>
+                                </AccordionContent>
+                            </AccordionItem>
+                        )
+                    })}
+                </Accordion>
+            ) : (
+                <div className="h-24 text-center content-center">-- ບໍ່ພົບຂໍ້ມູນລູກໜີ້ທີ່ກົງກັບການກັ່ນຕອງ --</div>
+            )}
           </CardContent>
         </Card>
       </main>
