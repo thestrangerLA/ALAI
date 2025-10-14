@@ -1,11 +1,10 @@
 
 export interface StockItem {
   id: string;
-  name: string;
+  partCode: string;
+  partName: string;
   category: string;
-  currentStock: number;
-  costPrice: number;
-  costPriceBaht: number;
+  quantity: number;
+  price: number;
+  createdAt: any;
 }
-
-    

@@ -6,33 +6,34 @@ import {
   updateDoc, 
   deleteDoc, 
   doc,
-  getFirestore
+  serverTimestamp,
+  query,
+  orderBy
 } from "firebase/firestore";
 import type { StockItem } from "@/lib/types";
 import { initializeFirebase } from "@/firebase";
 
-// This is a simplified service. In a real app, you'd handle errors and security.
-
 const { firestore } = initializeFirebase();
-const stockCollection = collection(firestore, "stockItems");
+const stockCollectionRef = collection(firestore, "inventory");
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
-  return onSnapshot(stockCollection, (snapshot) => {
+  const q = query(stockCollectionRef, orderBy("createdAt", "desc"));
+  return onSnapshot(q, (snapshot) => {
     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockItem));
     callback(items);
   });
 }
 
-export async function addStockItem(item: Omit<StockItem, 'id'>) {
+export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>) {
   try {
-    await addDoc(stockCollection, item);
+    await addDoc(stockCollectionRef, { ...item, createdAt: serverTimestamp() });
   } catch (e) {
     console.error("Error adding document: ", e);
   }
 }
 
-export async function updateStockItem(id: string, updatedFields: Partial<StockItem>) {
-  const itemDoc = doc(firestore, "stockItems", id);
+export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
+  const itemDoc = doc(firestore, "inventory", id);
   try {
     await updateDoc(itemDoc, updatedFields);
   } catch (e) {
@@ -41,12 +42,10 @@ export async function updateStockItem(id: string, updatedFields: Partial<StockIt
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(firestore, "stockItems", id);
+  const itemDoc = doc(firestore, "inventory", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {
     console.error("Error deleting document: ", e);
   }
 }
-
-    

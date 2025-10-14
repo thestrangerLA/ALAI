@@ -1,5 +1,5 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 
 interface StatCardProps {
     title: string;
@@ -10,9 +10,9 @@ interface StatCardProps {
 
 export function StatCard({ title, value, icon, description }: StatCardProps) {
     return (
-        <Card>
+        <Card className="transition-all hover:shadow-lg hover:-translate-y-1">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <CardTitle className="text-sm font-medium text-gray-600">{title}</CardTitle>
                 {icon}
             </CardHeader>
             <CardContent>
@@ -24,5 +24,3 @@ export function StatCard({ title, value, icon, description }: StatCardProps) {
         </Card>
     )
 }
-
-    
