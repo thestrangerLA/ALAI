@@ -34,7 +34,10 @@ export default function StockPage() {
   };
 
   const handleUpdateItem = async (id: string, updatedFields: Partial<StockItem>) => {
-    await updateStockItem(id, updatedFields);
+    const result = await updateStockItem(id, updatedFields);
+     if (result) {
+      alert(result); // Show the error message from the service
+    }
   };
 
   const handleDeleteItem = async (id: string) => {
