@@ -20,12 +20,12 @@ export default function InvoicePage() {
   }, []);
 
   const handleSaveInvoice = async (invoiceData: any) => {
-    try {
-      await saveSale(invoiceData);
+    const result = await saveSale(invoiceData);
+    if (result.success) {
+      alert(result.message);
       invoiceFormRef.current?.resetForm();
-    } catch (error) {
-      console.error("Error saving invoice: ", error);
-      alert('Failed to save invoice.');
+    } else {
+      alert(`Failed to save invoice: ${result.message}`);
     }
   };
 

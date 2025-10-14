@@ -13,35 +13,52 @@ import {
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
 
-// Use a simple root collection name
 const salesCollectionRef = collection(db, "sales");
 const stockCollectionRef = collection(db, "stockReceive"); 
 
-export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
+export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}): Promise<{success: boolean, message: string}> {
   const batch = writeBatch(db);
 
-  // 1. Create a new sale document
-  const saleRef = doc(salesCollectionRef);
-  batch.set(saleRef, {
-      ...saleData,
-      saleDate: Timestamp.fromDate(saleData.saleDate),
-  });
+  try {
+    // 1. Create a new sale document
+    const saleRef = doc(salesCollectionRef);
+    batch.set(saleRef, {
+        ...saleData,
+        saleDate: Timestamp.fromDate(saleData.saleDate),
+    });
 
-  // 2. Update stock quantities for each item sold
-  for (const item of saleData.items) {
-    const itemRef = doc(stockCollectionRef, item.id);
-    const itemDoc = await getDoc(itemRef);
-    if (itemDoc.exists()) {
-        const currentQuantity = itemDoc.data().quantity;
-        const newQuantity = currentQuantity - item.sellQuantity;
-        batch.update(itemRef, { quantity: newQuantity });
-    } else {
-      console.warn(`Stock item with id ${item.id} not found. Cannot update quantity.`);
+    // 2. Update stock quantities for each item sold
+    for (const item of saleData.items) {
+      if (!item.id) {
+        throw new Error(`Invoice item ${item.productName} is missing an ID.`);
+      }
+      const itemRef = doc(stockCollectionRef, item.id);
+      const itemDoc = await getDoc(itemRef);
+
+      if (itemDoc.exists()) {
+          const currentQuantity = itemDoc.data().quantity;
+          const newQuantity = currentQuantity - item.sellQuantity;
+          if (newQuantity < 0) {
+            throw new Error(`Not enough stock for ${item.productName}. Only ${currentQuantity} left.`);
+          }
+          batch.update(itemRef, { quantity: newQuantity });
+      } else {
+        // This case should ideally not happen if items are added from existing stock
+        throw new Error(`Stock item with id ${item.id} not found. Cannot update quantity.`);
+      }
     }
-  }
 
-  // 3. Commit the batch
-  await batch.commit();
+    // 3. Commit the batch
+    await batch.commit();
+    return { success: true, message: "Sale recorded successfully!" };
+
+  } catch (error) {
+    console.error("Error saving sale: ", error);
+    if (error instanceof Error) {
+        return { success: false, message: error.message };
+    }
+    return { success: false, message: "An unknown error occurred while saving the sale." };
+  }
 }
 
 export function listenToSales(callback: (sales: Sale[]) => void) {
