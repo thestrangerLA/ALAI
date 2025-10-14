@@ -8,7 +8,7 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 const fontSans = Noto_Sans_Lao({
   subsets: ["lao", "latin"],
   variable: "--font-sans",
-  weight: ["400", "700"],
+  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
 export const metadata: Metadata = {
