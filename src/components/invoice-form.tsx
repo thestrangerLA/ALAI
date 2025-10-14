@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import type { StockItem } from '@/lib/types';
+import type { StockItem, InvoiceItem as InvoiceItemType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -14,18 +14,15 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Trash2, Search, Printer, RotateCcw } from 'lucide-react';
-
-interface InvoiceItem extends StockItem {
-  sellQuantity: number;
-}
+import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
 
 interface InvoiceFormProps {
   allItems: StockItem[];
+  onSave: (invoiceData: any) => void;
 }
 
-export function InvoiceForm({ allItems }: InvoiceFormProps) {
-  const [invoiceItems, setInvoiceItems] = useState<InvoiceItem[]>([]);
+export function InvoiceForm({ allItems, onSave }: InvoiceFormProps) {
+  const [invoiceItems, setInvoiceItems] = useState<InvoiceItemType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
   const [customerName, setCustomerName] = useState('');
@@ -84,6 +81,24 @@ export function InvoiceForm({ allItems }: InvoiceFormProps) {
     setCustomerName('');
     setInvoiceNumber(`INV-${Date.now()}`);
     setInvoiceDate(new Date().toISOString().split('T')[0]);
+  }
+
+  const handleSave = () => {
+    if (invoiceItems.length === 0) {
+      alert("Please add items to the invoice before saving.");
+      return;
+    }
+    const saleData = {
+      invoiceNumber,
+      customerName,
+      saleDate: new Date(invoiceDate),
+      items: invoiceItems.map(item => ({
+        ...item,
+        sellQuantity: item.sellQuantity
+      })),
+      totalAmount,
+    };
+    onSave(saleData);
   }
 
   const totalAmount = useMemo(() => {
@@ -227,6 +242,7 @@ export function InvoiceForm({ allItems }: InvoiceFormProps) {
       <div className="mt-8 flex justify-end gap-2 no-print">
         <Button variant="outline" onClick={handleReset}><RotateCcw className="mr-2 h-4 w-4"/>ລ້າງລາຍການ</Button>
         <Button onClick={handlePrint} disabled={invoiceItems.length === 0}><Printer className="mr-2 h-4 w-4"/>ພິມໃບເກັບເງິນ</Button>
+        <Button onClick={handleSave} disabled={invoiceItems.length === 0} className="bg-green-600 hover:bg-green-700 text-white"><Save className="mr-2 h-4 w-4"/>ບັນທຶກການຂາຍ</Button>
       </div>
     </>
   );

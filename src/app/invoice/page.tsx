@@ -3,19 +3,33 @@
 
 import { useState, useEffect } from 'react';
 import { listenToStockItems } from '@/services/stockService';
+import { saveSale } from '@/services/salesService';
 import type { StockItem } from '@/lib/types';
 import { InvoiceForm } from '@/components/invoice-form';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ArrowLeft, FileText } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function InvoicePage() {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const router = useRouter();
 
   useEffect(() => {
     const unsubscribe = listenToStockItems(setStockItems);
     return () => unsubscribe();
   }, []);
+
+  const handleSaveInvoice = async (invoiceData: any) => {
+    try {
+      await saveSale(invoiceData);
+      // alert('Invoice saved successfully!');
+      router.push('/sales');
+    } catch (error) {
+      console.error("Error saving invoice: ", error);
+      alert('Failed to save invoice.');
+    }
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -37,7 +51,7 @@ export default function InvoicePage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <InvoiceForm allItems={stockItems} />
+        <InvoiceForm allItems={stockItems} onSave={handleSaveInvoice} />
       </main>
     </div>
   );

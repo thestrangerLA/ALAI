@@ -11,7 +11,7 @@ import {
 import { useFirestore, useUser } from '@/firebase';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { HardHat, ShoppingCart } from 'lucide-react';
+import { HardHat, ShoppingCart, FileText } from 'lucide-react';
 
 // Mock data structure, will be replaced by Firestore data
 interface InventoryItem {
@@ -96,13 +96,17 @@ export default function Home() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="bg-white rounded-xl shadow-lg p-2">
             <nav className="flex space-x-2 overflow-x-auto">
-                <Link href="/stock" className={`tab-active px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
+                <Link href="/stock" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <HardHat className="w-5 h-5 mr-2" />
                     ຈັດການສິນຄ້າ
                 </Link>
-                <Link href="/invoice" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
+                <Link href="/invoice" className={`tab-active px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     ອອກບິນ
+                </Link>
+                <Link href="/sales" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
+                    <FileText className="w-5 h-5 mr-2" />
+                    ລາຍງານການຂາຍ
                 </Link>
             </nav>
         </div>
