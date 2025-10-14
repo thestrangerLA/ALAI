@@ -48,16 +48,22 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
   }));
 
   useEffect(() => {
-    if (searchQuery.length > 0) {
-      const results = allItems.filter(
-        item =>
-          item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.partCode.toLowerCase().includes(searchQuery.toLowerCase())
-      ).slice(0, 5); // Limit results to 5 for performance
-      setSearchResults(results);
-    } else {
-      setSearchResults([]);
-    }
+    const handler = setTimeout(() => {
+      if (searchQuery.length > 0) {
+        const results = allItems.filter(
+          item =>
+            item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            item.partCode.toLowerCase().includes(searchQuery.toLowerCase())
+        ).slice(0, 5); // Limit results to 5 for performance
+        setSearchResults(results);
+      } else {
+        setSearchResults([]);
+      }
+    }, 300); // 300ms debounce
+
+    return () => {
+      clearTimeout(handler);
+    };
   }, [searchQuery, allItems]);
   
   const handleAddItem = (item: StockItem, selectedPrice: number) => {
@@ -276,3 +282,5 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
 });
 
 InvoiceForm.displayName = 'InvoiceForm';
+
+    
