@@ -9,17 +9,56 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, DollarSign, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, CheckCircle, Calendar, UserPlus } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 export default function DebtorsPage() {
   const [debtors, setDebtors] = useState<Debtor[]>([]);
   const [selectedDebtor, setSelectedDebtor] = useState<Debtor | null>(null);
 
+  // Stats State
+  const [debtThisMonth, setDebtThisMonth] = useState(0);
+  const [newDebtorsThisMonthCount, setNewDebtorsThisMonthCount] = useState(0);
+  const [debtLastMonth, setDebtLastMonth] = useState(0);
+  const [newDebtorsLastMonthCount, setNewDebtorsLastMonthCount] = useState(0);
+
   useEffect(() => {
-    const unsubscribe = listenToDebtors(setDebtors);
+    const unsubscribe = listenToDebtors((allDebtors) => {
+        setDebtors(allDebtors);
+        calculateStats(allDebtors);
+    });
     return () => unsubscribe();
   }, []);
+
+  const calculateStats = (allDebtors: Debtor[]) => {
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
+
+    let thisMonthDebt = 0;
+    let thisMonthCount = 0;
+    let lastMonthDebt = 0;
+    let lastMonthCount = 0;
+
+    allDebtors.forEach(debtor => {
+        const saleDate = debtor.saleDate.toDate();
+        if (saleDate >= startOfThisMonth && saleDate <= endOfThisMonth) {
+            thisMonthDebt += debtor.totalAmount;
+            thisMonthCount++;
+        } else if (saleDate >= startOfLastMonth && saleDate <= endOfLastMonth) {
+            lastMonthDebt += debtor.totalAmount;
+            lastMonthCount++;
+        }
+    });
+
+    setDebtThisMonth(thisMonthDebt);
+    setNewDebtorsThisMonthCount(thisMonthCount);
+    setDebtLastMonth(lastMonthDebt);
+    setNewDebtorsLastMonthCount(lastMonthCount);
+  };
+
 
   const totalDebt = useMemo(() => {
     return debtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
@@ -57,12 +96,24 @@ export default function DebtorsPage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
                 title="ຍອດໜີ້ລວມທັງໝົດ"
                 value={formatCurrency(totalDebt)}
                 icon={<DollarSign className="h-5 w-5 text-red-500" />}
                 description={`ຈາກ ${debtors.length} ບິນທີ່ຍັງຄ້າງຊຳລະ`}
+            />
+            <StatCard
+                title="ໜີ້ໃໝ່ເດືອນນີ້"
+                value={formatCurrency(debtThisMonth)}
+                icon={<Calendar className="h-5 w-5 text-orange-500" />}
+                description={`ຈາກ ${newDebtorsThisMonthCount} ບິນ`}
+            />
+            <StatCard
+                title="ໜີ້ໃໝ່ເດືອນກ່ອນ"
+                value={formatCurrency(debtLastMonth)}
+                icon={<Calendar className="h-5 w-5 text-blue-500" />}
+                description={`ຈາກ ${newDebtorsLastMonthCount} ບິນ`}
             />
         </div>
         <Card>
