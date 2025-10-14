@@ -1,7 +1,10 @@
 rules_version = '2';
+
+// This is a trigger to re-deploy the rules.
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Warning: This rule allows open access and should be secured before production.
+    // Allow read/write access to all documents for development purposes.
+    // WARNING: Do not use this in a production environment.
     match /{document=**} {
       allow read, write: if true;
     }
