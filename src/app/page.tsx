@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import Link from 'next/link';
-import { HardHat, ShoppingCart, FileText } from 'lucide-react';
+import { HardHat, ShoppingCart, FileText, Users } from 'lucide-react';
 import type { StockItem } from '@/lib/types';
 
 
@@ -57,6 +57,10 @@ export default function Home() {
                 <Link href="/invoice" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     ອອກບິນ
+                </Link>
+                 <Link href="/debtors" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
+                    <Users className="w-5 h-5 mr-2" />
+                    ລູກໜີ້
                 </Link>
                 <Link href="/sales" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <FileText className="w-5 h-5 mr-2" />

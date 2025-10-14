@@ -14,18 +14,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
-import { Trash2, Search, Printer, RotateCcw, Save, Tags } from 'lucide-react';
+import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
+import { Label } from './ui/label';
+import { Switch } from './ui/switch';
 
 interface InvoiceFormProps {
   allItems: StockItem[];
   onSave: (invoiceData: any) => void;
+  paymentStatus: 'paid' | 'unpaid';
+  onPaymentStatusChange: (status: 'paid' | 'unpaid') => void;
 }
 
 export interface InvoiceFormHandle {
   resetForm: () => void;
 }
 
-export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ allItems, onSave }, ref) => {
+export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ allItems, onSave, paymentStatus, onPaymentStatusChange }, ref) => {
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
@@ -112,6 +116,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     setCustomerName('');
     generateNewInvoiceNumber();
     setInvoiceDate(new Date().toISOString().split('T')[0]);
+    onPaymentStatusChange('paid');
   }
 
   const handleSave = () => {
@@ -128,6 +133,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
         sellQuantity: item.sellQuantity
       })),
       totalAmount,
+      status: paymentStatus,
     };
     onSave(saleData);
   }
@@ -199,6 +205,16 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                         <label className="text-sm font-medium">ເລກທີ່ Invoice:</label>
                         <Input value={invoiceNumber} readOnly disabled />
                     </div>
+                     <div className="flex items-center space-x-2 pt-2">
+                        <Switch 
+                            id="payment-status" 
+                            checked={paymentStatus === 'paid'}
+                            onCheckedChange={(checked) => onPaymentStatusChange(checked ? 'paid' : 'unpaid')}
+                        />
+                        <Label htmlFor="payment-status" className={`font-semibold ${paymentStatus === 'paid' ? 'text-green-600' : 'text-red-600'}`}>
+                            {paymentStatus === 'paid' ? 'ຈ່າຍແລ້ວ' : 'ຍັງບໍ່ຈ່າຍ'}
+                        </Label>
+                    </div>
                 </CardContent>
             </Card>
         </div>
@@ -210,6 +226,9 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                 <div className="flex justify-between items-center">
                     <div>
                         <h2 className="text-3xl font-bold">ໃບເກັບເງິນ / INVOICE</h2>
+                        <p className={`text-xl font-bold ${paymentStatus === 'paid' ? 'text-green-600' : 'text-red-600'}`}>
+                           ສະຖານະ: {paymentStatus === 'paid' ? 'ຈ່າຍແລ້ວ' : 'ຍັງບໍ່ຈ່າຍ'}
+                        </p>
                     </div>
                     <div className="text-right">
                          <p><strong>ເລກທີ່:</strong> {invoiceNumber}</p>
@@ -289,5 +308,3 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
 });
 
 InvoiceForm.displayName = 'InvoiceForm';
-
-    

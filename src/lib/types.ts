@@ -27,6 +27,7 @@ export interface Sale {
   saleDate: Timestamp;
   items: (Omit<InvoiceItem, 'price'> & { price: number; priceType: 'sell' | 'wholesale' })[];
   totalAmount: number;
+  status: 'paid' | 'unpaid';
 }
 
-    
+export interface Debtor extends Sale {}

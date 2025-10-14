@@ -25,6 +25,7 @@ export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDa
     batch.set(saleRef, {
         ...saleData,
         saleDate: Timestamp.fromDate(saleData.saleDate),
+        status: 'paid' // Ensure status is always 'paid' for a sale
     });
 
     // 2. Update stock quantities for each item sold

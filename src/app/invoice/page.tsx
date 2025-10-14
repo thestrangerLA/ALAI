@@ -4,6 +4,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import { saveSale } from '@/services/salesService';
+import { saveDebtor } from '@/services/debtorService';
 import type { StockItem } from '@/lib/types';
 import { InvoiceForm, type InvoiceFormHandle } from '@/components/invoice-form';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import { ArrowLeft, FileText } from 'lucide-react';
 
 export default function InvoicePage() {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
   const invoiceFormRef = useRef<InvoiceFormHandle>(null);
 
   useEffect(() => {
@@ -20,7 +22,13 @@ export default function InvoicePage() {
   }, []);
 
   const handleSaveInvoice = async (invoiceData: any) => {
-    const result = await saveSale(invoiceData);
+    let result;
+    if (invoiceData.status === 'unpaid') {
+      result = await saveDebtor(invoiceData);
+    } else {
+      result = await saveSale(invoiceData);
+    }
+
     if (result.success) {
       alert(result.message);
       invoiceFormRef.current?.resetForm();
@@ -49,7 +57,13 @@ export default function InvoicePage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <InvoiceForm ref={invoiceFormRef} allItems={stockItems} onSave={handleSaveInvoice} />
+        <InvoiceForm 
+            ref={invoiceFormRef} 
+            allItems={stockItems} 
+            onSave={handleSaveInvoice}
+            paymentStatus={paymentStatus}
+            onPaymentStatusChange={setPaymentStatus}
+        />
       </main>
     </div>
   );
