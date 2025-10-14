@@ -1,4 +1,5 @@
 
+
 'use client';
 import { useState } from "react";
 import type { StockItem } from "@/lib/types";
@@ -218,7 +219,7 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
                                     <SelectValue placeholder="เลือกหมวดหมู่" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {categories.map(cat => (
+                                    {categories.filter(Boolean).map(cat => (
                                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                     ))}
                                     <SelectItem value="add_new_category" className="text-blue-600 font-semibold">
@@ -247,3 +248,5 @@ export function StockTable({ data, categories, onAddItem, onUpdateItem, onDelete
         </Card>
     );
 }
+
+    

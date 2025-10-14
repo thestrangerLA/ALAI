@@ -1,4 +1,5 @@
 
+
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -152,7 +153,7 @@ export default function Home() {
         .filter(sale => sale.date === today)
         .reduce((sum, sale) => sum + sale.grandTotal, 0);
 
-    const categories = [...new Set(inventory.map(item => item.category))];
+    const categories = [...new Set(inventory.map(item => item.category))].filter(Boolean);
 
     const filteredPOSProducts = inventory.filter(item => {
         const searchTerm = posSearch.toLowerCase();
@@ -1019,5 +1020,7 @@ export default function Home() {
   </div>
   );
 }
+
+    
 
     
