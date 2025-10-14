@@ -9,6 +9,8 @@ import {
   query,
   orderBy,
   Timestamp,
+  updateDoc,
+  getDoc
 } from "firebase/firestore";
 import type { Sale, InvoiceItem } from "@/lib/types";
 import { db } from "@/firebase";
@@ -27,11 +29,15 @@ export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDa
   });
 
   // 2. Update stock quantities for each item sold
-  saleData.items.forEach((item: InvoiceItem) => {
+  for (const item of saleData.items) {
     const itemRef = doc(stockCollectionRef, item.id);
-    const newQuantity = item.quantity - item.sellQuantity;
-    batch.update(itemRef, { quantity: newQuantity });
-  });
+    const itemDoc = await getDoc(itemRef);
+    if (itemDoc.exists()) {
+        const currentQuantity = itemDoc.data().quantity;
+        const newQuantity = currentQuantity - item.sellQuantity;
+        batch.update(itemRef, { quantity: newQuantity });
+    }
+  }
 
   // 3. Commit the batch
   await batch.commit();
@@ -45,5 +51,7 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
       ...doc.data() 
     } as Sale));
     callback(sales);
+  }, (error) => {
+    console.error("Error listening to sales: ", error);
   });
 }

@@ -61,6 +61,8 @@ export function listenToStockItems(callback: (items: StockItem[]) => void) {
   return onSnapshot(q, (snapshot) => {
     const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as StockItem));
     callback(items);
+  }, (error) => {
+    console.error("Error listening to stock items: ", error);
   });
 }
 
