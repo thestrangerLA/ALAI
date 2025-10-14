@@ -12,6 +12,7 @@ import type { StockItem } from "@/lib/types"
 import { StatCard } from "@/components/stat-card"
 import { StockTable } from "@/components/stock-table"
 import { useState, useEffect } from "react"
+import { useSearchParams } from 'next/navigation'
 import { listenToStockItems, addStockItem, updateStockItem, deleteStockItem } from "@/services/stockService"
 import Link from "next/link"
 import { ArrowLeft, HardHat } from "lucide-react"
@@ -20,11 +21,18 @@ import { Button } from "@/components/ui/button"
 export default function StockPage() {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const searchParams = useSearchParams();
 
   useEffect(() => {
     const unsubscribe = listenToStockItems(setStockItems);
+    
+    const searchFromUrl = searchParams.get('search');
+    if (searchFromUrl) {
+      setSearchQuery(searchFromUrl);
+    }
+    
     return () => unsubscribe();
-  }, []);
+  }, [searchParams]);
 
   const handleAddItem = async (newItem: Omit<StockItem, 'id' | 'createdAt'>) => {
     await addStockItem(newItem);
