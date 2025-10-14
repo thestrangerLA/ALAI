@@ -1,7 +1,7 @@
 
 'use client';
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
 import type { StockItem, InvoiceItem as InvoiceItemType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,7 +21,11 @@ interface InvoiceFormProps {
   onSave: (invoiceData: any) => void;
 }
 
-export function InvoiceForm({ allItems, onSave }: InvoiceFormProps) {
+export interface InvoiceFormHandle {
+  resetForm: () => void;
+}
+
+export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ allItems, onSave }, ref) => {
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
@@ -29,10 +33,19 @@ export function InvoiceForm({ allItems, onSave }: InvoiceFormProps) {
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
 
-  useEffect(() => {
-    // Generate a unique invoice number
+  const generateNewInvoiceNumber = () => {
     setInvoiceNumber(`INV-${Date.now()}`);
+  }
+
+  useEffect(() => {
+    generateNewInvoiceNumber();
   }, []);
+
+  useImperativeHandle(ref, () => ({
+    resetForm() {
+      handleReset();
+    }
+  }));
 
   useEffect(() => {
     if (searchQuery.length > 0) {
@@ -79,7 +92,7 @@ export function InvoiceForm({ allItems, onSave }: InvoiceFormProps) {
   const handleReset = () => {
     setInvoiceItems([]);
     setCustomerName('');
-    setInvoiceNumber(`INV-${Date.now()}`);
+    generateNewInvoiceNumber();
     setInvoiceDate(new Date().toISOString().split('T')[0]);
   }
 
@@ -246,4 +259,6 @@ export function InvoiceForm({ allItems, onSave }: InvoiceFormProps) {
       </div>
     </>
   );
-}
+});
+
+InvoiceForm.displayName = 'InvoiceForm';
