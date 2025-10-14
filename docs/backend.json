@@ -1,121 +1,130 @@
 {
-    "entities": {
-        "Part": {
-            "title": "Spare Part",
-            "description": "Represents a single spare part in the inventory.",
-            "type": "object",
-            "properties": {
-                "name": {
-                    "type": "string",
-                    "description": "The name of the part."
-                },
-                "sku": {
-                    "type": "string",
-                    "description": "Stock Keeping Unit."
-                },
-                "oemCode": {
-                    "type": "string",
-                    "description": "Original Equipment Manufacturer Code."
-                },
-                "brand": {
-                    "type": "string",
-                    "description": "The brand of the part."
-                },
-                "category": {
-                    "type": "string",
-                    "description": "Category of the part (e.g., Brakes, Engine)."
-                },
-                "compatibleModels": {
-                    "type": "string",
-                    "description": "A text field listing compatible vehicle models."
-                },
-                "quantity": {
-                    "type": "number",
-                    "description": "The current quantity on hand."
-                },
-                "lowStockThreshold": {
-                    "type": "number",
-                    "description": "The quantity at which to trigger a low stock alert."
-                },
-                "costPrice": {
-                    "type": "number",
-                    "description": "The price paid to acquire the part."
-                },
-                "sellingPrice": {
-                    "type": "number",
-                    "description": "The price the part is sold at."
-                },
-                "createdAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Timestamp when the part was created."
-                },
-                "updatedAt": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Timestamp when the part was last updated."
-                }
-            },
-            "required": ["name", "quantity", "createdAt"]
+  "entities": {
+    "Idea": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Idea",
+      "type": "object",
+      "description": "Represents a user-generated idea that can be expanded and refined using AI.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the idea."
         },
-        "StockMovement": {
-            "title": "Stock Movement",
-            "description": "A log of any change in a part's quantity.",
-            "type": "object",
-            "properties": {
-                "partId": {
-                    "type": "string",
-                    "description": "The ID of the part that was moved."
-                },
-                 "partName": {
-                    "type": "string",
-                    "description": "The name of the part that was moved (for easier reporting)."
-                },
-                "quantityChange": {
-                    "type": "number",
-                    "description": "The amount the quantity changed by (can be positive or negative)."
-                },
-                "newQuantity": {
-                    "type": "number",
-                    "description": "The new total quantity after the movement."
-                },
-                "type": {
-                    "type": "string",
-                    "enum": ["Stock In", "Stock Out", "Initial", "Adjustment"],
-                    "description": "The type of stock movement."
-                },
-                "reason": {
-                    "type": "string",
-                    "description": "A brief reason for the stock movement (e.g., 'Purchase from Supplier X', 'Sale to Customer Y', 'Initial stock count')."
-                },
-                "relatedDocId": {
-                    "type": "string",
-                    "description": "The ID of a related document, like a purchase order or a sales invoice."
-                },
-                "timestamp": {
-                    "type": "string",
-                    "format": "date-time",
-                    "description": "Timestamp when the movement occurred."
-                }
-            },
-            "required": ["partId", "quantityChange", "newQuantity", "type", "timestamp"]
-        }
-    },
-    "auth": {
-        "providers": ["anonymous"]
-    },
-    "firestore": {
-        "/users/{userId}/parts/{partId}": {
-            "schema": {
-                "$ref": "#/entities/Part"
-            },
-            "description": "Stores individual spare parts for a user."
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N Idea). The user who created the idea."
         },
-        "/users/{userId}/stockMovements/{movementId}": {
-            "schema": {
-                "$ref": "#/entities/StockMovement"
-            },
-            "description": "Logs all inventory changes for a user's parts."
+        "initialConcept": {
+          "type": "string",
+          "description": "The user's initial idea or concept input."
+        },
+        "expandedConcept": {
+          "type": "string",
+          "description": "The AI-expanded version of the initial concept, including additional details and potential applications."
+        },
+        "refinementOptions": {
+          "type": "string",
+          "description": "JSON object containing the refinement options selected by the user, such as level of detail, focus area, and target audience."
+        },
+        "createdDate": {
+          "type": "string",
+          "description": "The date and time when the idea was initially created.",
+          "format": "date-time"
+        },
+        "lastModifiedDate": {
+          "type": "string",
+          "description": "The date and time when the idea was last modified.",
+          "format": "date-time"
         }
+      },
+      "required": [
+        "id",
+        "userId",
+        "initialConcept",
+        "expandedConcept",
+        "refinementOptions",
+        "createdDate",
+        "lastModifiedDate"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the Idea Spark application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the user."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        },
+        "creationDate": {
+          "type": "string",
+          "description": "The date and time when the user account was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name",
+        "creationDate"
+      ]
     }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}",
+        "definition": {
+          "entityName": "User",
+          "schema": {
+            "$ref": "#/backend/entities/User"
+          },
+          "description": "Stores user profile information.  The 'userId' is the Firebase Auth UID.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user, matching the Firebase Auth UID."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/ideas/{ideaId}",
+        "definition": {
+          "entityName": "Idea",
+          "schema": {
+            "$ref": "#/backend/entities/Idea"
+          },
+          "description": "Stores ideas created by the user. Includes denormalized 'userId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier for the user who created the idea."
+            },
+            {
+              "name": "ideaId",
+              "description": "The unique identifier for the idea."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to address the 'Module not found: Can't resolve '@/firebase'' error reported by Next.js.  This error usually indicates an issue with module path resolution within the Next.js project.  While not directly related to Firestore data structure, ensuring a clean and maintainable structure is crucial for overall application health and debugging potential future issues.\n\nThe proposed structure prioritizes Authorization Independence via denormalization to simplify security rules and enable atomic operations.  It also incorporates Structural Segregation to maintain a homogeneous security posture within each collection.\n\nThe data is structured around users and their ideas. Each user has a collection of ideas associated with them.\n\nAuthorization Independence:\nIdeas are stored as subcollections under each user's document (`/users/{userId}/ideas/{ideaId}`). The `userId` field within each idea document denormalizes the ownership, enabling security rules to validate ownership without needing to perform `get()` operations on parent documents. This allows for atomic creation of ideas and simplified security rules.\n\nQAPs Support:\n*   List Ideas: The structure supports secure listing of ideas for a specific user by querying the `/users/{userId}/ideas` collection. Security rules can efficiently filter based on `request.auth.uid == userId`.\n"
+  }
 }
