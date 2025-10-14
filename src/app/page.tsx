@@ -885,84 +885,56 @@ export default function Home() {
                     <h3 className="text-lg font-semibold text-gray-900">ໃບຮັບເງິນ</h3>
                 </div>
                 <div className="p-6">
-                    <div className="receipt-print">
+                    <div className="receipt-print" id="receipt-content">
                         <div className="text-center mb-4">
                             <h2 className="font-bold text-lg">ຮ້ານສິ້ນສ່ວນລົດຍົນ</h2>
                             <p className="text-sm">Auto Parts Shop</p>
                             <p className="text-sm">ໂທ: 02-xxx-xxxx</p>
-                            <hr className="my-2"/>
+                            <hr className="my-2 border-dashed"/>
                         </div>
                         <div className="mb-4">
-                            <div className="flex justify-between text-sm">
-                                <span>ໃບຮັບເງິນເລກທີ:</span>
-                                <span>{String(receiptToShow.receiptNumber).padStart(6, '0')}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ວັນທີ:</span>
-                                <span>{new Date().toLocaleDateString('lo-LA')} {new Date().toLocaleTimeString('lo-LA')}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ລູກຄ້າ:</span>
-                                <span>{receiptToShow.customerName}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ພະນັກງານ:</span>
-                                <span>{receiptToShow.cashier}</span>
-                            </div>
+                            <div className="flex justify-between text-sm"><span>ໃບຮັບເງິນເລກທີ:</span><span>{String(receiptToShow.receiptNumber).padStart(6, '0')}</span></div>
+                            <div className="flex justify-between text-sm"><span>ວັນທີ:</span><span>{new Date(receiptToShow.timestamp.seconds * 1000).toLocaleDateString('lo-LA')} {new Date(receiptToShow.timestamp.seconds * 1000).toLocaleTimeString('lo-LA')}</span></div>
+                            <div className="flex justify-between text-sm"><span>ລູກຄ້າ:</span><span>{receiptToShow.customerName}</span></div>
+                            <div className="flex justify-between text-sm"><span>ພະນັກງານ:</span><span>{receiptToShow.cashier}</span></div>
                         </div>
-                        <hr className="my-2"/>
-                        <div className="mb-4">
-                            {receiptToShow.items.map((item: any) => `
-                                <div class="flex justify-between text-sm mb-1">
-                                    <div class="flex-1">
-                                        <div>${item.partCode}</div>
-                                        <div class="text-xs text-gray-600">${item.partName}</div>
-                                        <div class="text-xs">${item.quantity} x ₭${item.price.toLocaleString('lo-LA')}</div>
-                                    </div>
-                                    <div class="text-right">
-                                        ₭${(item.quantity * item.price).toLocaleString('lo-LA')}
+                        <hr className="my-2 border-dashed"/>
+                        <div className="mb-2">
+                             {receiptToShow.items.map((item, index) => (
+                                <div key={index} className="mb-2">
+                                    <div className="flex justify-between text-sm">
+                                        <div className="flex-1">
+                                            <div>{item.partCode} - {item.partName}</div>
+                                            <div className="text-xs pl-2">{item.quantity} x ₭{item.price.toLocaleString('lo-LA')}</div>
+                                        </div>
+                                        <div className="text-right">
+                                            ₭{(item.quantity * item.price).toLocaleString('lo-LA')}
+                                        </div>
                                     </div>
                                 </div>
-                            `).join('')}
+                            ))}
                         </div>
-                        <hr className="my-2"/>
-                        <div className="mb-4">
-                            <div className="flex justify-between text-sm">
-                                <span>ຍອດລວມ:</span>
-                                <span>₭{receiptToShow.subtotal.toLocaleString('lo-LA')}</span>
-                            </div>
-                            {receiptToShow.discountAmount > 0 ? `
-                                <div class="flex justify-between text-sm">
-                                    <span>ສ່ວນຫຼຸດ (${receiptToShow.discountPercent}%):</span>
-                                    <span>-₭${receiptToShow.discountAmount.toLocaleString('lo-LA')}</span>
-                                </div>
-                            ` : ''}
-                            {receiptToShow.taxAmount > 0 ? `
-                                <div class="flex justify-between text-sm">
-                                    <span>ອາກອນ (${receiptToShow.taxPercent}%):</span>
-                                    <span>₭${receiptToShow.taxAmount.toLocaleString('lo-LA')}</span>
-                                </div>
-                            ` : ''}
-                            <div className="flex justify-between font-bold">
-                                <span>ຍອດຊຳລະ:</span>
-                                <span>₭{receiptToShow.grandTotal.toLocaleString('lo-LA')}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ຮັບເງິນ:</span>
-                                <span>₭{receiptToShow.received.toLocaleString('lo-LA')}</span>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ເງິນທອນ:</span>
-                                <span>₭{receiptToShow.change.toLocaleString('lo-LA')}</span>
-                            </div>
+                        <hr className="my-2 border-dashed"/>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-sm"><span>ຍອດລວມ:</span><span>₭{receiptToShow.subtotal.toLocaleString('lo-LA')}</span></div>
+                            {receiptToShow.discountAmount > 0 && (
+                                <div className="flex justify-between text-sm"><span>ສ່ວນຫຼຸດ ({receiptToShow.discountPercent}%):</span><span>-₭{receiptToShow.discountAmount.toLocaleString('lo-LA')}</span></div>
+                            )}
+                             {receiptToShow.taxAmount > 0 && (
+                                <div className="flex justify-between text-sm"><span>ອາກອນ ({receiptToShow.taxPercent}%):</span><span>₭{receiptToShow.taxAmount.toLocaleString('lo-LA')}</span></div>
+                            )}
+                            <div className="flex justify-between font-bold text-base"><span>ຍອດຊຳລະ:</span><span>₭{receiptToShow.grandTotal.toLocaleString('lo-LA')}</span></div>
+                            <hr className="my-1 border-dashed"/>
+                            <div className="flex justify-between text-sm"><span>ຮັບເງິນ:</span><span>₭{receiptToShow.received.toLocaleString('lo-LA')}</span></div>
+                            <div className="flex justify-between text-sm"><span>ເງິນທອນ:</span><span>₭{receiptToShow.change.toLocaleString('lo-LA')}</span></div>
                         </div>
-                        <hr className="my-2"/>
-                        <div className="text-center text-xs">
+                        <hr className="my-2 border-dashed"/>
+                        <div className="text-center text-xs mt-4">
                             <p>ຂອບໃຈທີ່ໃຊ້ບໍລິການ</p>
                             <p>Thank you for your business</p>
                         </div>
                     </div>
-                    <div className="flex space-x-3 mt-6">
+                    <div className="flex space-x-3 mt-6 no-print">
                         <button onClick={printReceipt} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ພິມໃບຮັບເງິນ</button>
                         <button onClick={() => setReceiptModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ປິດ</button>
                     </div>

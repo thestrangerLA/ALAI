@@ -114,23 +114,28 @@ body {
 .receipt-print {
     font-family: 'Courier New', monospace;
     font-size: 12px;
-    line-height: 1.2;
+    line-height: 1.5;
+    color: black;
 }
 
 @media print {
-    body * {
-        visibility: hidden;
-    }
-    .receipt-print, .receipt-print * {
-        visibility: visible;
-    }
-    .receipt-print {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 80mm;
-    }
+  body * {
+    visibility: hidden;
+  }
+  #receipt-content, #receipt-content * {
+    visibility: visible;
+  }
+  #receipt-content {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+      display: none;
+  }
 }
+
 
 .pos-item {
     transition: all 0.2s ease;
