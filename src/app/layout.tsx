@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Noto_Sans_Lao } from "next/font/google";
+import { Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const fontSans = Noto_Sans_Lao({
-  subsets: ["lao"],
+const fontSans = Noto_Sans_Thai({
+  subsets: ["thai"],
   variable: "--font-sans",
   weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
-  title: "POS ລາວ",
-  description: "ລະບົບຂາຍອາໄຫຼ່",
+  title: "POS ระบบขายอะไหล่",
+  description: "ระบบขายอะไหล่รถยนต์",
 };
 
 export default function RootLayout({
@@ -20,7 +20,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="lo">
+    <html lang="th">
       <body
         className={cn(
           "min-h-screen bg-background font-sans antialiased",
