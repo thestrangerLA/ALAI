@@ -75,28 +75,13 @@ export default function Home() {
     const [inventory, setInventory] = useState<InventoryItem[]>([]);
     const [receiveHistory, setReceiveHistory] = useState<ReceiveRecord[]>([]);
     const [salesHistory, setSalesHistory] = useState<SaleRecord[]>([]);
-    const [cart, setCart] = useState<SaleItem[]>([]);
     const [editingId, setEditingId] = useState<string | null>(null);
-    const [currentTab, setCurrentTab] = useState('pos');
+    const [currentTab, setCurrentTab] = useState('receive');
     const [receiptNumber, setReceiptNumber] = useState(1);
-
-    const [posSearch, setPosSearch] = useState('');
-    const [discountPercent, setDiscountPercent] = useState(0);
-    const [taxPercent, setTaxPercent] = useState(0);
-    const [paymentReceived, setPaymentReceived] = useState(0);
-    const [paymentCustomerName, setPaymentCustomerName] = useState('');
     
     const [editQuantity, setEditQuantity] = useState(0);
 
-    const [isPaymentModalOpen, setPaymentModalOpen] = useState(false);
-    const [isReceiptModalOpen, setReceiptModalOpen] = useState(false);
     const [isEditModalOpen, setEditModalOpen] = useState(false);
-    const [receiptToShow, setReceiptToShow] = useState<SaleRecord | null>(null);
-
-    const [addItemPartCode, setAddItemPartCode] = useState('');
-    const [addItemPartName, setAddItemPartName] = useState('');
-    const [addItemQuantity, setAddItemQuantity] = useState(0);
-    const [addItemPrice, setAddItemPrice] = useState(0);
 
     const [receivePartId, setReceivePartId] = useState('');
     const [receiveQuantity, setReceiveQuantity] = useState(1);
@@ -104,9 +89,6 @@ export default function Home() {
     const [receiveSupplier, setReceiveSupplier] = useState('');
     const [receiveDate, setReceiveDate] = useState(new Date().toISOString().split('T')[0]);
     const [receiveNote, setReceiveNote] = useState('');
-
-    const [invSearch, setInvSearch] = useState('');
-    const [invStatus, setInvStatus] = useState('');
     
     const { user } = useUser();
     const firestore = useFirestore();
@@ -153,39 +135,6 @@ export default function Home() {
         .filter(sale => sale.date === today)
         .reduce((sum, sale) => sum + sale.grandTotal, 0);
 
-    const filteredPOSProducts = inventory.filter(item => {
-        const searchTerm = posSearch.toLowerCase();
-        const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) ||
-                            item.partName.toLowerCase().includes(searchTerm);
-        const hasStock = item.quantity > 0;
-        return matchesSearch && hasStock;
-    });
-    
-    const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-    const cartSubtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-    const cartDiscountAmount = cartSubtotal * (discountPercent / 100);
-    const cartAfterDiscount = cartSubtotal - cartDiscountAmount;
-    const cartTaxAmount = cartAfterDiscount * (taxPercent / 100);
-    const cartGrandTotal = cartAfterDiscount + cartTaxAmount;
-
-    const paymentChange = paymentReceived - cartGrandTotal;
-
-    const filteredInventory = inventory.filter(item => {
-        const searchTerm = invSearch.toLowerCase();
-        const matchesSearch = item.partCode.toLowerCase().includes(searchTerm) || 
-                            item.partName.toLowerCase().includes(searchTerm);
-        
-        const getStatusKey = (item: InventoryItem) => {
-            if (item.quantity === 0) return 'out';
-            // Assuming reorderPoint logic is removed or adapted
-            // if (item.reorderPoint && item.quantity <= item.reorderPoint) return 'low';
-            return 'normal';
-        }
-        const matchesStatus = !invStatus || getStatusKey(item) === invStatus;
-
-        return matchesSearch && matchesStatus;
-    });
-
     const stockValue = inventory.reduce((sum, item) => sum + (item.quantity * item.costPrice), 0);
     
     const sevenDaysAgo = new Date();
@@ -228,148 +177,6 @@ export default function Home() {
         setCurrentTab(tabName);
     };
 
-    const addToCart = (itemId: string) => {
-        const item = inventory.find(i => i.id === itemId);
-        if (!item || item.quantity <= 0) {
-            showNotification('ສິນຄ້າໝົດສະຕັອກ', 'error');
-            return;
-        }
-
-        const existingCartItem = cart.find(c => c.id === itemId);
-        if (existingCartItem) {
-            if (existingCartItem.quantity >= item.quantity) {
-                showNotification('ຈຳນວນໃນກະຕ່າເກີນສະຕັອກທີ່ມີ', 'error');
-                return;
-            }
-            setCart(cart.map(c => c.id === itemId ? { ...c, quantity: c.quantity + 1 } : c));
-        } else {
-            setCart([...cart, {
-                id: itemId,
-                partCode: item.partCode,
-                partName: item.partName,
-                price: item.price,
-                quantity: 1,
-                maxQuantity: item.quantity
-            }]);
-        }
-    };
-
-    const updateCartQuantity = (itemId: string, newQuantity: number) => {
-        if (newQuantity <= 0) {
-            removeFromCart(itemId);
-            return;
-        }
-
-        const cartItem = cart.find(c => c.id === itemId);
-        if (cartItem && newQuantity <= cartItem.maxQuantity) {
-            setCart(cart.map(c => c.id === itemId ? { ...c, quantity: newQuantity } : c));
-        } else {
-            showNotification('ຈຳນວນເກີນສະຕັອກທີ່ມີ', 'error');
-        }
-    };
-    
-    const removeFromCart = (itemId: string) => {
-        setCart(cart.filter(c => c.id !== itemId));
-    };
-
-    const clearCart = () => {
-        setCart([]);
-    };
-    
-    const processPayment = () => {
-        if (cart.length === 0) return;
-        setPaymentReceived(0);
-        setPaymentCustomerName('');
-        setPaymentModalOpen(true);
-    };
-    
-    const completeSale = async () => {
-        if (!firestore) return;
-        if (paymentReceived < cartGrandTotal) {
-            showNotification('ຈຳນວນເງິນທີ່ຮັບບໍ່ພຽງພໍ', 'error');
-            return;
-        }
-
-        const saleRecord: Omit<SaleRecord, 'id'> = {
-            receiptNumber: receiptNumber,
-            items: cart,
-            subtotal: cartSubtotal,
-            discountPercent: discountPercent,
-            discountAmount: cartDiscountAmount,
-            taxPercent: taxPercent,
-            taxAmount: cartTaxAmount,
-            grandTotal: cartGrandTotal,
-            received: paymentReceived,
-            change: paymentChange,
-            customerName: paymentCustomerName || 'ລູກຄ້າທົ່ວໄປ',
-            cashier: user?.displayName || user?.email || 'ผู้ดູແລລະບົບ',
-            date: new Date().toISOString().split('T')[0],
-            timestamp: serverTimestamp()
-        };
-        
-        try {
-            const batch = writeBatch(firestore);
-            
-            // Add sale record
-            const salesRef = collection(firestore, 'salesHistory');
-            batch.set(doc(salesRef), saleRecord);
-
-            // Update inventory stock
-            cart.forEach(cartItem => {
-                const invItemRef = doc(firestore, 'inventory', cartItem.id);
-                const inventoryItem = inventory.find(i => i.id === cartItem.id);
-                if (inventoryItem) {
-                    batch.update(invItemRef, { quantity: inventoryItem.quantity - cartItem.quantity });
-                }
-            });
-
-            await batch.commit();
-
-            setReceiptToShow({ ...saleRecord, id: 'temp-id', timestamp: new Date() });
-            setReceiptModalOpen(true);
-
-            clearCart();
-            setPaymentModalOpen(false);
-            setReceiptNumber(receiptNumber + 1);
-            showNotification('ຂາຍສຳເລັດແລ້ວ', 'success');
-
-        } catch (error) {
-            console.error("Error completing sale: ", error);
-            showNotification('ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກການຂາຍ', 'error');
-        }
-    };
-
-    const handleAddItemSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!firestore) return;
-
-        if (inventory.some(item => item.partCode === addItemPartCode)) {
-            showNotification('ລະຫັດສິ້ນສ່ວນນີ້ມີຢູ່ແລ້ວໃນລະບົບ', 'error');
-            return;
-        }
-
-        const newItem = {
-            partCode: addItemPartCode.toUpperCase(),
-            partName: addItemPartName,
-            quantity: Number(addItemQuantity),
-            price: Number(addItemPrice),
-            createdAt: serverTimestamp()
-        };
-
-        try {
-            await addDoc(collection(firestore, 'inventory'), newItem);
-            showNotification('ເພີ່ມສິ້ນສ່ວນສຳເລັດແລ້ວ', 'success');
-            // Reset form
-            setAddItemPartCode('');
-            setAddItemPartName('');
-            setAddItemQuantity(0);
-            setAddItemPrice(0);
-        } catch (error) {
-            console.error("Error adding item: ", error);
-            showNotification('ເກີດຂໍ້ຜິດພາດໃນການເພີ່ມສິ້ນສ່ວນ', 'error');
-        }
-    };
-
     const handleReceiveSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!firestore) return;
@@ -401,7 +208,7 @@ export default function Home() {
             
             // Update inventory
             const itemRef = doc(firestore, 'inventory', receivePartId);
-            batch.update(itemRef, { quantity: item.quantity + Number(receiveQuantity) });
+            batch.update(itemRef, { quantity: item.quantity + Number(receiveQuantity), costPrice: Number(receiveCost) });
             
             await batch.commit();
 
@@ -455,10 +262,6 @@ export default function Home() {
         }
     };
     
-    const viewItemDetails = (partCode: string) => {
-        router.push(`/stock?search=${encodeURIComponent(partCode)}`);
-    }
-    
     const getStockStatus = (item: InventoryItem) => {
         if (item.quantity === 0) return 'ໝົດສະຕັອກ';
         // Reorder point logic removed
@@ -473,10 +276,6 @@ export default function Home() {
             'ໝົດສະຕັອກ': 'bg-red-100 text-red-800'
         };
         return statusClass[status];
-    }
-
-    const printReceipt = () => {
-        window.print();
     }
   
     return (
@@ -515,12 +314,6 @@ export default function Home() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
         <div className="bg-white rounded-xl shadow-lg p-2">
             <nav className="flex space-x-2 overflow-x-auto">
-                <button onClick={() => switchTab('pos')} className={`${currentTab === 'pos' ? 'tab-active' : 'tab-inactive'} px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
-                    </svg>
-                    ໜ້າຈໍຂາຍ (POS)
-                </button>
                 <Link href="/stock" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
@@ -545,140 +338,6 @@ export default function Home() {
 
     {/* Tab Content */}
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
-        {/* POS Tab */}
-        <div id="content-pos" className={currentTab === 'pos' ? 'tab-content' : 'tab-content hidden'}>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {/* Left Side - Product Search & Selection */}
-                <div className="lg:col-span-2 space-y-6">
-                    {/* Search Bar */}
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                        <div className="flex space-x-4">
-                            <div className="flex-1">
-                                <input type="text" value={posSearch} onChange={(e) => setPosSearch(e.target.value)} className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຄົ້ນຫາດ້ວຍລະຫັດ, ຊື່..."/>
-                            </div>
-                            <button onClick={() => setPosSearch('')} className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ລ້າງ
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Product Grid */}
-                    <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ລາຍການສິນຄ້າ</h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                            {filteredPOSProducts.length > 0 ? filteredPOSProducts.map(item => (
-                                <div key={item.id} className="pos-item bg-white border border-gray-200 rounded-lg p-4 flex flex-col justify-between hover:shadow-lg transition-shadow">
-                                    <div className="cursor-pointer" onClick={() => addToCart(item.id)}>
-                                        <div className="text-sm font-medium text-gray-900 mb-1">{item.partCode}</div>
-                                        <div className="text-sm text-gray-600 mb-2 h-10">{item.partName}</div>
-                                        <div className="flex justify-between items-center">
-                                            <div className="text-lg font-bold text-blue-600">₭{item.price.toLocaleString('lo-LA')}</div>
-                                            <div className="text-xs text-gray-500">ຄົງເຫຼືອ: {item.quantity}</div>
-                                        </div>
-                                    </div>
-                                    <div className="border-t mt-3 pt-3">
-                                        <button onClick={() => viewItemDetails(item.partCode)} className="w-full text-center text-sm text-blue-600 hover:text-blue-800 font-semibold py-1 rounded-md hover:bg-blue-50 transition-colors">ເບິ່ງລາຍລະອຽດ</button>
-                                    </div>
-                                </div>
-                            )) : (
-                                <div className="col-span-full text-center py-8 text-gray-500">ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ</div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Right Side - Shopping Cart */}
-                <div className="space-y-6">
-                    {/* Cart */}
-                    <div className="bg-white rounded-xl shadow-lg p-6 sticky top-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
-                            </svg>
-                            ກະຕ່າສິນຄ້າ ({cartCount})
-                        </h3>
-                        
-                        <div className="space-y-3 mb-6 max-h-96 overflow-y-auto">
-                           {cart.length > 0 ? cart.map(item => (
-                                <div key={item.id} className="cart-item bg-gray-50 rounded-lg p-3 flex justify-between items-center">
-                                    <div className="flex-1">
-                                        <div className="font-medium text-sm">{item.partCode}</div>
-                                        <div className="text-xs text-gray-600">{item.partName}</div>
-                                        <div className="text-sm font-bold text-blue-600">₭{item.price.toLocaleString('lo-LA')}</div>
-                                    </div>
-                                    <div className="flex items-center space-x-2">
-                                        <button onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="bg-red-500 hover:bg-red-600 text-white w-6 h-6 rounded text-xs">-</button>
-                                        <span className="w-8 text-center text-sm font-semibold">{item.quantity}</span>
-                                        <button onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="bg-green-500 hover:bg-green-600 text-white w-6 h-6 rounded text-xs" disabled={item.quantity >= item.maxQuantity}>+</button>
-                                        <button onClick={() => removeFromCart(item.id)} className="bg-gray-500 hover:bg-gray-600 text-white w-6 h-6 rounded text-xs ml-2">×</button>
-                                    </div>
-                                </div>
-                           )) : (
-                                <div className="text-center text-gray-500 py-4">ກະຕ່າວ່າງ</div>
-                           )}
-                        </div>
-
-                        {/* Cart Summary */}
-                        <div className="border-t pt-4 space-y-3">
-                            <div className="flex justify-between text-sm">
-                                <span>ຍອດລວມ:</span>
-                                <span id="subtotal">₭{cartSubtotal.toLocaleString('lo-LA')}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm">ສ່ວນຫຼຸດ (%):</span>
-                                <input type="number" value={discountPercent} onChange={(e) => setDiscountPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" />
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ສ່ວນຫຼຸດ:</span>
-                                <span id="discountAmount">₭{cartDiscountAmount.toLocaleString('lo-LA')}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-sm">ອາກອນ (%):</span>
-                                <input type="number" value={taxPercent} onChange={(e) => setTaxPercent(parseFloat(e.target.value))} className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100"/>
-                            </div>
-                            <div className="flex justify-between text-sm">
-                                <span>ອາກອນ:</span>
-                                <span id="taxAmount">₭{cartTaxAmount.toLocaleString('lo-LA')}</span>
-                            </div>
-                            <div className="border-t pt-2">
-                                <div className="flex justify-between text-lg font-bold">
-                                    <span>ຍອດຊຳລະ:</span>
-                                    <span id="grandTotal">₭{cartGrandTotal.toLocaleString('lo-LA')}</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons */}
-                        <div className="space-y-3 mt-6">
-                            <button onClick={clearCart} className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ລ້າງກະຕ່າ
-                            </button>
-                            <button onClick={processPayment} className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200 disabled:bg-gray-300" disabled={cart.length === 0}>
-                                ຊຳລະເງິນ
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        {/* Inventory Tab */}
-        <div id="content-inventory" className={currentTab === 'inventory' ? 'tab-content' : 'tab-content hidden'}>
-           {/* This content is now in /stock page */}
-            <div className="text-center py-12 bg-white rounded-xl shadow-lg">
-                 <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                </svg>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">ສ່ວນຈັດການສິນຄ້າຖືກຍ້າຍໄປທີ່ໜ້າໃໝ່</h3>
-                <p className="mt-2 text-gray-500">ກະລຸນາໃຊ້ເມນູ "ຈັດການສິນຄ້າ" ເພື່ອເຂົ້າເຖິງສະຕັອກສິນຄ້າ</p>
-                <div className="mt-6">
-                    <Link href="/stock" className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        ໄປທີ່ໜ້າຈັດການສິນຄ້າ
-                    </Link>
-                </div>
-            </div>
-        </div>
 
         {/* Receive Tab */}
         <div id="content-receive" className={currentTab === 'receive' ? 'tab-content' : 'tab-content hidden'}>
@@ -843,105 +502,6 @@ export default function Home() {
         </div>
     </div>
 
-    {/* Payment Modal */}
-    {isPaymentModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">ຊຳລະເງິນ</h3>
-                </div>
-                <div className="p-6">
-                    <div className="mb-4">
-                        <div className="text-center mb-4">
-                            <p className="text-2xl font-bold text-gray-900">ຍອດຊຳລະ: <span>₭{cartGrandTotal.toLocaleString('lo-LA')}</span></p>
-                        </div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນເງິນທີ່ຮັບ</label>
-                        <input type="number" value={paymentReceived} onChange={e => setPaymentReceived(parseFloat(e.target.value))} className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" min="0"/>
-                    </div>
-                    <div className="mb-4">
-                        <div className="flex justify-between text-lg">
-                            <span>ເງິນທອນ:</span>
-                            <span className="font-bold">₭{Math.max(0, paymentChange).toLocaleString('lo-LA')}</span>
-                        </div>
-                    </div>
-                    <div className="mb-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ລູກຄ້າ (ບໍ່ບັງຄັບ)</label>
-                        <input type="text" value={paymentCustomerName} onChange={e => setPaymentCustomerName(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ລູກຄ້າ"/>
-                    </div>
-                    <div className="flex space-x-3">
-                        <button onClick={completeSale} className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຢືນຢັນການຊຳລະ</button>
-                        <button onClick={() => setPaymentModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )}
-
-    {/* Receipt Modal */}
-    {isReceiptModalOpen && receiptToShow && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
-                <div className="px-6 py-4 border-b border-gray-200">
-                    <h3 className="text-lg font-semibold text-gray-900">ໃບຮັບເງິນ</h3>
-                </div>
-                <div className="p-6">
-                    <div className="receipt-print" id="receipt-content">
-                        <div className="text-center mb-4">
-                            <h2 className="font-bold text-lg">ຮ້ານສິ້ນສ່ວນລົດຍົນ</h2>
-                            <p className="text-sm">Auto Parts Shop</p>
-                            <p className="text-sm">ໂທ: 02-xxx-xxxx</p>
-                            <hr className="my-2 border-dashed"/>
-                        </div>
-                        <div className="mb-4">
-                            <div className="flex justify-between text-sm"><span>ໃບຮັບເງິນເລກທີ:</span><span>{String(receiptToShow.receiptNumber).padStart(6, '0')}</span></div>
-                            <div className="flex justify-between text-sm"><span>ວັນທີ:</span><span>{new Date(receiptToShow.timestamp.seconds * 1000).toLocaleDateString('lo-LA')} {new Date(receiptToShow.timestamp.seconds * 1000).toLocaleTimeString('lo-LA')}</span></div>
-                            <div className="flex justify-between text-sm"><span>ລູກຄ້າ:</span><span>{receiptToShow.customerName}</span></div>
-                            <div className="flex justify-between text-sm"><span>ພະນັກງານ:</span><span>{receiptToShow.cashier}</span></div>
-                        </div>
-                        <hr className="my-2 border-dashed"/>
-                        <div className="mb-2">
-                             {receiptToShow.items.map((item, index) => (
-                                <div key={index} className="mb-2">
-                                    <div className="flex justify-between text-sm">
-                                        <div className="flex-1">
-                                            <div>{item.partCode} - {item.partName}</div>
-                                            <div className="text-xs pl-2">{item.quantity} x ₭{item.price.toLocaleString('lo-LA')}</div>
-                                        </div>
-                                        <div className="text-right">
-                                            ₭{(item.quantity * item.price).toLocaleString('lo-LA')}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <hr className="my-2 border-dashed"/>
-                        <div className="space-y-1">
-                            <div className="flex justify-between text-sm"><span>ຍອດລວມ:</span><span>₭{receiptToShow.subtotal.toLocaleString('lo-LA')}</span></div>
-                            {receiptToShow.discountAmount > 0 && (
-                                <div className="flex justify-between text-sm"><span>ສ່ວນຫຼຸດ ({receiptToShow.discountPercent}%):</span><span>-₭{receiptToShow.discountAmount.toLocaleString('lo-LA')}</span></div>
-                            )}
-                             {receiptToShow.taxAmount > 0 && (
-                                <div className="flex justify-between text-sm"><span>ອາກອນ ({receiptToShow.taxPercent}%):</span><span>₭{receiptToShow.taxAmount.toLocaleString('lo-LA')}</span></div>
-                            )}
-                            <div className="flex justify-between font-bold text-base"><span>ຍອດຊຳລະ:</span><span>₭{receiptToShow.grandTotal.toLocaleString('lo-LA')}</span></div>
-                            <hr className="my-1 border-dashed"/>
-                            <div className="flex justify-between text-sm"><span>ຮັບເງິນ:</span><span>₭{receiptToShow.received.toLocaleString('lo-LA')}</span></div>
-                            <div className="flex justify-between text-sm"><span>ເງິນທອນ:</span><span>₭{receiptToShow.change.toLocaleString('lo-LA')}</span></div>
-                        </div>
-                        <hr className="my-2 border-dashed"/>
-                        <div className="text-center text-xs mt-4">
-                            <p>ຂອບໃຈທີ່ໃຊ້ບໍລິການ</p>
-                            <p>Thank you for your business</p>
-                        </div>
-                    </div>
-                    <div className="flex space-x-3 mt-6 no-print">
-                        <button onClick={printReceipt} className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ພິມໃບຮັບເງິນ</button>
-                        <button onClick={() => setReceiptModalOpen(false)} className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ປິດ</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    )}
 
     {/* Edit Modal */}
     {isEditModalOpen && (

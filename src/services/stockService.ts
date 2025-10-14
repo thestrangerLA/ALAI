@@ -1,4 +1,5 @@
 
+
 import { 
   collection, 
   onSnapshot, 
@@ -118,6 +119,14 @@ export function listenToStockItems(callback: (items: StockItem[]) => void) {
 
 export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>) {
   try {
+    const existingItemQuery = query(stockCollectionRef, where("partCode", "==", item.partCode));
+    const existingItemSnapshot = await getDocs(existingItemQuery);
+
+    if (!existingItemSnapshot.empty) {
+        console.error("Error: Part code already exists.");
+        // Optionally, show a notification to the user
+        return;
+    }
     await addDoc(stockCollectionRef, { ...item, createdAt: serverTimestamp() });
   } catch (e) {
     console.error("Error adding document: ", e);
