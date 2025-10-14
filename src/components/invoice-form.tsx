@@ -38,7 +38,7 @@ export function InvoiceForm({ allItems }: InvoiceFormProps) {
   }, []);
 
   useEffect(() => {
-    if (searchQuery.length > 1) {
+    if (searchQuery.length > 0) {
       const results = allItems.filter(
         item =>
           item.partName.toLowerCase().includes(searchQuery.toLowerCase()) ||
