@@ -7,14 +7,20 @@ import type { Debtor } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, DollarSign, CheckCircle, Calendar, UserPlus } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, CheckCircle, Calendar, Eye } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 export default function DebtorsPage() {
-  const [debtors, setDebtors] = useState<Debtor[]>([]);
+  const [allDebtors, setAllDebtors] = useState<Debtor[]>([]);
+  const [filteredDebtors, setFilteredDebtors] = useState<Debtor[]>([]);
   const [selectedDebtor, setSelectedDebtor] = useState<Debtor | null>(null);
+
+  // Filter states
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   // Stats State
   const [debtThisMonth, setDebtThisMonth] = useState(0);
@@ -23,14 +29,34 @@ export default function DebtorsPage() {
   const [newDebtorsLastMonthCount, setNewDebtorsLastMonthCount] = useState(0);
 
   useEffect(() => {
-    const unsubscribe = listenToDebtors((allDebtors) => {
-        setDebtors(allDebtors);
-        calculateStats(allDebtors);
+    const unsubscribe = listenToDebtors((debtorsData) => {
+        setAllDebtors(debtorsData);
+        calculateStats(debtorsData);
     });
     return () => unsubscribe();
   }, []);
 
-  const calculateStats = (allDebtors: Debtor[]) => {
+  const availableYears = useMemo(() => {
+    const years = new Set(allDebtors.map(debtor => debtor.saleDate.toDate().getFullYear().toString()));
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [allDebtors]);
+
+  useEffect(() => {
+    let debtorsToFilter = allDebtors;
+
+    if (selectedYear !== 'all') {
+      debtorsToFilter = debtorsToFilter.filter(debtor => debtor.saleDate.toDate().getFullYear().toString() === selectedYear);
+    }
+
+    if (selectedMonth !== 'all') {
+      debtorsToFilter = debtorsToFilter.filter(debtor => (debtor.saleDate.toDate().getMonth() + 1).toString() === selectedMonth);
+    }
+    
+    setFilteredDebtors(debtorsToFilter);
+
+  }, [selectedYear, selectedMonth, allDebtors]);
+
+  const calculateStats = (debtorsData: Debtor[]) => {
     const now = new Date();
     const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -42,7 +68,7 @@ export default function DebtorsPage() {
     let lastMonthDebt = 0;
     let lastMonthCount = 0;
 
-    allDebtors.forEach(debtor => {
+    debtorsData.forEach(debtor => {
         const saleDate = debtor.saleDate.toDate();
         if (saleDate >= startOfThisMonth && saleDate <= endOfThisMonth) {
             thisMonthDebt += debtor.totalAmount;
@@ -61,8 +87,12 @@ export default function DebtorsPage() {
 
 
   const totalDebt = useMemo(() => {
-    return debtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
-  }, [debtors]);
+    return allDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+  }, [allDebtors]);
+
+  const totalFilteredDebt = useMemo(() => {
+    return filteredDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+  }, [filteredDebtors]);
 
   const handleMarkAsPaid = async (debtor: Debtor) => {
     if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການບັນທຶກການຈ່າຍເງິນສຳລັບ Invoice #${debtor.invoiceNumber}?`)) {
@@ -70,6 +100,11 @@ export default function DebtorsPage() {
         alert(result.message);
     }
   };
+
+  const handleResetFilters = () => {
+    setSelectedYear('all');
+    setSelectedMonth('all');
+  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -101,7 +136,7 @@ export default function DebtorsPage() {
                 title="ຍອດໜີ້ລວມທັງໝົດ"
                 value={formatCurrency(totalDebt)}
                 icon={<DollarSign className="h-5 w-5 text-red-500" />}
-                description={`ຈາກ ${debtors.length} ບິນທີ່ຍັງຄ້າງຊຳລະ`}
+                description={`ຈາກ ${allDebtors.length} ບິນທີ່ຍັງຄ້າງຊຳລະ`}
             />
             <StatCard
                 title="ໜີ້ໃໝ່ເດືອນນີ້"
@@ -118,10 +153,39 @@ export default function DebtorsPage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle>ລາຍການບິນທີ່ຍັງບໍ່ຈ່າຍ</CardTitle>
-            <CardDescription>
-              ກະລຸນາຕິດຕາມການຊຳລະເງິນຈາກລູກຄ້າ
-            </CardDescription>
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                <div>
+                    <CardTitle>ລາຍການບິນທີ່ຍັງບໍ່ຈ່າຍ</CardTitle>
+                    <CardDescription>
+                      ຍອດໜີ້ທີ່ກັ່ນຕອງ: {formatCurrency(totalFilteredDebt)}
+                    </CardDescription>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="ເລືອກປີ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">ທຸກໆປີ</SelectItem>
+                            {availableYears.map(year => (
+                            <SelectItem key={year} value={year}>{year}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="ເລືອກເດືອນ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
+                            {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                            <SelectItem key={month} value={month.toString()}>{`ເດືອນ ${month}`}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={handleResetFilters}>ລ້າງຕົວກອງ</Button>
+                </div>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -135,7 +199,7 @@ export default function DebtorsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {debtors.length > 0 ? debtors.map(debtor => (
+                {filteredDebtors.length > 0 ? filteredDebtors.map(debtor => (
                   <TableRow key={debtor.id}>
                     <TableCell>{debtor.saleDate.toDate().toLocaleDateString('lo-LA')}</TableCell>
                     <TableCell className="font-medium">{debtor.invoiceNumber}</TableCell>
@@ -143,7 +207,7 @@ export default function DebtorsPage() {
                     <TableCell className="text-right font-semibold text-red-600">{formatCurrency(debtor.totalAmount)}</TableCell>
                     <TableCell className="text-center space-x-2">
                       <Button variant="outline" size="sm" onClick={() => setSelectedDebtor(debtor)}>
-                        ເບິ່ງລາຍລະອຽດ
+                        <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
                       </Button>
                       <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleMarkAsPaid(debtor)}>
                          <CheckCircle className="h-4 w-4 mr-1"/> ບັນທຶກການຈ່າຍເງິນ
