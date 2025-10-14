@@ -122,6 +122,12 @@ body {
   body * {
     visibility: hidden;
   }
+  .no-print {
+      display: none !important;
+  }
+  .print-only {
+      display: block !important;
+  }
   #receipt-content, #receipt-content * {
     visibility: visible;
   }
@@ -130,9 +136,8 @@ body {
     left: 0;
     top: 0;
     width: 100%;
-  }
-  .no-print {
-      display: none;
+    padding: 2rem;
+    margin: 0;
   }
 }
 
