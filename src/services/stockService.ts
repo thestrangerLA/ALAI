@@ -1,5 +1,4 @@
 
-
 import { 
   collection, 
   onSnapshot, 
@@ -17,44 +16,8 @@ import {
 import type { StockItem } from "@/lib/types";
 import { db } from "@/firebase";
 
-const stockCollectionRef = collection(db, "inventory");
-
-const initialProductNames: string[] = [];
-
-
-export async function seedInitialData() {
-  const q = query(stockCollectionRef);
-  const snapshot = await getDocs(q);
-  if (snapshot.empty) {
-    console.log("Inventory is empty, seeding initial data...");
-    const batch = writeBatch(db);
-    const uniqueProductNames = [...new Set(initialProductNames)];
-
-    uniqueProductNames.forEach((name, index) => {
-      const docRef = doc(stockCollectionRef);
-      const partCode = `P${(index + 1).toString().padStart(3, '0')}`;
-      const newItem: Omit<StockItem, 'id'> = {
-        partCode: partCode,
-        partName: name.trim(),
-        quantity: 0,
-        price: 0,
-        costPrice: 0,
-        wholesalePrice: 0,
-        createdAt: serverTimestamp(),
-      };
-      batch.set(docRef, newItem);
-    });
-
-    try {
-      await batch.commit();
-      console.log("Initial data seeded successfully.");
-    } catch (e) {
-      console.error("Error seeding data: ", e);
-    }
-  } else {
-    console.log("Inventory already contains data, skipping seed.");
-  }
-}
+const staticUserId = "default-user";
+const stockCollectionRef = collection(db, "users", staticUserId, "inventory");
 
 export function listenToStockItems(callback: (items: StockItem[]) => void) {
   const q = query(stockCollectionRef, orderBy("createdAt", "desc"));
@@ -87,7 +50,7 @@ export async function addStockItem(item: Omit<StockItem, 'id' | 'createdAt'>): P
 }
 
 export async function updateStockItem(id: string, updatedFields: Partial<Omit<StockItem, 'id'>>) {
-  const itemDoc = doc(db, "inventory", id);
+  const itemDoc = doc(db, "users", staticUserId, "inventory", id);
   try {
     await updateDoc(itemDoc, updatedFields);
   } catch (e) {
@@ -96,11 +59,10 @@ export async function updateStockItem(id: string, updatedFields: Partial<Omit<St
 }
 
 export async function deleteStockItem(id: string) {
-  const itemDoc = doc(db, "inventory", id);
+  const itemDoc = doc(db, "users", staticUserId, "inventory", id);
   try {
     await deleteDoc(itemDoc);
   } catch (e) {
     console.error("Error deleting document: ", e);
   }
 }
-

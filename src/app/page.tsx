@@ -2,55 +2,23 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import {
-  collection,
-  query,
-  onSnapshot,
-} from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { listenToStockItems } from '@/services/stockService';
 import Link from 'next/link';
 import { HardHat, ShoppingCart, FileText } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-
-
-// Mock data structure, will be replaced by Firestore data
-interface InventoryItem {
-  id: string;
-  partCode: string;
-  partName: string;
-  quantity: number;
-  price: number;
-  costPrice: number;
-  wholesalePrice: number;
-}
+import type { StockItem } from '@/lib/types';
 
 
 export default function Home() {
-    const [inventory, setInventory] = useState<InventoryItem[]>([]);
+    const [totalStock, setTotalStock] = useState(0);
     
-    const firestore = useFirestore();
-
-    // Data Fetching
     useEffect(() => {
-        if (!firestore) return;
-        const inventoryQuery = query(collection(firestore, 'inventory'));
-
-        const unsubInventory = onSnapshot(inventoryQuery, (snapshot) => {
-            const items = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as InventoryItem));
-            setInventory(items);
-        }, (error) => {
-            console.error("Error fetching inventory: ", error);
+        const unsubscribe = listenToStockItems((items: StockItem[]) => {
+            const total = items.reduce((sum, item) => sum + item.quantity, 0);
+            setTotalStock(total);
         });
 
-        return () => {
-            unsubInventory();
-        };
-
-    }, [firestore]);
-
-
-    // Derived State & Calculations
-    const totalStock = inventory.reduce((sum, item) => sum + item.quantity, 0);
+        return () => unsubscribe();
+    }, []);
 
     return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
@@ -86,7 +54,7 @@ export default function Home() {
                     <HardHat className="w-5 h-5 mr-2" />
                     ຈັດການສິນຄ້າ
                 </Link>
-                <Link href="/invoice" className={`tab-active px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
+                <Link href="/invoice" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
                     <ShoppingCart className="w-5 h-5 mr-2" />
                     ອອກບິນ
                 </Link>

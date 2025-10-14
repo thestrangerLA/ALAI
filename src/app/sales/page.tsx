@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, DollarSign, FileText } from 'lucide-react';
-import { Timestamp } from 'firebase/firestore';
 
 export default function SalesReportPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
@@ -27,7 +26,6 @@ export default function SalesReportPage() {
   useEffect(() => {
     const unsubscribe = listenToSales(salesData => {
       setAllSales(salesData);
-      setFilteredSales(salesData);
     });
     return () => unsubscribe();
   }, []);
@@ -49,43 +47,30 @@ export default function SalesReportPage() {
     }
     
     setFilteredSales(salesToFilter);
-    calculateStats(salesToFilter);
+    calculateStats(allSales); // Always calculate stats based on all sales
 
   }, [selectedYear, selectedMonth, allSales]);
 
   const calculateStats = (salesData: Sale[]) => {
     const now = new Date();
     const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
     
-    // Adjust start of month and year based on filter
-    const yearForStats = selectedYear === 'all' ? now.getFullYear() : parseInt(selectedYear);
-    const monthForStats = selectedMonth === 'all' ? now.getMonth() : parseInt(selectedMonth) - 1;
-
-    const startOfMonth = new Date(yearForStats, monthForStats, 1);
-    const startOfYear = new Date(yearForStats, 0, 1);
-    
-    const endOfMonth = new Date(yearForStats, monthForStats + 1, 0);
-    const endOfYear = new Date(yearForStats, 11, 31);
-
     let today = 0;
     let month = 0;
     let year = 0;
     
-    // Base today's sales on all sales, not filtered
-    allSales.forEach(sale => {
-        const saleDate = sale.saleDate.toDate();
-        if (saleDate >= startOfToday) {
-            today += sale.totalAmount;
-        }
-    });
-
     salesData.forEach(sale => {
       const saleDate = sale.saleDate.toDate();
-      if (saleDate >= startOfYear && saleDate <= endOfYear) {
-        year += sale.totalAmount;
+      if (saleDate >= startOfToday) {
+          today += sale.totalAmount;
       }
-      if (saleDate >= startOfMonth && saleDate <= endOfMonth) {
+      if (saleDate >= startOfMonth) {
         month += sale.totalAmount;
+      }
+      if (saleDate >= startOfYear) {
+        year += sale.totalAmount;
       }
     });
 
@@ -102,6 +87,10 @@ export default function SalesReportPage() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   };
+  
+  const totalFilteredSales = useMemo(() => {
+    return filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+  }, [filteredSales]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -130,12 +119,12 @@ export default function SalesReportPage() {
             icon={<DollarSign className="h-5 w-5 text-green-500" />}
           />
           <StatCard
-            title={`ຍອດຂາຍ${selectedMonth !== 'all' ? `ເດືອນ ${selectedMonth}` : 'ເດືອນນີ້'}`}
+            title={'ຍອດຂາຍເດືອນນີ້'}
             value={formatCurrency(salesThisMonth)}
             icon={<Calendar className="h-5 w-5 text-orange-500" />}
           />
           <StatCard
-            title={`ຍອດຂາຍ${selectedYear !== 'all' ? `ປີ ${selectedYear}` : 'ປີນີ້'}`}
+            title={'ຍອດຂາຍປີນີ້'}
             value={formatCurrency(salesThisYear)}
             icon={<Calendar className="h-5 w-5 text-blue-500" />}
           />
@@ -145,7 +134,9 @@ export default function SalesReportPage() {
              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
                 <CardTitle>ປະຫວັດການຂາຍ</CardTitle>
-                <CardDescription>ລາຍການໃບເກັບເງິນທັງໝົດທີ່ໄດ້ບັນທຶກໄວ້</CardDescription>
+                <CardDescription>
+                  ຍອດຂາຍລວມທີ່ກັ່ນຕອງ: {formatCurrency(totalFilteredSales)}
+                </CardDescription>
               </div>
               <div className="flex items-center gap-2">
                  <Select value={selectedYear} onValueChange={setSelectedYear}>

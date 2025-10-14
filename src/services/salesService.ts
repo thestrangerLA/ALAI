@@ -1,35 +1,33 @@
 
-
 import { 
   collection, 
   onSnapshot, 
   addDoc, 
   writeBatch,
   doc,
-  serverTimestamp,
+  Timestamp,
   query,
   orderBy,
-  Timestamp,
-  updateDoc,
   getDoc
 } from "firebase/firestore";
-import type { Sale, InvoiceItem } from "@/lib/types";
+import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
 
-const salesCollectionRef = collection(db, "sales");
-const stockCollectionRef = collection(db, "inventory");
+const staticUserId = "default-user";
+const salesCollectionRef = collection(db, "users", staticUserId, "sales");
+const stockCollectionRef = collection(db, "users", staticUserId, "inventory");
 
 export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDate: Date}) {
   const batch = writeBatch(db);
 
-  // 1. Create a new sale document
+  // 1. Create a new sale document under the static user's sales subcollection
   const saleRef = doc(salesCollectionRef);
   batch.set(saleRef, {
       ...saleData,
-      saleDate: Timestamp.fromDate(saleData.saleDate), // Convert JS Date to Firestore Timestamp
+      saleDate: Timestamp.fromDate(saleData.saleDate),
   });
 
-  // 2. Update stock quantities for each item sold
+  // 2. Update stock quantities for each item sold in the static user's inventory
   for (const item of saleData.items) {
     const itemRef = doc(stockCollectionRef, item.id);
     const itemDoc = await getDoc(itemRef);
@@ -37,6 +35,8 @@ export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDa
         const currentQuantity = itemDoc.data().quantity;
         const newQuantity = currentQuantity - item.sellQuantity;
         batch.update(itemRef, { quantity: newQuantity });
+    } else {
+      console.warn(`Stock item with id ${item.id} not found. Cannot update quantity.`);
     }
   }
 
@@ -56,4 +56,3 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
     console.error("Error listening to sales: ", error);
   });
 }
-

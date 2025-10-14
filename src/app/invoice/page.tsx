@@ -22,7 +22,6 @@ export default function InvoicePage() {
   const handleSaveInvoice = async (invoiceData: any) => {
     try {
       await saveSale(invoiceData);
-      // alert('Invoice saved successfully!');
       invoiceFormRef.current?.resetForm();
     } catch (error) {
       console.error("Error saving invoice: ", error);
