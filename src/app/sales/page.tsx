@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart } from 'lucide-react';
 
 export default function SalesReportPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
@@ -20,6 +20,7 @@ export default function SalesReportPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   const [salesToday, setSalesToday] = useState(0);
+  const [ordersTodayCount, setOrdersTodayCount] = useState(0);
   const [salesThisMonth, setSalesThisMonth] = useState(0);
   const [salesThisYear, setSalesThisYear] = useState(0);
 
@@ -57,26 +58,29 @@ export default function SalesReportPage() {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
     
-    let today = 0;
-    let month = 0;
-    let year = 0;
+    let todayRevenue = 0;
+    let todayOrders = 0;
+    let monthRevenue = 0;
+    let yearRevenue = 0;
     
     salesData.forEach(sale => {
       const saleDate = sale.saleDate.toDate();
       if (saleDate >= startOfToday) {
-          today += sale.totalAmount;
+          todayRevenue += sale.totalAmount;
+          todayOrders++;
       }
       if (saleDate >= startOfMonth) {
-        month += sale.totalAmount;
+        monthRevenue += sale.totalAmount;
       }
       if (saleDate >= startOfYear) {
-        year += sale.totalAmount;
+        yearRevenue += sale.totalAmount;
       }
     });
 
-    setSalesToday(today);
-    setSalesThisMonth(month);
-    setSalesThisYear(year);
+    setSalesToday(todayRevenue);
+    setOrdersTodayCount(todayOrders);
+    setSalesThisMonth(monthRevenue);
+    setSalesThisYear(yearRevenue);
   };
   
   const handleResetFilters = () => {
@@ -112,11 +116,16 @@ export default function SalesReportPage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2 md:gap-8 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="ຍອດຂາຍມື້ນີ້"
             value={formatCurrency(salesToday)}
             icon={<DollarSign className="h-5 w-5 text-green-500" />}
+          />
+           <StatCard
+            title="ຈຳນວນບິນມື້ນີ້"
+            value={`${ordersTodayCount.toLocaleString('lo-LA')} ບິນ`}
+            icon={<ShoppingCart className="h-5 w-5 text-indigo-500" />}
           />
           <StatCard
             title={'ຍອດຂາຍເດືອນນີ້'}
