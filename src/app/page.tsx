@@ -11,7 +11,7 @@ export default function Home() {
     let cart: any[] = [];
     let editingId: number | null = null;
     let currentTab = 'pos';
-    let currentUser = { username: 'admin', fullName: 'ผู้ดูแลระบบ', role: 'admin' };
+    let currentUser = { username: 'admin', fullName: 'ຜູ້ดูแลລະບົບ', role: 'admin' };
     let selectedCategory = '';
     let receiptNumber = 1;
 
@@ -40,7 +40,7 @@ export default function Home() {
                 id: 1,
                 username: 'admin',
                 password: 'admin123',
-                fullName: 'ผู้ดูแลระบบ',
+                fullName: 'ຜູ້ดูแลລະບົບ',
                 role: 'admin',
                 status: 'active',
                 createdAt: new Date().toISOString()
@@ -80,7 +80,7 @@ export default function Home() {
     function switchTab(tabName: string) {
         // Check permissions
         if (!hasPermission(tabName)) {
-            showNotification('คุณไม่มีสิทธิ์เข้าถึงหน้านี้', 'error');
+            showNotification('ທ່ານບໍ່ມີສິດເຂົ້າເຖິງໜ້ານີ້', 'error');
             return;
         }
 
@@ -139,7 +139,7 @@ export default function Home() {
         
         categoryButtons.innerHTML = `
             <button id="cat-button-all" class="px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === '' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
-                ทั้งหมด
+                ທັງໝົດ
             </button>
             ${categories.map(category => `
                 <button id="cat-button-${category}" class="px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${selectedCategory === category ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}">
@@ -176,7 +176,7 @@ export default function Home() {
         });
 
         if (filteredProducts.length === 0) {
-            productGrid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">ไม่พบสินค้าที่ค้นหา</div>';
+            productGrid.innerHTML = '<div class="col-span-full text-center py-8 text-gray-500">ບໍ່ພົບສິນຄ້າທີ່ຄົ້ນຫາ</div>';
             return;
         }
 
@@ -187,7 +187,7 @@ export default function Home() {
                 <div class="text-xs text-gray-500 mb-2">${item.brand} | ${item.carModel}</div>
                 <div class="flex justify-between items-center">
                     <div class="text-lg font-bold text-blue-600">฿${item.price.toLocaleString('th-TH', {minimumFractionDigits: 2})}</div>
-                    <div class="text-xs text-gray-500">คงเหลือ: ${item.quantity}</div>
+                    <div class="text-xs text-gray-500">ຄົງເຫຼືອ: ${item.quantity}</div>
                 </div>
             </div>
         `).join('');
@@ -205,14 +205,14 @@ export default function Home() {
     function addToCart(itemId: number) {
         const item = inventory.find(i => i.id === itemId);
         if (!item || item.quantity <= 0) {
-            showNotification('สินค้าหมดสต๊อก', 'error');
+            showNotification('ສິນຄ້າໝົດสต๊อก', 'error');
             return;
         }
 
         const existingCartItem = cart.find(c => c.id === itemId);
         if (existingCartItem) {
             if (existingCartItem.quantity >= item.quantity) {
-                showNotification('จำนวนในตะกร้าเกินสต๊อกที่มี', 'error');
+                showNotification('ຈຳນວນໃນກະຕ່າເກີນสต๊อกທີ່ມີ', 'error');
                 return;
             }
             existingCartItem.quantity += 1;
@@ -239,7 +239,7 @@ export default function Home() {
         cartCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0).toString();
 
         if (cart.length === 0) {
-            cartItems.innerHTML = '<div class="text-center text-gray-500 py-4">ตะกร้าว่าง</div>';
+            cartItems.innerHTML = '<div class="text-center text-gray-500 py-4">ກະຕ່າຫວ່າງ</div>';
             (document.getElementById('checkoutBtn') as HTMLButtonElement).disabled = true;
             return;
         }
@@ -281,7 +281,7 @@ export default function Home() {
             renderCart();
             updateCartTotal();
         } else {
-            showNotification('จำนวนเกินสต๊อกที่มี', 'error');
+            showNotification('ຈຳນວນເກີນสต๊อกທີ່ມີ', 'error');
         }
     }
 
@@ -337,7 +337,7 @@ export default function Home() {
         const grandTotal = afterDiscount + taxAmount;
         const received = parseFloat((document.getElementById('receivedAmount') as HTMLInputElement).value);
         const change = received - grandTotal;
-        const customerName = (document.getElementById('customerName') as HTMLInputElement).value || 'ลูกค้าทั่วไป';
+        const customerName = (document.getElementById('customerName') as HTMLInputElement).value || 'ລູກຄ້າທົ່ວໄປ';
         
         const saleRecord = {
             id: Date.now(),
@@ -378,7 +378,7 @@ export default function Home() {
         document.getElementById('paymentModal')!.classList.add('hidden');
         document.getElementById('paymentModal')!.classList.remove('flex');
         
-        showNotification('ขายสำเร็จแล้ว', 'success');
+        showNotification('ຂາຍສຳເລັດແລ້ວ', 'success');
     }
 
     function showReceipt(saleRecord: any) {
@@ -388,27 +388,27 @@ export default function Home() {
         
         receiptContent.innerHTML = `
             <div class="text-center mb-4">
-                <h2 class="font-bold text-lg">ร้านอะไหล่รถยนต์</h2>
+                <h2 class="font-bold text-lg">ຮ້ານອາໄຫຼ່ລົດ</h2>
                 <p class="text-sm">Auto Parts Shop</p>
-                <p class="text-sm">โทร: 02-xxx-xxxx</p>
+                <p class="text-sm">ໂທ: 02-xxx-xxxx</p>
                 <hr class="my-2">
             </div>
             
             <div class="mb-4">
                 <div class="flex justify-between text-sm">
-                    <span>ใบเสร็จเลขที่:</span>
+                    <span>ໃບບິນເລກທີ:</span>
                     <span>${String(saleRecord.receiptNumber).padStart(6, '0')}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span>วันที่:</span>
+                    <span>ວັນທີ:</span>
                     <span>${now.toLocaleDateString('th-TH')} ${now.toLocaleTimeString('th-TH')}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span>ลูกค้า:</span>
+                    <span>ລູກຄ້າ:</span>
                     <span>${saleRecord.customerName}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span>พนักงาน:</span>
+                    <span>ພະນັກງານ:</span>
                     <span>${saleRecord.cashier}</span>
                 </div>
             </div>
@@ -434,38 +434,38 @@ export default function Home() {
             
             <div class="mb-4">
                 <div class="flex justify-between text-sm">
-                    <span>ยอดรวม:</span>
+                    <span>ຍอดລວມ:</span>
                     <span>฿${saleRecord.subtotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                 </div>
                 ${saleRecord.discountAmount > 0 ? `
                     <div class="flex justify-between text-sm">
-                        <span>ส่วนลด (${saleRecord.discountPercent}%):</span>
+                        <span>ສ່ວນຫຼຸດ (${saleRecord.discountPercent}%):</span>
                         <span>-฿${saleRecord.discountAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                     </div>
                 ` : ''}
                 ${saleRecord.taxAmount > 0 ? `
                     <div class="flex justify-between text-sm">
-                        <span>ภาษี (${saleRecord.taxPercent}%):</span>
+                        <span>ພາສີ (${saleRecord.taxPercent}%):</span>
                         <span>฿${saleRecord.taxAmount.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                     </div>
                 ` : ''}
                 <div class="flex justify-between font-bold">
-                    <span>ยอดชำระ:</span>
+                    <span>ຍอดຊำລະ:</span>
                     <span>฿${saleRecord.grandTotal.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span>รับเงิน:</span>
+                    <span>ຮັບເງິນ:</span>
                     <span>฿${saleRecord.received.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                 </div>
                 <div class="flex justify-between text-sm">
-                    <span>เงินทอน:</span>
+                    <span>ເງິນທອນ:</span>
                     <span>฿${saleRecord.change.toLocaleString('th-TH', {minimumFractionDigits: 2})}</span>
                 </div>
             </div>
             
             <hr class="my-2">
             <div class="text-center text-xs">
-                <p>ขอบคุณที่ใช้บริการ</p>
+                <p>ຂอบคุณທີ່ໃຊ້ບໍລິການ</p>
                 <p>Thank you for your business</p>
             </div>
         `;
@@ -501,7 +501,7 @@ export default function Home() {
             document.getElementById('currentUser')!.textContent = user.fullName;
             closeUserSwitchModal();
             updateTabVisibility();
-            showNotification(`เข้าสู่ระบบสำเร็จ ยินดีต้อนรับ ${user.fullName}`, 'success');
+            showNotification(`ເຂົ້າສູ່ລະບົບສຳເລັດ ຍິນດີຕ້ອນຮັບ ${user.fullName}`, 'success');
             
             if (user.role === 'cashier' || user.role === 'staff') {
                 switchTab('pos');
@@ -509,7 +509,7 @@ export default function Home() {
                 switchTab('pos');
             }
         } else {
-            showNotification('ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง', 'error');
+            showNotification('ຊື່ຜູ້ໃຊ້ ຫຼື ລະຫັດຜ່ານບໍ່ຖືກຕ້ອງ', 'error');
         }
     }
 
@@ -539,13 +539,13 @@ export default function Home() {
         
         tbody.innerHTML = users.map(user => {
             const roleText: {[key: string]: string} = {
-                'admin': 'ผู้ดูแลระบบ',
-                'cashier': 'พนักงานขาย',
-                'staff': 'พนักงานทั่วไป'
+                'admin': 'ຜູ້ดูแลລະບົບ',
+                'cashier': 'ພະນັກງານຂາຍ',
+                'staff': 'ພະນັກງານທົ່ວไป'
             };
             
             const statusClass = user.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
-            const statusText = user.status === 'active' ? 'ใช้งาน' : 'ปิดใช้งาน';
+            const statusText = user.status === 'active' ? 'ໃຊ້ງານ' : 'ປິດໃຊ້ງານ';
             
             return `
                 <tr class="hover:bg-gray-50 fade-in">
@@ -560,9 +560,9 @@ export default function Home() {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${new Date(user.createdAt).toLocaleDateString('th-TH')}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
                         <button id="toggle-user-${user.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">
-                            ${user.status === 'active' ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                            ${user.status === 'active' ? 'ປິດໃຊ້ງານ' : 'ເປີດໃຊ້ງານ'}
                         </button>
-                        ${user.username !== 'admin' ? `<button id="delete-user-${user.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ลบ</button>` : ''}
+                        ${user.username !== 'admin' ? `<button id="delete-user-${user.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ລົບ</button>` : ''}
                     </td>
                 </tr>
             `;
@@ -582,7 +582,7 @@ export default function Home() {
             user.status = user.status === 'active' ? 'inactive' : 'active';
             saveData();
             renderUsers();
-            showNotification(`${user.status === 'active' ? 'เปิด' : 'ปิด'}ใช้งานผู้ใช้ ${user.fullName} แล้ว`, 'success');
+            showNotification(`${user.status === 'active' ? 'ເປີດ' : 'ປິດ'}ໃຊ້ງານຜູ້ໃຊ້ ${user.fullName} ແລ້ວ`, 'success');
         }
     }
 
@@ -593,11 +593,11 @@ export default function Home() {
             confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
             confirmDiv.innerHTML = `
                 <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ยืนยันการลบผู้ใช้</h3>
-                    <p class="text-gray-600 mb-6">คุณแน่ใจหรือไม่ที่จะลบผู้ใช้ "${user.fullName}"? การดำเนินการนี้ไม่สามารถยกเลิกได้</p>
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">ຢືນຢັນການລົບຜູ້ໃຊ້</h3>
+                    <p class="text-gray-600 mb-6">ທ່ານແນ່ใจບໍ່ທີ່ຈະລົບຜູ້ໃຊ້ "${user.fullName}"? ການກະທຳນີ້ບໍ່ສາມາດຍົກເລີກໄດ້</p>
                     <div class="flex space-x-3">
-                        <button id="confirm-delete-user-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ลบ</button>
-                        <button id="cancel-delete-user-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                        <button id="confirm-delete-user-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ລົບ</button>
+                        <button id="cancel-delete-user-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                     </div>
                 </div>
             `;
@@ -613,7 +613,7 @@ export default function Home() {
         saveData();
         renderUsers();
         document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50')?.remove();
-        showNotification('ลบผู้ใช้เรียบร้อยแล้ว', 'success');
+        showNotification('ລົບຜູ້ໃຊ້ສຳເລັດແລ້ວ', 'success');
     }
 
     function updateTodayTotal() {
@@ -631,10 +631,10 @@ export default function Home() {
         if(!receiveSelect) return;
 
         const options = inventory.map(item => 
-            `<option value="${item.id}">${item.partCode} - ${item.partName} (คงเหลือ: ${item.quantity})</option>`
+            `<option value="${item.id}">${item.partCode} - ${item.partName} (ຄົງເຫຼືອ: ${item.quantity})</option>`
         ).join('');
         
-        receiveSelect.innerHTML = '<option value="">เลือกอะไหล่</option>' + options;
+        receiveSelect.innerHTML = '<option value="">ເລືອກອາໄຫຼ່</option>' + options;
     }
 
     function updateBrandFilter() {
@@ -642,7 +642,7 @@ export default function Home() {
         if (!brandFilter) return;
         const brands = [...new Set(inventory.map(item => item.brand))].sort();
         
-        brandFilter.innerHTML = '<option value="">ทุกยี่ห้อ</option>' + 
+        brandFilter.innerHTML = '<option value="">ທຸກຍີ່ຫໍ້</option>' + 
             brands.map(brand => `<option value="${brand}">${brand}</option>`).join('');
     }
 
@@ -663,9 +663,9 @@ export default function Home() {
         tbody.innerHTML = filteredInventory.map(item => {
             const status = getStockStatus(item);
             const statusClass: {[key: string]: string} = {
-                'ปกติ': 'bg-green-100 text-green-800',
+                'ປົກກະຕິ': 'bg-green-100 text-green-800',
                 'สต๊อกต่ำ': 'bg-yellow-100 text-yellow-800',
-                'หมดสต๊อก': 'bg-red-100 text-red-800'
+                'ໝົດสต๊อก': 'bg-red-100 text-red-800'
             };
 
             return `
@@ -683,8 +683,8 @@ export default function Home() {
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                        <button id="edit-item-${item.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">แก้ไข</button>
-                        <button id="delete-item-${item.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ลบ</button>
+                        <button id="edit-item-${item.id}" class="text-blue-600 hover:text-blue-900 bg-blue-100 hover:bg-blue-200 px-3 py-1 rounded-lg transition-colors duration-200">ແກ້ໄຂ</button>
+                        <button id="delete-item-${item.id}" class="text-red-600 hover:text-red-900 bg-red-100 hover:bg-red-200 px-3 py-1 rounded-lg transition-colors duration-200">ລົບ</button>
                     </td>
                 </tr>
             `;
@@ -736,15 +736,15 @@ export default function Home() {
         const lowStockAlert = document.getElementById('lowStockAlert');
         if (!lowStockAlert) return;
         if (lowStockItems.length === 0) {
-            lowStockAlert.innerHTML = '<p class="text-green-600 font-semibold">✅ ไม่มีสินค้าที่สต๊อกต่ำ</p>';
+            lowStockAlert.innerHTML = '<p class="text-green-600 font-semibold">✅ ບໍ່ມີສິນຄ້າที่สต๊อกต่ำ</p>';
         } else {
             lowStockAlert.innerHTML = lowStockItems.map(item => `
                 <div class="bg-red-50 border border-red-200 rounded-lg p-4 flex justify-between items-center">
                     <div>
                         <p class="font-semibold text-red-800">${item.partCode} - ${item.partName}</p>
-                        <p class="text-red-600">คงเหลือ: ${item.quantity} ชิ้น (จุดสั่งซื้อ: ${item.reorderPoint} ชิ้น)</p>
+                        <p class="text-red-600">ຄົງເຫຼືອ: ${item.quantity} ชิ้น (ຈຸດสั่งซื้อ: ${item.reorderPoint} ชิ้น)</p>
                     </div>
-                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">ต้องสั่งซื้อ</span>
+                    <span class="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-semibold">ຕ້ອງสั่งซื้อ</span>
                 </div>
             `).join('');
         }
@@ -778,7 +778,7 @@ export default function Home() {
         const bestSellingTable = document.getElementById('bestSellingTable');
         if (!bestSellingTable) return;
         if (bestSelling.length === 0) {
-            bestSellingTable.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ไม่มีข้อมูลการขายใน 7 วันที่ผ่านมา</td></tr>';
+            bestSellingTable.innerHTML = '<tr><td colspan="5" class="px-6 py-4 text-center text-gray-500">ບໍ່ມີຂໍ້ມູນການຂາຍໃນ 7 ວັນທີ່ຜ່ານມາ</td></tr>';
         } else {
             bestSellingTable.innerHTML = bestSelling.map((item, index) => `
                 <tr class="hover:bg-gray-50">
@@ -812,9 +812,9 @@ export default function Home() {
     }
 
     function getStockStatus(item: any) {
-        if (item.quantity === 0) return 'หมดสต๊อก';
+        if (item.quantity === 0) return 'ໝົດสต๊อก';
         if (item.quantity <= item.reorderPoint) return 'สต๊อกต่ำ';
-        return 'ปกติ';
+        return 'ປົກກະຕິ';
     }
 
     function getStatusKey(item: any) {
@@ -838,11 +838,11 @@ export default function Home() {
         confirmDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         confirmDiv.innerHTML = `
             <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 p-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4">ยืนยันการลบ</h3>
-                <p class="text-gray-600 mb-6">คุณแน่ใจหรือไม่ที่จะลบอะไหล่นี้? การดำเนินการนี้ไม่สามารถยกเลิกได้</p>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">ຢືນຢັນການລົບ</h3>
+                <p class="text-gray-600 mb-6">ທ່ານແນ່ใจບໍ່ທີ່ຈະລົບອາໄຫຼ่นີ້? ການກະທຳນີ້ບໍ່ສາມາດຍົກເລີກໄດ້</p>
                 <div class="flex space-x-3">
-                    <button id="confirm-delete-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ลบ</button>
-                    <button id="cancel-delete-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    <button id="confirm-delete-btn" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ລົບ</button>
+                    <button id="cancel-delete-btn" class="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                 </div>
             </div>
         `;
@@ -860,7 +860,7 @@ export default function Home() {
         updatePartSelects();
         updateBrandFilter();
         cancelDelete();
-        showNotification('ลบอะไหล่เรียบร้อยแล้ว', 'success');
+        showNotification('ລົບອາໄຫຼ່ສຳເລັດແລ້ວ', 'success');
     }
 
     function cancelDelete() {
@@ -916,7 +916,7 @@ export default function Home() {
       };
 
       if (inventory.some(item => item.partCode === newItem.partCode)) {
-          showNotification('รหัสอะไหล่นี้มีอยู่แล้วในระบบ', 'error');
+          showNotification('ລະຫັດອາໄຫຼ่นີ້ມີຢູ່ແລ້ວໃນລະບົບ', 'error');
           return;
       }
 
@@ -928,7 +928,7 @@ export default function Home() {
       updateBrandFilter();
       (this as HTMLFormElement).reset();
       
-      showNotification('เพิ่มอะไหล่เรียบร้อยแล้ว', 'success');
+      showNotification('ເພີ່ມອາໄຫຼ່ສຳເລັດແລ້ວ', 'success');
     });
 
     document.getElementById('receiveForm')?.addEventListener('submit', function(e) {
@@ -968,7 +968,7 @@ export default function Home() {
       const today = new Date().toISOString().split('T')[0];
       (document.getElementById('receiveDate') as HTMLInputElement).value = today;
       
-      showNotification(`รับสินค้า ${item.partName} จำนวน ${quantity} ชิ้น เรียบร้อยแล้ว`, 'success');
+      showNotification(`ຮັບສິນຄ້າ ${item.partName} ຈຳນວນ ${quantity} ชิ้น ສຳເລັດແລ້ວ`, 'success');
     });
 
     document.getElementById('addUserForm')?.addEventListener('submit', function(e) {
@@ -980,7 +980,7 @@ export default function Home() {
       const role = (document.getElementById('userRole') as HTMLSelectElement).value;
       
       if (users.some(user => user.username === username)) {
-          showNotification('ชื่อผู้ใช้นี้มีอยู่แล้ว', 'error');
+          showNotification('ຊື່ຜູ້ใช้นี้มีอยู่แล้ว', 'error');
           return;
       }
       
@@ -999,7 +999,7 @@ export default function Home() {
       renderUsers();
       (this as HTMLFormElement).reset();
       
-      showNotification('เพิ่มผู้ใช้งานเรียบร้อยแล้ว', 'success');
+      showNotification('ເພີ່ມຜູ້ໃຊ້ງານສຳເລັດແລ້ວ', 'success');
     });
 
     document.getElementById('receivedAmount')?.addEventListener('input', function() {
@@ -1015,7 +1015,7 @@ export default function Home() {
         const total = parseFloat(document.getElementById('paymentTotal')!.textContent!.replace('฿', '').replace(/,/g, ''));
         
         if (received < total) {
-            showNotification('จำนวนเงินที่รับไม่เพียงพอ', 'error');
+            showNotification('ຈຳນວນເງິນที่รับไม่เพียงพอ', 'error');
             return;
         }
         
@@ -1051,7 +1051,7 @@ export default function Home() {
                 updateTotalStock();
                 updatePartSelects();
                 closeModal();
-                showNotification('อัปเดตจำนวนสต๊อกเรียบร้อยแล้ว', 'success');
+                showNotification('ອັບເດດຈຳນວນสต๊อกສຳເລັດແລ້ວ', 'success');
             }
         }
     });
@@ -1087,22 +1087,22 @@ export default function Home() {
                         </svg>
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">POS ระบบขายอะไหล่</h1>
-                        <p className="text-gray-600">Auto Parts Point of Sale System</p>
+                        <h1 className="text-2xl font-bold text-gray-900">POS ລະບົບຂາຍອາໄຫຼ່</h1>
+                        <p className="text-gray-600">ລະບົບຈຸດຂາຍອາໄຫຼ່ລົດยนต์</p>
                     </div>
                 </div>
                 <div className="flex items-center space-x-4">
                     <div className="bg-green-100 px-4 py-2 rounded-lg">
-                        <span className="text-green-800 font-semibold">สต๊อกทั้งหมด: <span id="totalStock">0</span> ชิ้น</span>
+                        <span className="text-green-800 font-semibold">ສິນຄ້າທັງໝົດ: <span id="totalStock">0</span> ລາຍການ</span>
                     </div>
                     <div className="bg-yellow-100 px-4 py-2 rounded-lg">
-                        <span className="text-yellow-800 font-semibold">ยอดขายวันนี้: ฿<span id="todayTotal">0</span></span>
+                        <span className="text-yellow-800 font-semibold">ຍອດຂາຍມື້ນີ້: ฿<span id="todayTotal">0</span></span>
                     </div>
                     <div className="bg-blue-100 px-4 py-2 rounded-lg">
-                        <span className="text-blue-800 font-semibold">ผู้ใช้: <span id="currentUser">Admin</span></span>
+                        <span className="text-blue-800 font-semibold">ຜູ້ໃຊ້: <span id="currentUser">Admin</span></span>
                     </div>
                     <button id="switchUserBtn" className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-semibold transition-colors duration-200">
-                        เปลี่ยนผู้ใช้
+                        ປ່ຽນຜູ້ໃຊ້
                     </button>
                 </div>
             </div>
@@ -1117,31 +1117,31 @@ export default function Home() {
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                     </svg>
-                    หน้าจอขาย (POS)
+                    ໜ້າຈໍຂາຍ (POS)
                 </button>
                 <button id="tab-inventory" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
                     </svg>
-                    จัดการสินค้า
+                    ຈັດການສິນຄ້າ
                 </button>
                 <button id="tab-receive" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
-                    รับสินค้าเข้า
+                    ຮັບສິນຄ້າເຂົ້າ
                 </button>
                 <button id="tab-reports" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
                     </svg>
-                    รายงาน
+                    ລາຍງານ
                 </button>
                 <button id="tab-users" className="tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap">
                     <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
                     </svg>
-                    ผู้ใช้งาน
+                    ຜູ້ໃຊ້ງານ
                 </button>
             </nav>
         </div>
@@ -1159,17 +1159,17 @@ export default function Home() {
                     <div className="bg-white rounded-xl shadow-lg p-6">
                         <div className="flex space-x-4">
                             <div className="flex-1">
-                                <input type="text" id="posSearch" className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ค้นหาด้วย รหัส, ชื่อ, หรือ Barcode..."/>
+                                <input type="text" id="posSearch" className="w-full px-4 py-3 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຄົ້ນหาດ້ວຍລະຫັດ, ຊື່, ຫຼື Barcode..."/>
                             </div>
                             <button id="clearPosSearchBtn" className="bg-gray-500 hover:bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ล้าง
+                                ລ້າງ
                             </button>
                         </div>
                     </div>
 
                     {/* Category Filter */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">หมวดหมู่สินค้า</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ໝວດหมู่ສິນຄ້າ</h3>
                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3" id="categoryButtons">
                             {/* Category buttons will be populated here */}
                         </div>
@@ -1177,7 +1177,7 @@ export default function Home() {
 
                     {/* Product Grid */}
                     <div className="bg-white rounded-xl shadow-lg p-6">
-                        <h3 className="text-lg font-semibold text-gray-900 mb-4">รายการสินค้า</h3>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-4">ລາຍການສິນຄ້າ</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4" id="productGrid">
                             {/* Products will be populated here */}
                         </div>
@@ -1192,7 +1192,7 @@ export default function Home() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
                             </svg>
-                            ตะกร้าสินค้า (<span id="cartCount">0</span>)
+                            ກະຕ່າສິນຄ້າ (<span id="cartCount">0</span>)
                         </h3>
                         
                         <div id="cartItems" className="space-y-3 mb-6 max-h-96 overflow-y-auto">
@@ -1202,28 +1202,28 @@ export default function Home() {
                         {/* Cart Summary */}
                         <div className="border-t pt-4 space-y-3">
                             <div className="flex justify-between text-sm">
-                                <span>ยอดรวม:</span>
+                                <span>ຍອດລວມ:</span>
                                 <span id="subtotal">฿0.00</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm">ส่วนลด (%):</span>
+                                <span className="text-sm">ສ່ວນຫຼຸດ (%):</span>
                                 <input type="number" id="discountPercent" className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" defaultValue="0"/>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>ส่วนลด:</span>
+                                <span>ສ່ວນຫຼຸດ:</span>
                                 <span id="discountAmount">฿0.00</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm">ภาษี (%):</span>
+                                <span className="text-sm">ພາສີ (%):</span>
                                 <input type="number" id="taxPercent" className="w-20 px-2 py-1 text-sm border border-gray-300 rounded" min="0" max="100" defaultValue="7"/>
                             </div>
                             <div className="flex justify-between text-sm">
-                                <span>ภาษี:</span>
+                                <span>ພາສີ:</span>
                                 <span id="taxAmount">฿0.00</span>
                             </div>
                             <div className="border-t pt-2">
                                 <div className="flex justify-between text-lg font-bold">
-                                    <span>ยอดชำระ:</span>
+                                    <span>ຍอดຊຳລະ:</span>
                                     <span id="grandTotal">฿0.00</span>
                                 </div>
                             </div>
@@ -1232,10 +1232,10 @@ export default function Home() {
                         {/* Action Buttons */}
                         <div className="space-y-3 mt-6">
                             <button id="clearCartBtn" className="w-full bg-gray-500 hover:bg-gray-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200">
-                                ล้างตะกร้า
+                                ລ້າງກະຕ່າ
                             </button>
                             <button id="checkoutBtn" className="w-full bg-green-500 hover:bg-green-600 text-white py-3 rounded-lg font-semibold transition-colors duration-200 disabled:bg-gray-300" disabled>
-                                ชำระเงิน
+                                ຊຳລະເງິນ
                             </button>
                         </div>
                     </div>
@@ -1247,50 +1247,50 @@ export default function Home() {
         <div id="content-inventory" className="tab-content hidden">
             {/* Add New Item Form */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">เพิ่มอะไหล่ใหม่</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">ເພີ່ມອາໄຫຼ່ໃໝ່</h2>
                 <form id="addItemForm" className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสอะไหล่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລະຫັດອາໄຫຼ່</label>
                         <input type="text" id="partCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น ENG001" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่ออะไหล่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ອາໄຫຼ່</label>
                         <input type="text" id="partName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น กรองอากาศ" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ยี่ห้อ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຍີ່ຫໍ້</label>
                         <input type="text" id="brand" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น Toyota, Honda" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รุ่นรถที่ใช้ได้</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລຸ້ນລົດທີ່ໃຊ້ໄດ້</label>
                         <input type="text" id="carModel" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="เช่น Vios, City, Civic" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">OEM Code</label>
-                        <input type="text" id="oemCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส OEM (ถ้ามี)"/>
+                        <input type="text" id="oemCode" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ລະຫັດ OEM (ຖ້າມີ)"/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ໝວດหมู่</label>
                         <select id="category" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกหมวดหมู่</option>
-                            <option value="เครื่องยนต์">เครื่องยนต์</option>
-                            <option value="เบรก">เบรก</option>
-                            <option value="ช่วงล่าง">ช่วงล่าง</option>
-                            <option value="ไฟฟ้า">ไฟฟ้า</option>
-                            <option value="ตัวถัง">ตัวถัง</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
+                            <option value="">ເລືອກໝວດหมู่</option>
+                            <option value="ເຄື່ອງຈັກ">ເຄື່ອງຈັກ</option>
+                            <option value="ເບກ">ເບກ</option>
+                            <option value="ຊ່ວງລ่าง">ຊ່ວງລ่าง</option>
+                            <option value="ໄຟຟ້າ">ໄຟຟ້າ</option>
+                            <option value="ຕົວถัง">ຕົວถัง</option>
+                            <option value="ອື່ນໆ">ອື່ນໆ</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเริ่มต้น</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນເລີ່ມຕົ້ນ</label>
                         <input type="number" id="quantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="0" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ราคาขาย (บาท)</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລາຄາຂາຍ (ບາດ)</label>
                         <input type="number" id="price" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จุดสั่งซื้อใหม่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຸດสั่งซื้อใหม่</label>
                         <input type="number" id="reorderPoint" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="10" min="0" required/>
                     </div>
                     <div className="md:col-span-3">
@@ -1298,7 +1298,7 @@ export default function Home() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            เพิ่มอะไหล่
+                            ເພີ່ມອາໄຫຼ່
                         </button>
                     </div>
                 </form>
@@ -1306,37 +1306,37 @@ export default function Home() {
 
             {/* Search and Filter */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">ค้นหาและกรอง</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">ຄົ້ນຫາ ແລະ ກรอง</h2>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
-                        <input type="text" id="searchInput" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัส, ชื่อ, ยี่ห้อ, รุ่นรถ"/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຄົ້ນຫາ</label>
+                        <input type="text" id="searchInput" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ລະຫັດ, ຊື່, ຍີ່ຫໍ້, ລຸ້ນລົດ"/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมวดหมู่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ໝວດหมู่</label>
                         <select id="filterCategory" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกหมวดหมู่</option>
-                            <option value="เครื่องยนต์">เครื่องยนต์</option>
-                            <option value="เบรก">เบรก</option>
-                            <option value="ช่วงล่าง">ช่วงล่าง</option>
-                            <option value="ไฟฟ้า">ไฟฟ้า</option>
-                            <option value="ตัวถัง">ตัวถัง</option>
-                            <option value="อื่นๆ">อื่นๆ</option>
+                            <option value="">ທຸກໝວດหมู่</option>
+                            <option value="ເຄື່ອງຈັກ">ເຄື່ອງຈັກ</option>
+                            <option value="ເບກ">ເບກ</option>
+                            <option value="ຊ່ວງລ่าง">ຊ່ວງລ่าง</option>
+                            <option value="ໄຟຟ້າ">ໄຟຟ້າ</option>
+                            <option value="ຕົວถัง">ຕົວถัง</option>
+                            <option value="ອື່ນໆ">ອື່ນໆ</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ยี่ห้อ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຍີ່ຫໍ້</label>
                         <select id="filterBrand" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกยี่ห้อ</option>
+                            <option value="">ທຸກຍີ່ຫໍ້</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">สถานะสต๊อก</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ສະຖານะสต๊อก</label>
                         <select id="filterStatus" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">ทุกสถานะ</option>
-                            <option value="normal">ปกติ</option>
+                            <option value="">ທຸກສະຖານะ</option>
+                            <option value="normal">ປົກກະຕິ</option>
                             <option value="low">สต๊อกต่ำ</option>
-                            <option value="out">หมดสต๊อก</option>
+                            <option value="out">ໝົດสต๊อก</option>
                         </select>
                     </div>
                 </div>
@@ -1345,21 +1345,21 @@ export default function Home() {
             {/* Inventory Table */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">รายการสต๊อกอะไหล่</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">ລາຍການสต๊อกອາໄຫຼ່</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยี่ห้อ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รุ่นรถ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมวดหมู่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ราคา</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລະຫັດ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ອາໄຫຼ່</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຍີ່ຫໍ້</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລຸ້ນລົດ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ໝວດหมู่</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈຳນວນ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລາຄາ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ສະຖານະ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈັດການ</th>
                             </tr>
                         </thead>
                         <tbody id="inventoryTable" className="bg-white divide-y divide-gray-200">
@@ -1374,48 +1374,48 @@ export default function Home() {
                 <svg className="mx-auto h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                 </svg>
-                <h3 className="mt-4 text-lg font-medium text-gray-900">ยังไม่มีอะไหล่ในระบบ</h3>
-                <p className="mt-2 text-gray-500">เริ่มต้นโดยการเพิ่มอะไหล่รายการแรกของคุณ</p>
+                <h3 className="mt-4 text-lg font-medium text-gray-900">ຍັງບໍ່ມີອາໄຫຼ່ໃນລະບົບ</h3>
+                <p className="mt-2 text-gray-500">ເລີ່ມຕົ້ນໂດຍການເພີ່ມອາໄຫຼ່ລາຍການທຳອິດຂອງທ່ານ</p>
             </div>
         </div>
 
         {/* Receive Tab */}
         <div id="content-receive" className="tab-content hidden">
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">รับสินค้าเข้าคลัง</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">ຮັບສິນຄ້າເຂົ້າคลัง</h2>
                 <form id="receiveForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">เลือกอะไหล่</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ເລືອກອາໄຫຼ່</label>
                         <select id="receivePartSelect" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกอะไหล่</option>
+                            <option value="">ເລືອກອາໄຫຼ່</option>
                         </select>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนที่รับเข้า</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນທີ່ຮັບເຂົ້າ</label>
                         <input type="number" id="receiveQuantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0" min="1" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ราคาต้นทุน/ชิ้น</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລາຄາต้นทุน/ชิ้น</label>
                         <input type="number" id="receiveCost" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="0.00" step="0.01" min="0" required/>
                     </div>
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">ซัพพลายเออร์</label>
-                        <input type="text" id="supplier" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อร้านค้า/ซัพพลายเออร์" required/>
+                        <input type="text" id="supplier" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ຮ້ານຄ້າ/ซัพพลายเออร์" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">วันที่รับ</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ວັນທີຮັບ</label>
                         <input type="date" id="receiveDate" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
-                        <input type="text" id="receiveNote" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="หมายเหตุเพิ่มเติม"/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ໝາຍເຫດ</label>
+                        <input type="text" id="receiveNote" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ໝາຍເຫດເພີ່ມເຕີມ"/>
                     </div>
                     <div className="md:col-span-2">
                         <button type="submit" className="bg-green-500 hover:bg-green-600 text-white px-6 py-3 rounded-lg font-semibold transition-colors duration-200 flex items-center">
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            บันทึกการรับสินค้า
+                            ບັນທึกການຮັບສິນຄ້າ
                         </button>
                     </div>
                 </form>
@@ -1424,19 +1424,19 @@ export default function Home() {
             {/* Receive History */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">ประวัติการรับสินค้า</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">ປະຫວັດການຮັບສິນຄ້າ</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัสอะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวน</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ວັນທີ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລະຫັດອາໄຫຼ່</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ອາໄຫຼ່</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈຳນວນ</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ต้นทุน/ชิ้น</th>
                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ซัพพลายเออร์</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">หมายเหตุ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ໝາຍເຫດ</th>
                             </tr>
                         </thead>
                         <tbody id="receiveHistoryTable" className="bg-white divide-y divide-gray-200">
@@ -1474,7 +1474,7 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">ยอดขายวันนี้</p>
+                            <p className="text-sm font-medium text-gray-600">ຍອດຂາຍມື້ນີ້</p>
                             <p className="text-2xl font-bold text-gray-900" id="todaySales">0</p>
                         </div>
                     </div>
@@ -1487,7 +1487,7 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">รายการทั้งหมด</p>
+                            <p className="text-sm font-medium text-gray-600">ລາຍການທັງໝົດ</p>
                             <p className="text-2xl font-bold text-gray-900" id="totalItems">0</p>
                         </div>
                     </div>
@@ -1500,7 +1500,7 @@ export default function Home() {
                             </svg>
                         </div>
                         <div className="ml-4">
-                            <p className="text-sm font-medium text-gray-600">มูลค่าสต๊อก</p>
+                            <p className="text-sm font-medium text-gray-600">ມູນຄ່າสต๊อก</p>
                             <p className="text-2xl font-bold text-gray-900" id="stockValue">฿0</p>
                         </div>
                     </div>
@@ -1509,7 +1509,7 @@ export default function Home() {
 
             {/* Low Stock Alert */}
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">🚨 แจ้งเตือนสต๊อกต่ำ</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">🚨 ແຈ້ງເຕືອນสต๊อกต่ำ</h2>
                 <div id="lowStockAlert" className="space-y-3">
                     {/* Low stock items will be populated here */}
                 </div>
@@ -1517,16 +1517,16 @@ export default function Home() {
 
             {/* Best Selling Items */}
             <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">🏆 อะไหล่ขายดี (7 วันที่ผ่านมา)</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">🏆 ອາໄຫຼ່ຂາຍດີ (7 ວັນທີ່ຜ່ານມາ)</h2>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">อันดับ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">รหัส</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่ออะไหล่</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จำนวนขาย</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ยอดขาย</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ອັນດັບ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ລະຫັດ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ອາໄຫຼ່</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈຳນວນຂາຍ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຍອດຂາຍ</th>
                             </tr>
                         </thead>
                         <tbody id="bestSellingTable" className="bg-white divide-y divide-gray-200">
@@ -1540,27 +1540,27 @@ export default function Home() {
         {/* Users Tab */}
         <div id="content-users" className="tab-content hidden">
             <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">เพิ่มผู้ใช้งานใหม่</h2>
+                <h2 className="text-xl font-semibold text-gray-900 mb-4">ເພີ່ມຜູ້ໃຊ້ງານໃໝ່</h2>
                 <form id="addUserForm" className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
-                        <input type="text" id="username" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อผู้ใช้" required/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ຜູ້ໃຊ້</label>
+                        <input type="text" id="username" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ຜູ້ໃຊ້" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
-                        <input type="password" id="password" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัสผ่าน" required/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ລະຫັດຜ່ານ</label>
+                        <input type="password" id="password" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ລະຫັດຜ່ານ" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อจริง</label>
-                        <input type="text" id="fullName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อ-นามสกุล" required/>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ຈິງ</label>
+                        <input type="text" id="fullName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່-ນາມສະກຸນ" required/>
                     </div>
                     <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">ตำแหน่ง</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">ຕຳແໜ່ງ</label>
                         <select id="userRole" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
-                            <option value="">เลือกตำแหน่ง</option>
-                            <option value="admin">ผู้ดูแลระบบ (Admin)</option>
-                            <option value="cashier">พนักงานขาย (Cashier)</option>
-                            <option value="staff">พนักงานทั่วไป (Staff)</option>
+                            <option value="">ເລືອກຕຳແໜ່ງ</option>
+                            <option value="admin">ຜູ້ดูแลລະບົບ (Admin)</option>
+                            <option value="cashier">ພະນັກງານຂາຍ (Cashier)</option>
+                            <option value="staff">ພະນັກງານທົ່ວไป (Staff)</option>
                         </select>
                     </div>
                     <div className="md:col-span-2">
@@ -1568,7 +1568,7 @@ export default function Home() {
                             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            เพิ่มผู้ใช้งาน
+                            ເພີ່ມຜູ້ໃຊ້ງານ
                         </button>
                     </div>
                 </form>
@@ -1577,18 +1577,18 @@ export default function Home() {
             {/* Users List */}
             <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="px-6 py-4 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">รายการผู้ใช้งาน</h2>
+                    <h2 className="text-xl font-semibold text-gray-900">ລາຍການຜູ້ໃຊ້ງານ</h2>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="min-w-full divide-y divide-gray-200">
                         <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อผู้ใช้</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ชื่อจริง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ตำแหน่ง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">สถานะ</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">วันที่สร้าง</th>
-                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">จัดการ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ຜູ້ໃຊ້</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຊື່ຈິງ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຕຳແໜ່ງ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ສະຖານະ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ວັນທີສ້າງ</th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ຈັດການ</th>
                             </tr>
                         </thead>
                         <tbody id="usersTable" className="bg-white divide-y divide-gray-200">
@@ -1604,29 +1604,29 @@ export default function Home() {
     <div id="paymentModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
             <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">ชำระเงิน</h3>
+                <h3 className="text-lg font-semibold text-gray-900">ຊຳລະເງິນ</h3>
             </div>
             <div className="p-6">
                 <div className="mb-4">
                     <div className="text-center mb-4">
-                        <p className="text-2xl font-bold text-gray-900">ยอดชำระ: <span id="paymentTotal">฿0.00</span></p>
+                        <p className="text-2xl font-bold text-gray-900">ຍอดຊຳລະ: <span id="paymentTotal">฿0.00</span></p>
                     </div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนเงินที่รับ</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນເງິນที่รับ</label>
                     <input type="number" id="receivedAmount" className="w-full px-4 py-2 text-lg border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" step="0.01" min="0"/>
                 </div>
                 <div className="mb-4">
                     <div className="flex justify-between text-lg">
-                        <span>เงินทอน:</span>
+                        <span>ເງິນທອນ:</span>
                         <span id="changeAmount" className="font-bold">฿0.00</span>
                     </div>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อลูกค้า (ไม่บังคับ)</label>
-                    <input type="text" id="customerName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อลูกค้า"/>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ລູກຄ້າ (ບໍ່บังคับ)</label>
+                    <input type="text" id="customerName" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ລູກຄ້າ"/>
                 </div>
                 <div className="flex space-x-3">
-                    <button id="confirmPayment" className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยืนยันการชำระ</button>
-                    <button id="cancelPayment" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    <button id="confirmPayment" className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຢືນຢັນການຊຳລະ</button>
+                    <button id="cancelPayment" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                 </div>
             </div>
         </div>
@@ -1636,15 +1636,15 @@ export default function Home() {
     <div id="receiptModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
             <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">ใบเสร็จรับเงิน</h3>
+                <h3 className="text-lg font-semibold text-gray-900">ໃບບິນຮັບເງິນ</h3>
             </div>
             <div className="p-6">
                 <div id="receiptContent" className="receipt-print">
                     {/* Receipt content will be populated here */}
                 </div>
                 <div className="flex space-x-3 mt-6">
-                    <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">พิมพ์ใบเสร็จ</button>
-                    <button id="closeReceiptBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ปิด</button>
+                    <button id="printReceiptBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ພິມໃບບິນ</button>
+                    <button id="closeReceiptBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ປິດ</button>
                 </div>
             </div>
         </div>
@@ -1654,20 +1654,20 @@ export default function Home() {
     <div id="userSwitchModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
             <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">เข้าสู่ระบบ</h3>
+                <h3 className="text-lg font-semibold text-gray-900">ເຂົ້າສູ່ລະບົບ</h3>
             </div>
             <div className="p-6">
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">ชื่อผู้ใช้</label>
-                    <input type="text" id="loginUsername" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ชื่อผู้ใช้"/>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ຊື່ຜູ້ໃຊ້</label>
+                    <input type="text" id="loginUsername" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ຊື່ຜູ້ໃຊ້"/>
                 </div>
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">รหัสผ่าน</label>
-                    <input type="password" id="loginPassword" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="รหัสผ่าน"/>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ລະຫັດຜ່ານ</label>
+                    <input type="password" id="loginPassword" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="ລະຫັດຜ່ານ"/>
                 </div>
                 <div className="flex space-x-3">
-                    <button id="loginBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">เข้าสู่ระบบ</button>
-                    <button id="closeUserSwitchBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    <button id="loginBtn" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ເຂົ້າສູ່ລະບົບ</button>
+                    <button id="closeUserSwitchBtn" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                 </div>
             </div>
         </div>
@@ -1677,16 +1677,16 @@ export default function Home() {
     <div id="editModal" className="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50">
         <div className="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 slide-up">
             <div className="px-6 py-4 border-b border-gray-200">
-                <h3 className="text-lg font-semibold text-gray-900">แก้ไขจำนวนสต๊อก</h3>
+                <h3 className="text-lg font-semibold text-gray-900">ແກ້ໄຂຈຳນວນสต๊อก</h3>
             </div>
             <div className="p-6">
                 <div className="mb-4">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">จำนวนใหม่</label>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">ຈຳນວນໃໝ່</label>
                     <input type="number" id="editQuantity" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" min="0"/>
                 </div>
                 <div className="flex space-x-3">
-                    <button id="saveEdit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">บันทึก</button>
-                    <button id="cancelEdit" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ยกเลิก</button>
+                    <button id="saveEdit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ບັນทึก</button>
+                    <button id="cancelEdit" className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-700 py-2 px-4 rounded-lg font-semibold transition-colors duration-200">ຍົກເລີກ</button>
                 </div>
             </div>
         </div>
