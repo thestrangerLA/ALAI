@@ -103,3 +103,4 @@ export async function deleteStockItem(id: string) {
     console.error("Error deleting document: ", e);
   }
 }
+

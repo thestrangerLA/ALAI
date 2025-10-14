@@ -1,4 +1,5 @@
 
+
 import { 
   collection, 
   onSnapshot, 
@@ -55,3 +56,4 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
     console.error("Error listening to sales: ", error);
   });
 }
+
