@@ -23,10 +23,9 @@ export default function DebtorsPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
   // Stats State
-  const [debtThisMonth, setDebtThisMonth] = useState(0);
-  const [newDebtorsThisMonthCount, setNewDebtorsThisMonthCount] = useState(0);
-  const [debtLastMonth, setDebtLastMonth] = useState(0);
-  const [newDebtorsLastMonthCount, setNewDebtorsLastMonthCount] = useState(0);
+  const [debtToday, setDebtToday] = useState(0);
+  const [newDebtorsTodayCount, setNewDebtorsTodayCount] = useState(0);
+
 
   useEffect(() => {
     const unsubscribe = listenToDebtors((debtorsData) => {
@@ -58,31 +57,21 @@ export default function DebtorsPage() {
 
   const calculateStats = (debtorsData: Debtor[]) => {
     const now = new Date();
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfThisMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-
-    let thisMonthDebt = 0;
-    let thisMonthCount = 0;
-    let lastMonthDebt = 0;
-    let lastMonthCount = 0;
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
+    let todayDebt = 0;
+    let todayCount = 0;
 
     debtorsData.forEach(debtor => {
         const saleDate = debtor.saleDate.toDate();
-        if (saleDate >= startOfThisMonth && saleDate <= endOfThisMonth) {
-            thisMonthDebt += debtor.totalAmount;
-            thisMonthCount++;
-        } else if (saleDate >= startOfLastMonth && saleDate <= endOfLastMonth) {
-            lastMonthDebt += debtor.totalAmount;
-            lastMonthCount++;
+        if (saleDate >= startOfToday) {
+            todayDebt += debtor.totalAmount;
+            todayCount++;
         }
     });
 
-    setDebtThisMonth(thisMonthDebt);
-    setNewDebtorsThisMonthCount(thisMonthCount);
-    setDebtLastMonth(lastMonthDebt);
-    setNewDebtorsLastMonthCount(lastMonthCount);
+    setDebtToday(todayDebt);
+    setNewDebtorsTodayCount(todayCount);
   };
 
 
@@ -139,16 +128,10 @@ export default function DebtorsPage() {
                 description={`ຈາກ ${allDebtors.length} ບິນທີ່ຍັງຄ້າງຊຳລະ`}
             />
             <StatCard
-                title="ໜີ້ໃໝ່ເດືອນນີ້"
-                value={formatCurrency(debtThisMonth)}
+                title="ໜີ້ໃໝ່ມື້ນີ້"
+                value={formatCurrency(debtToday)}
                 icon={<Calendar className="h-5 w-5 text-orange-500" />}
-                description={`ຈາກ ${newDebtorsThisMonthCount} ບິນ`}
-            />
-            <StatCard
-                title="ໜີ້ໃໝ່ເດືອນກ່ອນ"
-                value={formatCurrency(debtLastMonth)}
-                icon={<Calendar className="h-5 w-5 text-blue-500" />}
-                description={`ຈາກ ${newDebtorsLastMonthCount} ບິນ`}
+                description={`ຈາກ ${newDebtorsTodayCount} ບິນ`}
             />
         </div>
         <Card>
