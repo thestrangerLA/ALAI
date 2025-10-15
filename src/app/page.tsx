@@ -4,71 +4,115 @@
 import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import Link from 'next/link';
-import { HardHat, ShoppingCart, FileText, Users } from 'lucide-react';
+import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package } from 'lucide-react';
 import type { StockItem } from '@/lib/types';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 export default function Home() {
     const [totalStock, setTotalStock] = useState(0);
+    const [totalStockItems, setTotalStockItems] = useState(0);
     
     useEffect(() => {
         const unsubscribe = listenToStockItems((items: StockItem[]) => {
             const total = items.reduce((sum, item) => sum + item.quantity, 0);
             setTotalStock(total);
+            setTotalStockItems(items.length);
         });
 
         return () => unsubscribe();
     }, []);
 
+    const menuItems = [
+      {
+        href: '/stock',
+        icon: <HardHat className="w-8 h-8 text-blue-500" />,
+        title: 'ຈັດການສິນຄ້າ',
+        description: 'ເພີ່ມ, ລົບ, ແກ້ໄຂ ແລະ ເບິ່ງສະຕັອກສິນຄ້າ'
+      },
+      {
+        href: '/invoice',
+        icon: <ShoppingCart className="w-8 h-8 text-green-500" />,
+        title: 'ອອກບິນຂາຍສິນຄ້າ',
+        description: 'ສ້າງໃບເກັບເງິນ ແລະ ບັນທຶກການຂາຍ'
+      },
+      {
+        href: '/debtors',
+        icon: <Users className="w-8 h-8 text-red-500" />,
+        title: 'ລາຍການລູກໜີ້',
+        description: 'ຕິດຕາມລາຍການບິນທີ່ຍັງບໍ່ທັນຊຳລະ'
+      },
+      {
+        href: '/sales',
+        icon: <FileText className="w-8 h-8 text-purple-500" />,
+        title: 'ລາຍງານການຂາຍ',
+        description: 'ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ປະຫວັດການຂາຍ'
+      }
+    ];
+
     return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div className="bg-gradient-to-br from-gray-50 to-slate-200 min-h-screen">
     {/* Header */}
-    <header className="bg-white shadow-lg border-b-4 border-blue-500">
+    <header className="bg-white shadow-md border-b-4 border-blue-600">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-6">
                 <div className="flex items-center">
-                    <div className="bg-blue-500 p-3 rounded-lg mr-4">
-                        <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m0 0h8m-8 0a2 2 0 100 4 2 2 0 000-4zm8 0a2 2 0 100 4 2 2 0 000-4z"></path>
-                        </svg>
+                    <div className="bg-blue-600 p-3 rounded-full mr-4 shadow-lg">
+                         <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-gray-900">POS ລະບົບຂາຍສິ້ນສ່ວນ</h1>
-                        <p className="text-gray-600">ລະບົບຈຸດຂາຍສິ້ນສ່ວນລົດຍົນ</p>
-                    </div>
-                </div>
-                <div className="flex items-center space-x-4">
-                    <div className="bg-green-100 px-4 py-2 rounded-lg">
-                        <span className="text-green-800 font-semibold">ສິນຄ້າທັງໝົດ: <span id="totalStock">{totalStock.toLocaleString()}</span> ອັນ</span>
+                        <h1 className="text-3xl font-bold text-gray-800">POS ລະບົບຂາຍສິ້ນສ່ວນ</h1>
+                        <p className="text-gray-500">ລະບົບຈຸດຂາຍສຳລັບຮ້ານຂາຍສິ້ນສ່ວນລົດຍົນ</p>
                     </div>
                 </div>
             </div>
         </div>
     </header>
 
-    {/* Navigation Tabs */}
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        <div className="bg-white rounded-xl shadow-lg p-2">
-            <nav className="flex space-x-2 overflow-x-auto">
-                <Link href="/stock" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
-                    <HardHat className="w-5 h-5 mr-2" />
-                    ຈັດການສິນຄ້າ
-                </Link>
-                <Link href="/invoice" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
-                    <ShoppingCart className="w-5 h-5 mr-2" />
-                    ອອກບິນ
-                </Link>
-                 <Link href="/debtors" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
-                    <Users className="w-5 h-5 mr-2" />
-                    ລູກໜີ້
-                </Link>
-                <Link href="/sales" className={`tab-inactive px-6 py-3 rounded-lg font-semibold transition-all duration-200 flex items-center whitespace-nowrap`}>
-                    <FileText className="w-5 h-5 mr-2" />
-                    ລາຍງານການຂາຍ
-                </Link>
-            </nav>
+    {/* Main Content */}
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Stat Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base font-medium text-gray-600">ຈຳນວນສິນຄ້າທັງໝົດ</CardTitle>
+                    <Package className="w-5 h-5 text-blue-500"/>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-3xl font-bold">{totalStock.toLocaleString()} ອັນ</div>
+                    <p className="text-xs text-muted-foreground">ຈາກ {totalStockItems.toLocaleString()} ລາຍການ</p>
+                </CardContent>
+            </Card>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-base font-medium text-gray-600">ໜ້າທີ່ຫຼັກ</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-3xl font-bold">4 ໜ້າທີ່</div>
+                     <p className="text-xs text-muted-foreground">ຈັດການ, ຂາຍ, ຕິດຕາມ, ລາຍງານ</p>
+                </CardContent>
+            </Card>
         </div>
-    </div>
+        
+        {/* Navigation Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {menuItems.map((item) => (
+              <Link href={item.href} key={item.href} className="block group">
+                <Card className="h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out">
+                  <CardHeader>
+                    <div className="bg-gray-100 rounded-lg p-3 w-max mb-4 group-hover:bg-blue-100 transition-colors">
+                      {item.icon}
+                    </div>
+                    <CardTitle className="text-xl">{item.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <CardDescription>{item.description}</CardDescription>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+        </div>
+    </main>
   </div>
   );
 }
