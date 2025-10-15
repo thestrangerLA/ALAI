@@ -48,12 +48,6 @@ export default function Home() {
         title: 'ອອກບິນຂາຍສິນຄ້າ',
         description: 'ສ້າງໃບເກັບເງິນ ແລະ ບັນທຶກການຂາຍ'
       },
-      {
-        href: '/debtors',
-        icon: <Users className="w-8 h-8 text-red-500" />,
-        title: 'ລາຍການລູກໜີ້',
-        description: 'ຕິດຕາມລາຍການບິນທີ່ຍັງບໍ່ທັນຊຳລະ'
-      },
        {
         href: '/customers',
         icon: <BookUser className="w-8 h-8 text-cyan-500" />,
