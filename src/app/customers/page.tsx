@@ -3,18 +3,32 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BookUser, UserPlus, FileSearch } from 'lucide-react';
+import { ArrowLeft, BookUser, UserPlus, FileSearch, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
+// Simple customer type for local state
+interface Customer {
+  name: string;
+}
+
 export default function CustomersPage() {
   
-  // Placeholder state and functions for future implementation
-  const [customers, setCustomers] = useState([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [newCustomerName, setNewCustomerName] = useState('');
-  const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);
+  
+  const handleSaveCustomer = () => {
+    if (newCustomerName.trim() === '') {
+        alert('ກະລຸນາປ້ອນຊື່ລູກຄ້າກ່ອນ.');
+        return;
+    }
+    const newCustomer: Customer = { name: newCustomerName };
+    setCustomers([...customers, newCustomer]);
+    setNewCustomerName(''); // Clear input field
+    alert(`ບັນທຶກລູກຄ້າ "${newCustomerName}" ສຳເລັດ!`);
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-cyan-50 to-blue-100">
@@ -54,13 +68,13 @@ export default function CustomersPage() {
                             <Label htmlFor="customer-name">ຊື່ລູກຄ້າ</Label>
                             <Input 
                                 id="customer-name" 
-                                placeholder="ປ້ອນຊື່ ແລະ ນາມສະກຸນ" 
+                                placeholder="ປ້ອນຊື່ และ ນາມສະກຸນ" 
                                 value={newCustomerName}
                                 onChange={(e) => setNewCustomerName(e.target.value)}
                             />
                         </div>
                          {/* Add more fields like phone number, address here in the future */}
-                        <Button className="w-full" onClick={() => { /* Logic to save customer */ alert('ຈະເພີ່ມຟັງຊັນບັນທຶກໃນໄວໆນີ້') }}>
+                        <Button className="w-full" onClick={handleSaveCustomer}>
                             <UserPlus className="mr-2 h-4 w-4"/> ບັນທຶກລູກຄ້າ
                         </Button>
                     </div>
@@ -74,15 +88,23 @@ export default function CustomersPage() {
                         <FileSearch className="w-8 h-8 text-green-500"/>
                         <div>
                             <CardTitle>ລາຍງານຂໍ້ມູນລູກຄ້າ</CardTitle>
-                            <CardDescription>ຄົ້ນຫາ ແລະ ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າ</CardDescription>
+                            <CardDescription>ລາຍຊື່ລູກຄ້າທີ່ບັນທຶກໄວ້ໃນລະບົບ</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
-                     <p className="text-center text-gray-500 mb-4">(ລາຍການ ແລະ ຂໍ້ມູນການຊື້ຂອງລູກຄ້າຈະສະແດງຢູ່ນີ້)</p>
-                     <Button className="w-full" variant="secondary">
-                        <FileSearch className="mr-2 h-4 w-4"/> ເບິ່ງລາຍງານ
-                    </Button>
+                    {customers.length > 0 ? (
+                        <ul className="space-y-3">
+                            {customers.map((customer, index) => (
+                                <li key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
+                                    <User className="h-5 w-5 text-gray-600"/>
+                                    <span className="font-medium">{customer.name}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    ) : (
+                        <p className="text-center text-gray-500 py-4">-- ຍັງບໍ່ມີຂໍ້ມູນລູກຄ້າ --</p>
+                    )}
                 </CardContent>
             </Card>
         </div>
