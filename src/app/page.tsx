@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import { listenToDebtors } from '@/services/debtorService';
 import Link from 'next/link';
-import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package } from 'lucide-react';
+import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package, BookUser } from 'lucide-react';
 import type { StockItem, Debtor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -53,6 +53,12 @@ export default function Home() {
         icon: <Users className="w-8 h-8 text-red-500" />,
         title: 'ລາຍການລູກໜີ້',
         description: 'ຕິດຕາມລາຍການບິນທີ່ຍັງບໍ່ທັນຊຳລະ'
+      },
+       {
+        href: '/customers',
+        icon: <BookUser className="w-8 h-8 text-cyan-500" />,
+        title: 'ຂໍ້ມູນລູກຄ້າ',
+        description: 'ຈັດການຂໍ້ມູນ ແລະ ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າ'
       },
       {
         href: '/sales',
@@ -112,7 +118,7 @@ export default function Home() {
         </div>
         
         {/* Navigation Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {menuItems.map((item) => (
               <Link href={item.href} key={item.href} className="block group">
                 <Card className="h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out">
