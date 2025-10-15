@@ -90,7 +90,11 @@ export async function deleteSale(sale: Sale) {
     // 2. Iterate over items to return them to stock
     for (const item of sale.items) {
       const stockRef = doc(db, "stockReceive", item.id);
-      transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+      const stockDoc = await transaction.get(stockRef);
+      // Only update stock if the item still exists in the stock collection
+      if (stockDoc.exists()) {
+        transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+      }
     }
 
     // 3. Delete the sale document

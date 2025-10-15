@@ -125,8 +125,11 @@ export async function deleteDebtor(debtor: Debtor) {
     // 2. Iterate over items to return them to stock
     for (const item of debtor.items) {
       const stockRef = doc(db, "stockReceive", item.id);
-      // Use increment to safely add back the quantity
-      transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+      const stockDoc = await transaction.get(stockRef);
+      // Only update stock if the item still exists in the stock collection
+      if (stockDoc.exists()) {
+        transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+      }
     }
 
     // 3. Delete the debtor document
