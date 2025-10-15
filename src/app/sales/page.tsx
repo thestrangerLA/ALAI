@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, BookUser, History } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, BookUser, History, Users } from 'lucide-react';
 
 export default function SalesReportPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
@@ -105,19 +105,21 @@ export default function SalesReportPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <Link href="#" className="block group">
+            <Link href="/sales/by-customer" className="block group">
               <Card className="h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out">
                 <CardHeader>
                     <div className="flex items-center gap-4">
-                        <BookUser className="w-8 h-8 text-teal-500"/>
+                        <Users className="w-8 h-8 text-teal-500"/>
                         <div>
                             <CardTitle>ລາຍງານຕາມລູກຄ້າ</CardTitle>
-                            <CardDescription>ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າແຕ່ລະຄົນ</CardDescription>
+                            <CardDescription>ເບິ່ງປະຫວັດການຊື້ ແລະ ຍອດຄ້າງຊຳລະຂອງລູກຄ້າແຕ່ລະຄົນ</CardDescription>
                         </div>
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-gray-500">ຄຸນສົມບັດນີ້ກຳລັງຢູ່ໃນການພັດທະນາ...</p>
+                    <Button variant="outline" className="w-full">
+                           ເປີດລາຍງານ
+                    </Button>
                 </CardContent>
               </Card>
             </Link>
