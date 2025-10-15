@@ -7,9 +7,10 @@ import { listenToDebtors } from '@/services/debtorService';
 import type { Sale, Debtor } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, DollarSign, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ChevronRight, Filter } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 type CustomerReport = {
@@ -23,7 +24,11 @@ type CustomerReport = {
 export default function SalesByCustomerPage() {
     const [allSales, setAllSales] = useState<Sale[]>([]);
     const [allDebtors, setAllDebtors] = useState<Debtor[]>([]);
-    const [selectedTransaction, setSelectedTransaction] = useState<Sale | Debtor | null>(null);
+    const [filteredTransactions, setFilteredTransactions] = useState<(Sale | Debtor)[]>([]);
+
+    // Filter states
+    const [selectedYear, setSelectedYear] = useState<string>('all');
+    const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
     useEffect(() => {
         const unsubscribeSales = listenToSales(setAllSales);
@@ -33,17 +38,39 @@ export default function SalesByCustomerPage() {
             unsubscribeDebtors();
         };
     }, []);
+    
+    const allTransactions = useMemo(() => [...allSales, ...allDebtors], [allSales, allDebtors]);
+
+    const availableYears = useMemo(() => {
+        const years = new Set(allTransactions.map(tx => tx.saleDate.toDate().getFullYear().toString()));
+        return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+    }, [allTransactions]);
+
+    useEffect(() => {
+        let transactionsToFilter = allTransactions;
+
+        if (selectedYear !== 'all') {
+            transactionsToFilter = transactionsToFilter.filter(tx => tx.saleDate.toDate().getFullYear().toString() === selectedYear);
+        }
+
+        if (selectedMonth !== 'all') {
+            transactionsToFilter = transactionsToFilter.filter(tx => (tx.saleDate.toDate().getMonth() + 1).toString() === selectedMonth);
+        }
+        
+        setFilteredTransactions(transactionsToFilter);
+
+    }, [selectedYear, selectedMonth, allTransactions]);
 
     const totalOutstandingDebt = useMemo(() => {
-        return allDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
-    }, [allDebtors]);
+        return filteredTransactions
+            .filter(tx => tx.status === 'unpaid')
+            .reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+    }, [filteredTransactions]);
 
     const customerReports = useMemo(() => {
         const reports: Record<string, CustomerReport> = {};
 
-        const allTransactions = [...allSales, ...allDebtors];
-
-        allTransactions.forEach(transaction => {
+        filteredTransactions.forEach(transaction => {
             const customerName = transaction.customerName || 'ບໍ່ໄດ້ລະບຸຊື່';
             if (!reports[customerName]) {
                 reports[customerName] = {
@@ -71,7 +98,12 @@ export default function SalesByCustomerPage() {
 
         return Object.entries(reports).sort(([nameA], [nameB]) => nameA.localeCompare(nameB));
 
-    }, [allSales, allDebtors]);
+    }, [filteredTransactions]);
+    
+    const handleResetFilters = () => {
+        setSelectedYear('all');
+        setSelectedMonth('all');
+    }
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -100,18 +132,48 @@ export default function SalesByCustomerPage() {
                 <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                         <StatCard
-                            title="ຍອດໜີ້ຄ້າງຊຳລະທັງໝົດ"
+                            title="ຍອດໜີ້ຄ້າງຊຳລະ (ກັ່ນຕອງ)"
                             value={formatCurrency(totalOutstandingDebt)}
                             icon={<DollarSign className="h-5 w-5 text-red-500" />}
-                            description={`ຈາກ ${allDebtors.length} ບິນ`}
+                            description={`ຈາກ ${filteredTransactions.filter(tx => tx.status === 'unpaid').length} ບິນ`}
                         />
                     </div>
                      <Card>
                         <CardHeader>
-                            <CardTitle>ສະຫຼຸບຂໍ້ມູນລູກຄ້າ</CardTitle>
-                            <CardDescription>
-                                ພົບລູກຄ້າທັງໝົດ {customerReports.length} ຄົນທີ່ມີປະຫວັດການຊື້. ກົດເພື່ອເບິ່ງລາຍລະອຽດ.
-                            </CardDescription>
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
+                                <div>
+                                    <CardTitle>ສະຫຼຸບຂໍ້ມູນລູກຄ້າ</CardTitle>
+                                    <CardDescription>
+                                        ພົບລູກຄ້າທັງໝົດ {customerReports.length} ຄົນທີ່ກົງກັບການກັ່ນຕອງ.
+                                    </CardDescription>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                     <Filter className="h-4 w-4 text-muted-foreground" />
+                                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="ເລືອກປີ" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ທຸກໆປີ</SelectItem>
+                                            {availableYears.map(year => (
+                                            <SelectItem key={year} value={year}>{year}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                                        <SelectTrigger className="w-[120px]">
+                                            <SelectValue placeholder="ເລືອກເດືອນ" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
+                                            {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                                            <SelectItem key={month} value={month.toString()}>{`ເດືອນ ${month}`}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    <Button variant="outline" onClick={handleResetFilters}>ລ້າງຕົວກອງ</Button>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {customerReports.length > 0 ? (
@@ -137,19 +199,13 @@ export default function SalesByCustomerPage() {
                                     ))}
                                 </div>
                             ) : (
-                                 <div className="h-24 text-center content-center">-- ຍັງບໍ່ມີຂໍ້ມູນການຂາຍ --</div>
+                                 <div className="h-24 text-center content-center">-- ບໍ່ພົບຂໍ້ມູນທີ່ກົງກັບການກັ່ນຕອງ --</div>
                             )}
                         </CardContent>
                      </Card>
                 </main>
             </div>
-            {selectedTransaction && (
-                <InvoiceDetailsDialog 
-                    sale={selectedTransaction} 
-                    isOpen={!!selectedTransaction} 
-                    onOpenChange={() => setSelectedTransaction(null)} 
-                />
-            )}
         </>
     );
-}
+
+    
