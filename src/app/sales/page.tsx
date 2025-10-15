@@ -1,27 +1,17 @@
 
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { listenToSales } from '@/services/salesService';
 import type { Sale } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, Eye, BookUser } from 'lucide-react';
-import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
+import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, BookUser, History } from 'lucide-react';
 
 export default function SalesReportPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
-  const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
-  
-  const [selectedYear, setSelectedYear] = useState<string>('all');
-  const [selectedMonth, setSelectedMonth] = useState<string>('all');
-  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
-
   const [salesToday, setSalesToday] = useState(0);
   const [ordersTodayCount, setOrdersTodayCount] = useState(0);
   const [salesThisMonth, setSalesThisMonth] = useState(0);
@@ -30,30 +20,10 @@ export default function SalesReportPage() {
   useEffect(() => {
     const unsubscribe = listenToSales(salesData => {
       setAllSales(salesData);
+      calculateStats(salesData);
     });
     return () => unsubscribe();
   }, []);
-  
-  const availableYears = useMemo(() => {
-    const years = new Set(allSales.map(sale => sale.saleDate.toDate().getFullYear().toString()));
-    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
-  }, [allSales]);
-
-  useEffect(() => {
-    let salesToFilter = allSales;
-
-    if (selectedYear !== 'all') {
-      salesToFilter = salesToFilter.filter(sale => sale.saleDate.toDate().getFullYear().toString() === selectedYear);
-    }
-
-    if (selectedMonth !== 'all') {
-      salesToFilter = salesToFilter.filter(sale => (sale.saleDate.toDate().getMonth() + 1).toString() === selectedMonth);
-    }
-    
-    setFilteredSales(salesToFilter);
-    calculateStats(allSales); // Always calculate stats based on all sales
-
-  }, [selectedYear, selectedMonth, allSales]);
 
   const calculateStats = (salesData: Sale[]) => {
     const now = new Date();
@@ -85,31 +55,10 @@ export default function SalesReportPage() {
     setSalesThisMonth(monthRevenue);
     setSalesThisYear(yearRevenue);
   };
-  
-  const handleResetFilters = () => {
-    setSelectedYear('all');
-    setSelectedMonth('all');
-  }
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   };
-  
-  const totalFilteredSales = useMemo(() => {
-    return filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-  }, [filteredSales]);
-
-  const groupedSales = useMemo(() => {
-    const groups: { [key: string]: Sale[] } = {};
-    filteredSales.forEach(sale => {
-      const dateString = sale.saleDate.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD
-      if (!groups[dateString]) {
-        groups[dateString] = [];
-      }
-      groups[dateString].push(sale);
-    });
-    return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
-  }, [filteredSales]);
 
   return (
     <>
@@ -155,118 +104,45 @@ export default function SalesReportPage() {
           />
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <Card className="hover:shadow-lg transition-shadow">
-              <CardHeader>
-                  <div className="flex items-center gap-4">
-                      <BookUser className="w-8 h-8 text-teal-500"/>
-                      <div>
-                          <CardTitle>ລາຍງານຕາມລູກຄ້າ</CardTitle>
-                          <CardDescription>ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າແຕ່ລະຄົນ</CardDescription>
-                      </div>
-                  </div>
-              </CardHeader>
-              <CardContent>
-                  <p className="text-sm text-gray-500">ຄຸນສົມບັດນີ້ກຳລັງຢູ່ໃນການພັດທະນາ...</p>
-                   <Button variant="outline" className="mt-4 w-full" disabled>ເບິ່ງລາຍງານ</Button>
-              </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <Link href="#" className="block group">
+              <Card className="h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out">
+                <CardHeader>
+                    <div className="flex items-center gap-4">
+                        <BookUser className="w-8 h-8 text-teal-500"/>
+                        <div>
+                            <CardTitle>ລາຍງານຕາມລູກຄ້າ</CardTitle>
+                            <CardDescription>ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າແຕ່ລະຄົນ</CardDescription>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-gray-500">ຄຸນສົມບັດນີ້ກຳລັງຢູ່ໃນການພັດທະນາ...</p>
+                </CardContent>
+              </Card>
+            </Link>
 
-          <Card className="md:col-span-2 hover:shadow-lg transition-shadow">
-            <CardHeader>
-               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
-                <div>
-                  <CardTitle>ປະຫວັດການຂາຍ ທັງໝົດ</CardTitle>
-                  <CardDescription>
-                    ຍອດຂາຍລວມທີ່ກັ່ນຕອງ: {formatCurrency(totalFilteredSales)}
-                  </CardDescription>
-                </div>
-                <div className="flex items-center gap-2">
-                   <Select value={selectedYear} onValueChange={setSelectedYear}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="ເລືອກປີ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ທຸກໆປີ</SelectItem>
-                      {availableYears.map(year => (
-                        <SelectItem key={year} value={year}>{year}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                   <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="ເລືອກເດືອນ" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
-                      {Array.from({length: 12}, (_, i) => i + 1).map(month => (
-                        <SelectItem key={month} value={month.toString()}>{`ເດືອນ ${month}`}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Button variant="outline" onClick={handleResetFilters}>ລ້າງຕົວກອງ</Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {groupedSales.length > 0 ? (
-                   <Accordion type="multiple" className="w-full">
-                      {groupedSales.map(([date, sales]) => {
-                         const dailyTotal = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-                          return (
-                               <AccordionItem value={date} key={date}>
-                                  <AccordionTrigger>
-                                      <div className='flex justify-between w-full pr-4'>
-                                          <span>{new Date(date).toLocaleDateString('lo-LA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
-                                          <span className='font-semibold text-green-600'>{formatCurrency(dailyTotal)}</span>
-                                      </div>
-                                  </AccordionTrigger>
-                                  <AccordionContent>
-                                      <Table>
-                                          <TableHeader>
-                                              <TableRow>
-                                                  <TableHead>ເລກທີ່ Invoice</TableHead>
-                                                  <TableHead>ຊື່ລູກຄ້າ</TableHead>
-                                                  <TableHead>ເວລາ</TableHead>
-                                                  <TableHead className="text-right">ຍອດລວມ</TableHead>
-                                                  <TableHead className="text-center">ຈັດການ</TableHead>
-                                              </TableRow>
-                                          </TableHeader>
-                                          <TableBody>
-                                          {sales.map(sale => (
-                                              <TableRow key={sale.id}>
-                                                  <TableCell className="font-medium">{sale.invoiceNumber}</TableCell>
-                                                  <TableCell>{sale.customerName || '-'}</TableCell>
-                                                  <TableCell>{sale.saleDate.toDate().toLocaleTimeString('lo-LA')}</TableCell>
-                                                  <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
-                                                  <TableCell className="text-center">
-                                                      <Button variant="outline" size="sm" onClick={() => setSelectedSale(sale)}>
-                                                          <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
-                                                      </Button>
-                                                  </TableCell>
-                                              </TableRow>
-                                          ))}
-                                          </TableBody>
-                                      </Table>
-                                  </AccordionContent>
-                              </AccordionItem>
-                          )
-                      })}
-                  </Accordion>
-              ) : (
-                  <div className="h-24 text-center content-center">-- ບໍ່ພົບຂໍ້ມູນການຂາຍທີ່ກົງກັບການກັ່ນຕອງ --</div>
-              )}
-            </CardContent>
-          </Card>
+            <Link href="/sales/history" className="block group">
+                 <Card className="h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300 ease-in-out">
+                    <CardHeader>
+                        <div className="flex items-center gap-4">
+                            <History className="w-8 h-8 text-indigo-500"/>
+                            <div>
+                                <CardTitle>ປະຫວັດການຂາຍ ທັງໝົດ</CardTitle>
+                                <CardDescription>ເບິ່ງລາຍການຂາຍທັງໝົດ, ກັ່ນຕອງຕາມວັນທີ, ແລະ ເບິ່ງລາຍລະອຽດບິນ</CardDescription>
+                            </div>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                       <Button variant="outline" className="w-full">
+                           ເປີດປະຫວັດການຂາຍ
+                       </Button>
+                    </CardContent>
+                </Card>
+            </Link>
         </div>
-
       </main>
     </div>
-    {selectedSale && (
-        <InvoiceDetailsDialog sale={selectedSale} isOpen={!!selectedSale} onOpenChange={() => setSelectedSale(null)} />
-    )}
     </>
   );
 }
-
-    
