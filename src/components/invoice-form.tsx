@@ -80,66 +80,63 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
     };
   }, [searchQuery, allItems]);
   
-  const handleAddItem = (item: StockItem, priceType: 'sell' | 'wholesale' | 'custom', customPrice?: number) => {
+  const handleAddItem = (item: StockItem, priceType: 'sell' | 'wholesale' | 'custom') => {
     let price: number;
-    let identifier = priceType;
-
+    
     if (priceType === 'custom') {
         const priceInput = window.prompt(`ກະລຸນາໃສ່ລາຄາສຳລັບສິນຄ້າ: ${item.productName}`);
         if (priceInput === null || isNaN(parseFloat(priceInput))) {
             return; // User cancelled or entered invalid number
         }
         price = parseFloat(priceInput);
-        // Create a unique identifier for custom priced items to allow multiple entries of the same item
-        identifier = `custom-${Date.now()}`; 
-    } else {
-        price = priceType === 'sell' ? item.sellPrice : item.wholesalePrice;
-    }
-    
-    setInvoiceItems(prev => {
-      const existingItem = prev.find(i => i.id === item.id && i.priceType === priceType && priceType !== 'custom');
-      
-      if (existingItem) {
-        return prev.map(i =>
-          i.id === item.id && i.priceType === priceType 
-            ? { ...i, sellQuantity: i.sellQuantity + 1 } 
-            : i
-        );
-      } else {
+
         const newItem: InvoiceItemType = { 
           ...item, 
           sellQuantity: 1,
           price: price,
-          priceType: priceType === 'custom' ? 'custom' : priceType,
-          // We use a pseudo-unique ID for the key in React list
-          id: priceType === 'custom' ? `${item.id}-${identifier}` : item.id,
+          priceType: 'custom',
+          // Create a unique id for this custom item instance for React keys and manipulation
+          id: `custom-${item.id}-${Date.now()}`,
         };
-        // For the actual invoice item data, we should use the original item id
-        const originalItem: InvoiceItemType = {
-           ...newItem,
-           id: item.id
-        };
+        setInvoiceItems(prev => [...prev, newItem]);
+    } else {
+        price = priceType === 'sell' ? item.sellPrice : item.wholesalePrice;
+        
+        setInvoiceItems(prev => {
+          const existingItem = prev.find(i => i.id === item.id && i.priceType === priceType);
+          
+          if (existingItem) {
+            return prev.map(i =>
+              i.id === item.id && i.priceType === priceType 
+                ? { ...i, sellQuantity: i.sellQuantity + 1 } 
+                : i
+            );
+          } else {
+            const newItem: InvoiceItemType = { 
+              ...item, 
+              sellQuantity: 1,
+              price: price,
+              priceType: priceType,
+              id: item.id,
+            };
+            return [...prev, newItem];
+          }
+        });
+    }
 
-        if(priceType === 'custom') {
-            return [...prev, originalItem];
-        }
-        return [...prev, newItem];
-      }
-    });
     setSearchQuery('');
     setSearchResults([]);
   };
 
 
-  const handleQuantityChange = (id: string, priceType: 'sell' | 'wholesale' | 'custom', quantity: number) => {
+  const handleQuantityChange = (id: string, quantity: number) => {
     setInvoiceItems(prev =>
-      prev.map(i => (i.id === id && i.priceType === priceType ? { ...i, sellQuantity: Math.max(0, quantity) } : i))
+      prev.map(i => (i.id === id ? { ...i, sellQuantity: Math.max(0, quantity) } : i))
     );
   };
 
-  const handleRemoveItem = (id: string, priceType: 'sell' | 'wholesale' | 'custom') => {
-    // This now needs to handle the potentially unique IDs for custom items
-    setInvoiceItems(prev => prev.filter(i => !(i.id === id && i.priceType === priceType)));
+  const handleRemoveItem = (id: string) => {
+    setInvoiceItems(prev => prev.filter(i => i.id !== id));
   };
   
   const handlePrint = () => {
@@ -163,10 +160,15 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
       invoiceNumber,
       customerName,
       saleDate: new Date(invoiceDate),
-      items: invoiceItems.map(item => ({
-        ...item,
-        sellQuantity: item.sellQuantity
-      })),
+      items: invoiceItems.map(item => {
+        // For custom items, we need to revert the ID to the original product ID before saving
+        const originalId = item.id.startsWith('custom-') ? item.id.split('-')[1] : item.id;
+        return {
+          ...item,
+          id: originalId, // use original item id
+          sellQuantity: item.sellQuantity
+        }
+      }),
       totalAmount,
       status: paymentStatus,
     };
@@ -308,7 +310,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                                      <Input 
                                         type="number" 
                                         value={item.sellQuantity} 
-                                        onChange={e => handleQuantityChange(item.id, item.priceType, parseInt(e.target.value))}
+                                        onChange={e => handleQuantityChange(item.id, parseInt(e.target.value))}
                                         className="w-20 text-center no-print"
                                      />
                                      <span className="print-only">{item.sellQuantity}</span>
@@ -325,7 +327,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price * item.sellQuantity)}</TableCell>
                                 <TableCell className="no-print">
-                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id, item.priceType)}>
+                                    <Button variant="ghost" size="icon" onClick={() => handleRemoveItem(item.id)}>
                                         <Trash2 className="h-4 w-4 text-red-500"/>
                                     </Button>
                                 </TableCell>

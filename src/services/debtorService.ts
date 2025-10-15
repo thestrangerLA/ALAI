@@ -13,7 +13,6 @@ import {
 } from "firebase/firestore";
 import type { Debtor, Sale } from "@/lib/types";
 import { db } from "@/firebase";
-import { saveSale } from "./salesService";
 
 const debtorsCollectionRef = collection(db, "debtors");
 const stockCollectionRef = collection(db, "stockReceive"); 
