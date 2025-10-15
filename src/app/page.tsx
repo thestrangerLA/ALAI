@@ -61,7 +61,7 @@ export default function Home() {
         description: 'ຈັດການຂໍ້ມູນ ແລະ ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າ'
       },
       {
-        href: '/sales/history',
+        href: '/sales',
         icon: <FileText className="w-8 h-8 text-purple-500" />,
         title: 'ລາຍງານການຂາຍ',
         description: 'ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ປະຫວັດການຂາຍ'
