@@ -9,7 +9,8 @@ import {
   query,
   orderBy,
   getDoc,
-  deleteDoc
+  deleteDoc,
+  runTransaction
 } from "firebase/firestore";
 import type { Debtor, Sale } from "@/lib/types";
 import { db } from "@/firebase";
@@ -77,31 +78,35 @@ export function listenToDebtors(callback: (debtors: Debtor[]) => void) {
 }
 
 export async function markAsPaid(debtor: Debtor): Promise<{success: boolean, message: string}> {
-    try {
-        // First, convert the debtor record to a regular sale record.
-        // Note: The stock was already deducted when the debtor was created.
-        const saleData = {
-            ...debtor,
-            saleDate: debtor.saleDate.toDate(),
-            status: 'paid' as const,
-        };
+    const debtorDocRef = doc(db, "debtors", debtor.id);
+    const salesCollectionRef = collection(db, "sales");
 
-        // We call a modified saveSale that doesn't deduct stock again.
-        const salesCollectionRef = collection(db, "sales");
-        await addDoc(salesCollectionRef, {
-            ...saleData,
+    try {
+        await runTransaction(db, async (transaction) => {
+            const debtorDoc = await transaction.get(debtorDocRef);
+            if (!debtorDoc.exists()) {
+                throw new Error("Debtor document does not exist!");
+            }
+
+            // Create a new sale document from the debtor data
+            const newSaleData = {
+                ...debtorDoc.data(),
+                status: 'paid' as const, // Change status to 'paid'
+            };
+            
+            // Add the new sale document
+            transaction.set(doc(salesCollectionRef), newSaleData);
+
+            // Delete the original debtor document
+            transaction.delete(debtorDocRef);
         });
 
-        // Then, delete the record from the debtors collection.
-        const debtorDoc = doc(db, "debtors", debtor.id);
-        await deleteDoc(debtorDoc);
-        
-        return { success: true, message: "Invoice marked as paid and moved to sales." };
+        return { success: true, message: "Invoice marked as paid and moved to sales successfully." };
     } catch (error) {
         console.error("Error marking as paid: ", error);
         if (error instanceof Error) {
             return { success: false, message: error.message };
         }
-        return { success: false, message: "An unknown error occurred." };
+        return { success: false, message: "An unknown error occurred during the transaction." };
     }
 }

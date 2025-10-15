@@ -7,11 +7,9 @@ import { listenToDebtors } from '@/services/debtorService';
 import type { Sale, Debtor } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, Eye, DollarSign } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ChevronRight } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 type CustomerReport = {
@@ -67,7 +65,6 @@ export default function SalesByCustomerPage() {
             reports[customerName].transactions.push(transaction);
         });
         
-        // Sort transactions for each customer by date
         for (const customer in reports) {
             reports[customer].transactions.sort((a, b) => b.saleDate.toMillis() - a.saleDate.toMillis());
         }
@@ -113,17 +110,17 @@ export default function SalesByCustomerPage() {
                         <CardHeader>
                             <CardTitle>ສະຫຼຸບຂໍ້ມູນລູກຄ້າ</CardTitle>
                             <CardDescription>
-                                ພົບລູກຄ້າທັງໝົດ {customerReports.length} ຄົນທີ່ມີປະຫວັດການຊື້.
+                                ພົບລູກຄ້າທັງໝົດ {customerReports.length} ຄົນທີ່ມີປະຫວັດການຊື້. ກົດເພື່ອເບິ່ງລາຍລະອຽດ.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
                             {customerReports.length > 0 ? (
-                                <Accordion type="multiple" className="w-full">
+                                <div className="space-y-4">
                                     {customerReports.map(([name, report]) => (
-                                        <AccordionItem value={name} key={name}>
-                                            <AccordionTrigger>
-                                                <div className='flex justify-between w-full pr-4 items-center'>
-                                                    <div className="text-left">
+                                        <Link href={`/customers/${encodeURIComponent(name)}`} key={name} className="block">
+                                            <Card className="hover:bg-slate-50 hover:shadow-md transition-all">
+                                                <CardContent className="p-4 flex justify-between items-center">
+                                                     <div>
                                                         <p className="text-lg font-semibold">{name}</p>
                                                         <p className="text-sm text-muted-foreground">
                                                             {report.paidInvoices + report.unpaidInvoices} ທຸລະກຳ
@@ -133,43 +130,12 @@ export default function SalesByCustomerPage() {
                                                         <p className='font-semibold text-green-600'>ຍອດຊື້: {formatCurrency(report.totalSpent)}</p>
                                                         <p className='font-semibold text-red-600'>ຍອດໜີ້: {formatCurrency(report.totalDebt)}</p>
                                                     </div>
-                                                </div>
-                                            </AccordionTrigger>
-                                            <AccordionContent>
-                                                <Table>
-                                                    <TableHeader>
-                                                        <TableRow>
-                                                            <TableHead>ວັນທີ</TableHead>
-                                                            <TableHead>ເລກທີ່ Invoice</TableHead>
-                                                            <TableHead>ສະຖານະ</TableHead>
-                                                            <TableHead className="text-right">ຍອດລວມ</TableHead>
-                                                            <TableHead className="text-center">ຈັດການ</TableHead>
-                                                        </TableRow>
-                                                    </TableHeader>
-                                                    <TableBody>
-                                                        {report.transactions.map(tx => (
-                                                            <TableRow key={tx.id}>
-                                                                <TableCell>{tx.saleDate.toDate().toLocaleDateString('lo-LA')}</TableCell>
-                                                                <TableCell className="font-medium">{tx.invoiceNumber}</TableCell>
-                                                                <TableCell>
-                                                                     <span className={`px-2 py-1 text-xs font-semibold rounded-full ${tx.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                                        {tx.status === 'paid' ? 'ຈ່າຍແລ້ວ' : 'ຄ້າງຊຳລະ'}
-                                                                    </span>
-                                                                </TableCell>
-                                                                <TableCell className="text-right">{formatCurrency(tx.totalAmount)}</TableCell>
-                                                                <TableCell className="text-center">
-                                                                    <Button variant="outline" size="sm" onClick={() => setSelectedTransaction(tx)}>
-                                                                        <Eye className="h-4 w-4 mr-1"/> ເບິ່ງ
-                                                                    </Button>
-                                                                </TableCell>
-                                                            </TableRow>
-                                                        ))}
-                                                    </TableBody>
-                                                </Table>
-                                            </AccordionContent>
-                                        </AccordionItem>
+                                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                                                </CardContent>
+                                            </Card>
+                                        </Link>
                                     ))}
-                                </Accordion>
+                                </div>
                             ) : (
                                  <div className="h-24 text-center content-center">-- ຍັງບໍ່ມີຂໍ້ມູນການຂາຍ --</div>
                             )}
