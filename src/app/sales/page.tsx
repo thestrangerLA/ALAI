@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, Eye } from 'lucide-react';
+import { ArrowLeft, Calendar, DollarSign, FileText, ShoppingCart, Eye, BookUser } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 export default function SalesReportPage() {
@@ -154,11 +154,31 @@ export default function SalesReportPage() {
             icon={<Calendar className="h-5 w-5 text-blue-500" />}
           />
         </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <Card className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                  <div className="flex items-center gap-4">
+                      <BookUser className="w-8 h-8 text-teal-500"/>
+                      <div>
+                          <CardTitle>ລາຍງານຕາມລູກຄ້າ</CardTitle>
+                          <CardDescription>ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າແຕ່ລະຄົນ</CardDescription>
+                      </div>
+                  </div>
+              </CardHeader>
+              <CardContent>
+                  <p className="text-sm text-gray-500">ຄຸນສົມບັດນີ້ກຳລັງຢູ່ໃນການພັດທະນາ...</p>
+                   <Button variant="outline" className="mt-4 w-full" disabled>ເບິ່ງລາຍງານ</Button>
+              </CardContent>
+          </Card>
+        </div>
+
+
         <Card>
           <CardHeader>
              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
               <div>
-                <CardTitle>ປະຫວັດການຂາຍ</CardTitle>
+                <CardTitle>ປະຫວັດການຂາຍ ທັງໝົດ</CardTitle>
                 <CardDescription>
                   ຍອດຂາຍລວມທີ່ກັ່ນຕອງ: {formatCurrency(totalFilteredSales)}
                 </CardDescription>
