@@ -17,7 +17,6 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getDailyInvoiceCount } from '@/services/invoiceService';
 
 interface InvoiceFormProps {
@@ -246,18 +245,18 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                 <CardContent className="space-y-4">
                     <div>
                         <Label htmlFor="customer-name">ຊື່ລູກຄ້າ:</Label>
-                        <Select value={customerName} onValueChange={setCustomerName}>
-                            <SelectTrigger id="customer-name">
-                                <SelectValue placeholder="-- ເລືອກລູກຄ້າ --" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {customers.map(customer => (
-                                    <SelectItem key={customer.id} value={customer.name}>
-                                        {customer.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <Input 
+                            id="customer-name" 
+                            placeholder="ປ້ອນຊື່ລູກຄ້າ (ຖ້າມີ)"
+                            value={customerName}
+                            onChange={(e) => setCustomerName(e.target.value)}
+                            list="customers-list"
+                        />
+                        <datalist id="customers-list">
+                            {customers.map(customer => (
+                                <option key={customer.id} value={customer.name} />
+                            ))}
+                        </datalist>
                     </div>
                      <div>
                         <Label htmlFor="invoice-date">ວັນທີ:</Label>
