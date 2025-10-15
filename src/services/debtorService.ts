@@ -10,7 +10,8 @@ import {
   orderBy,
   getDoc,
   deleteDoc,
-  runTransaction
+  runTransaction,
+  increment
 } from "firebase/firestore";
 import type { Debtor, Sale } from "@/lib/types";
 import { db } from "@/firebase";
@@ -109,4 +110,26 @@ export async function markAsPaid(debtor: Debtor): Promise<{success: boolean, mes
         }
         return { success: false, message: "An unknown error occurred during the transaction." };
     }
+}
+
+export async function deleteDebtor(debtor: Debtor) {
+  const debtorDocRef = doc(db, "debtors", debtor.id);
+
+  await runTransaction(db, async (transaction) => {
+    // 1. Verify the debtor document exists before doing anything
+    const debtorDoc = await transaction.get(debtorDocRef);
+    if (!debtorDoc.exists()) {
+      throw new Error("Debtor document not found. It might have been already deleted.");
+    }
+    
+    // 2. Iterate over items to return them to stock
+    for (const item of debtor.items) {
+      const stockRef = doc(db, "stockReceive", item.id);
+      // Use increment to safely add back the quantity
+      transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+    }
+
+    // 3. Delete the debtor document
+    transaction.delete(debtorDocRef);
+  });
 }

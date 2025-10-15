@@ -4,13 +4,14 @@
 import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
 import { listenToDebtors, markAsPaid } from '@/services/debtorService';
+import { deleteTransaction } from '@/services/transactionService';
 import type { Sale, Debtor } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, User, DollarSign, CheckCircle, Eye, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, User, DollarSign, CheckCircle, Eye, ShoppingCart, Trash2 } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 export default function CustomerDetailPage({ params }: { params: { name: string } }) {
@@ -62,6 +63,19 @@ export default function CustomerDetailPage({ params }: { params: { name: string 
             alert(result.message);
         }
     };
+    
+    const handleDeleteTransaction = async (transaction: Sale | Debtor) => {
+        if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບທຸລະກຳ #${transaction.invoiceNumber}? ການກະທຳນີ້ຈະສົ່ງສິນຄ້າຄືນສະຕັອກ ແລະ ບໍ່ສາມາດຍົກເລີກໄດ້.`)) {
+            try {
+                await deleteTransaction(transaction);
+                alert('ລຶບທຸລະກຳສຳເລັດ!');
+            } catch (error) {
+                console.error("Error deleting transaction: ", error);
+                alert(`ເກີດຂໍ້ຜິດພາດໃນການລຶບທຸລະກຳ: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            }
+        }
+    };
+
 
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -137,15 +151,21 @@ export default function CustomerDetailPage({ params }: { params: { name: string 
                                                 </span>
                                             </TableCell>
                                             <TableCell className="text-right font-medium" style={{color: tx.status === 'paid' ? 'var(--green-600)' : 'var(--red-600)'}}>{formatCurrency(tx.totalAmount)}</TableCell>
-                                            <TableCell className="text-center space-x-2">
-                                                <Button variant="outline" size="sm" onClick={() => setSelectedTransaction(tx)}>
-                                                    <Eye className="h-4 w-4 mr-1"/> ເບິ່ງ
+                                            <TableCell className="text-center space-x-1">
+                                                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedTransaction(tx)}>
+                                                    <Eye className="h-4 w-4"/>
+                                                    <span className="sr-only">ເບິ່ງ</span>
                                                 </Button>
                                                 {tx.status === 'unpaid' && (
-                                                    <Button size="sm" className="bg-green-600 hover:bg-green-700" onClick={() => handleMarkAsPaid(tx as Debtor)}>
-                                                        <CheckCircle className="h-4 w-4 mr-1"/> ບັນທຶກການຈ່າຍເງິນ
+                                                    <Button size="icon" className="bg-green-600 hover:bg-green-700 h-8 w-8" onClick={() => handleMarkAsPaid(tx as Debtor)}>
+                                                        <CheckCircle className="h-4 w-4"/>
+                                                        <span className="sr-only">ບັນທຶກການຈ່າຍເງິນ</span>
                                                     </Button>
                                                 )}
+                                                 <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeleteTransaction(tx)}>
+                                                    <Trash2 className="h-4 w-4"/>
+                                                    <span className="sr-only">ລຶບ</span>
+                                                </Button>
                                             </TableCell>
                                         </TableRow>
                                     ))}

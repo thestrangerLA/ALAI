@@ -8,7 +8,9 @@ import {
   Timestamp,
   query,
   orderBy,
-  getDoc
+  getDoc,
+  runTransaction,
+  increment
 } from "firebase/firestore";
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
@@ -72,5 +74,26 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
     callback(sales);
   }, (error) => {
     console.error("Error listening to sales: ", error);
+  });
+}
+
+export async function deleteSale(sale: Sale) {
+  const saleDocRef = doc(db, "sales", sale.id);
+
+  await runTransaction(db, async (transaction) => {
+    // 1. Verify the sale document exists
+    const saleDoc = await transaction.get(saleDocRef);
+    if (!saleDoc.exists()) {
+      throw new Error("Sale document not found. It might have been already deleted.");
+    }
+    
+    // 2. Iterate over items to return them to stock
+    for (const item of sale.items) {
+      const stockRef = doc(db, "stockReceive", item.id);
+      transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
+    }
+
+    // 3. Delete the sale document
+    transaction.delete(saleDocRef);
   });
 }
