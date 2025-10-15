@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import { getDailyInvoiceCount } from '@/services/invoiceService';
 
 interface InvoiceFormProps {
   allItems: StockItem[];
@@ -37,8 +38,17 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
   const [invoiceNumber, setInvoiceNumber] = useState('');
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const generateNewInvoiceNumber = () => {
-    setInvoiceNumber(`INV-${Date.now()}`);
+  const generateNewInvoiceNumber = async () => {
+    const today = new Date();
+    const count = await getDailyInvoiceCount(today);
+    const orderNumber = count + 1;
+    
+    const year = today.getFullYear();
+    const month = (today.getMonth() + 1).toString().padStart(2, '0');
+    const day = today.getDate().toString().padStart(2, '0');
+    
+    const newInvoiceNumber = `INV-${year}${month}${day}-${orderNumber.toString().padStart(4, '0')}`;
+    setInvoiceNumber(newInvoiceNumber);
   }
 
   useEffect(() => {
