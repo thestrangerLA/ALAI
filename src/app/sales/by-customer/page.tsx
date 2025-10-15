@@ -9,8 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, Eye } from 'lucide-react';
+import { ArrowLeft, Users, Eye, DollarSign } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 type CustomerReport = {
@@ -34,6 +35,10 @@ export default function SalesByCustomerPage() {
             unsubscribeDebtors();
         };
     }, []);
+
+    const totalOutstandingDebt = useMemo(() => {
+        return allDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+    }, [allDebtors]);
 
     const customerReports = useMemo(() => {
         const reports: Record<string, CustomerReport> = {};
@@ -96,6 +101,14 @@ export default function SalesByCustomerPage() {
                     </div>
                 </header>
                 <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
+                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            title="ຍອດໜີ້ຄ້າງຊຳລະທັງໝົດ"
+                            value={formatCurrency(totalOutstandingDebt)}
+                            icon={<DollarSign className="h-5 w-5 text-red-500" />}
+                            description={`ຈາກ ${allDebtors.length} ບິນ`}
+                        />
+                    </div>
                      <Card>
                         <CardHeader>
                             <CardTitle>ສະຫຼຸບຂໍ້ມູນລູກຄ້າ</CardTitle>
@@ -174,4 +187,3 @@ export default function SalesByCustomerPage() {
         </>
     );
 }
-
