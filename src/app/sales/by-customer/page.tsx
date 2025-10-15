@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, Users, DollarSign, ChevronRight, Filter } from 'lucide-react';
-import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 type CustomerReport = {
     totalSpent: number;
@@ -207,5 +206,5 @@ export default function SalesByCustomerPage() {
             </div>
         </>
     );
+}
 
-    
