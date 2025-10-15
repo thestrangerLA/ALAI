@@ -5,7 +5,8 @@ import { useState, useEffect, useRef } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import { saveSale } from '@/services/salesService';
 import { saveDebtor } from '@/services/debtorService';
-import type { StockItem } from '@/lib/types';
+import { listenToCustomers } from '@/services/customerService';
+import type { StockItem, Customer } from '@/lib/types';
 import { InvoiceForm, type InvoiceFormHandle } from '@/components/invoice-form';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
@@ -13,12 +14,17 @@ import { ArrowLeft, FileText } from 'lucide-react';
 
 export default function InvoicePage() {
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [paymentStatus, setPaymentStatus] = useState<'paid' | 'unpaid'>('paid');
   const invoiceFormRef = useRef<InvoiceFormHandle>(null);
 
   useEffect(() => {
-    const unsubscribe = listenToStockItems(setStockItems);
-    return () => unsubscribe();
+    const unsubscribeStock = listenToStockItems(setStockItems);
+    const unsubscribeCustomers = listenToCustomers(setCustomers);
+    return () => {
+      unsubscribeStock();
+      unsubscribeCustomers();
+    };
   }, []);
 
   const handleSaveInvoice = async (invoiceData: any) => {
@@ -60,6 +66,7 @@ export default function InvoicePage() {
         <InvoiceForm 
             ref={invoiceFormRef} 
             allItems={stockItems} 
+            customers={customers}
             onSave={handleSaveInvoice}
             paymentStatus={paymentStatus}
             onPaymentStatusChange={setPaymentStatus}

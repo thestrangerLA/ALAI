@@ -1,33 +1,39 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, BookUser, UserPlus, FileSearch, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { addCustomer, listenToCustomers } from '@/services/customerService';
+import type { Customer } from '@/lib/types';
 
-// Simple customer type for local state
-interface Customer {
-  name: string;
-}
 
 export default function CustomersPage() {
   
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [newCustomerName, setNewCustomerName] = useState('');
   
-  const handleSaveCustomer = () => {
+  useEffect(() => {
+    const unsubscribe = listenToCustomers(setCustomers);
+    return () => unsubscribe();
+  }, []);
+
+  const handleSaveCustomer = async () => {
     if (newCustomerName.trim() === '') {
         alert('ກະລຸນາປ້ອນຊື່ລູກຄ້າກ່ອນ.');
         return;
     }
-    const newCustomer: Customer = { name: newCustomerName };
-    setCustomers([...customers, newCustomer]);
-    setNewCustomerName(''); // Clear input field
-    alert(`ບັນທຶກລູກຄ້າ "${newCustomerName}" ສຳເລັດ!`);
+    const result = await addCustomer({ name: newCustomerName });
+    if (result.success) {
+        setNewCustomerName(''); // Clear input field
+        alert(`ບັນທຶກລູກຄ້າ "${newCustomerName}" ສຳເລັດ!`);
+    } else {
+        alert(`ເກີດຂໍ້ຜິດພາດ: ${result.message}`);
+    }
   };
 
   return (
@@ -68,7 +74,7 @@ export default function CustomersPage() {
                             <Label htmlFor="customer-name">ຊື່ລູກຄ້າ</Label>
                             <Input 
                                 id="customer-name" 
-                                placeholder="ປ້ອນຊື່ และ ນາມສະກຸນ" 
+                                placeholder="ປ້ອນຊື່ ແລະ ນາມສະກຸນ" 
                                 value={newCustomerName}
                                 onChange={(e) => setNewCustomerName(e.target.value)}
                             />
@@ -96,7 +102,7 @@ export default function CustomersPage() {
                     {customers.length > 0 ? (
                         <ul className="space-y-3">
                             {customers.map((customer, index) => (
-                                <li key={index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
+                                <li key={customer.id || index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
                                     <User className="h-5 w-5 text-gray-600"/>
                                     <span className="font-medium">{customer.name}</span>
                                 </li>

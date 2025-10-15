@@ -2,7 +2,7 @@
 'use client';
 
 import { useState, useMemo, useEffect, forwardRef, useImperativeHandle } from 'react';
-import type { StockItem, InvoiceItem as InvoiceItemType } from '@/lib/types';
+import type { StockItem, InvoiceItem as InvoiceItemType, Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -17,10 +17,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/
 import { Trash2, Search, Printer, RotateCcw, Save } from 'lucide-react';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getDailyInvoiceCount } from '@/services/invoiceService';
 
 interface InvoiceFormProps {
   allItems: StockItem[];
+  customers: Customer[];
   onSave: (invoiceData: any) => void;
   paymentStatus: 'paid' | 'unpaid';
   onPaymentStatusChange: (status: 'paid' | 'unpaid') => void;
@@ -30,7 +32,7 @@ export interface InvoiceFormHandle {
   resetForm: () => void;
 }
 
-export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ allItems, onSave, paymentStatus, onPaymentStatusChange }, ref) => {
+export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ allItems, customers, onSave, paymentStatus, onPaymentStatusChange }, ref) => {
   const [invoiceItems, setInvoiceItems] = useState<InvoiceItemType[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<StockItem[]>([]);
@@ -243,16 +245,27 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <div>
-                        <label className="text-sm font-medium">ຊື່ລູກຄ້າ:</label>
-                        <Input value={customerName} onChange={e => setCustomerName(e.target.value)} placeholder=".................." />
+                        <Label htmlFor="customer-name">ຊື່ລູກຄ້າ:</Label>
+                        <Select value={customerName} onValueChange={setCustomerName}>
+                            <SelectTrigger id="customer-name">
+                                <SelectValue placeholder="-- ເລືອກລູກຄ້າ --" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {customers.map(customer => (
+                                    <SelectItem key={customer.id} value={customer.name}>
+                                        {customer.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
                     </div>
                      <div>
-                        <label className="text-sm font-medium">ວັນທີ:</label>
-                        <Input type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} />
+                        <Label htmlFor="invoice-date">ວັນທີ:</Label>
+                        <Input id="invoice-date" type="date" value={invoiceDate} onChange={e => setInvoiceDate(e.target.value)} />
                     </div>
                      <div>
-                        <label className="text-sm font-medium">ເລກທີ່ Invoice:</label>
-                        <Input value={invoiceNumber} readOnly disabled />
+                        <Label htmlFor="invoice-number">ເລກທີ່ Invoice:</Label>
+                        <Input id="invoice-number" value={invoiceNumber} readOnly disabled />
                     </div>
                      <div className="flex items-center space-x-2 pt-2">
                         <Switch 

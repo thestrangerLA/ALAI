@@ -31,3 +31,9 @@ export interface Sale {
 }
 
 export interface Debtor extends Sale {}
+
+export interface Customer {
+  id: string;
+  name: string;
+  createdAt?: Timestamp;
+}
