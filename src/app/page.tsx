@@ -3,24 +3,36 @@
 
 import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
+import { listenToDebtors } from '@/services/debtorService';
 import Link from 'next/link';
 import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package } from 'lucide-react';
-import type { StockItem } from '@/lib/types';
+import type { StockItem, Debtor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 
 export default function Home() {
     const [totalStock, setTotalStock] = useState(0);
     const [totalStockItems, setTotalStockItems] = useState(0);
+    const [totalDebt, setTotalDebt] = useState(0);
+    const [totalDebtors, setTotalDebtors] = useState(0);
     
     useEffect(() => {
-        const unsubscribe = listenToStockItems((items: StockItem[]) => {
+        const unsubscribeStock = listenToStockItems((items: StockItem[]) => {
             const total = items.reduce((sum, item) => sum + item.quantity, 0);
             setTotalStock(total);
             setTotalStockItems(items.length);
         });
 
-        return () => unsubscribe();
+        const unsubscribeDebtors = listenToDebtors((debtors: Debtor[]) => {
+            const total = debtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+            setTotalDebt(total);
+            setTotalDebtors(debtors.length);
+        });
+
+        return () => {
+            unsubscribeStock();
+            unsubscribeDebtors();
+        };
     }, []);
 
     const menuItems = [
@@ -49,6 +61,10 @@ export default function Home() {
         description: 'ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ປະຫວັດການຂາຍ'
       }
     ];
+
+    const formatCurrency = (value: number) => {
+        return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
+    };
 
     return (
     <div className="bg-gradient-to-br from-gray-50 to-slate-200 min-h-screen">
@@ -85,11 +101,12 @@ export default function Home() {
             </Card>
             <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-base font-medium text-gray-600">ໜ້າທີ່ຫຼັກ</CardTitle>
+                    <CardTitle className="text-base font-medium text-gray-600">ຍອດໜີ້ລວມທັງໝົດ</CardTitle>
+                    <DollarSign className="w-5 h-5 text-red-500"/>
                 </CardHeader>
                 <CardContent>
-                    <div className="text-3xl font-bold">4 ໜ້າທີ່</div>
-                     <p className="text-xs text-muted-foreground">ຈັດການ, ຂາຍ, ຕິດຕາມ, ລາຍງານ</p>
+                    <div className="text-3xl font-bold">{formatCurrency(totalDebt)}</div>
+                     <p className="text-xs text-muted-foreground">ຈາກ {totalDebtors.toLocaleString()} ບິນທີ່ຍັງຄ້າງຊຳລະ</p>
                 </CardContent>
             </Card>
         </div>
