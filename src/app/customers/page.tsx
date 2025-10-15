@@ -6,11 +6,14 @@ import Link from 'next/link';
 import { ArrowLeft, BookUser, UserPlus, FileSearch } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 export default function CustomersPage() {
   
   // Placeholder state and functions for future implementation
   const [customers, setCustomers] = useState([]);
+  const [newCustomerName, setNewCustomerName] = useState('');
   const [isAddCustomerOpen, setAddCustomerOpen] = useState(false);
 
   return (
@@ -46,10 +49,21 @@ export default function CustomersPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-center text-gray-500 mb-4">(ແບບຟອມເພີ່ມລູກຄ້າຈະສະແດງຢູ່ນີ້)</p>
-                    <Button className="w-full" onClick={() => setAddCustomerOpen(true)}>
-                        <UserPlus className="mr-2 h-4 w-4"/> ເລີ່ມລົງທະບຽນ
-                    </Button>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="customer-name">ຊື່ລູກຄ້າ</Label>
+                            <Input 
+                                id="customer-name" 
+                                placeholder="ປ້ອນຊື່ ແລະ ນາມສະກຸນ" 
+                                value={newCustomerName}
+                                onChange={(e) => setNewCustomerName(e.target.value)}
+                            />
+                        </div>
+                         {/* Add more fields like phone number, address here in the future */}
+                        <Button className="w-full" onClick={() => { /* Logic to save customer */ alert('ຈະເພີ່ມຟັງຊັນບັນທຶກໃນໄວໆນີ້') }}>
+                            <UserPlus className="mr-2 h-4 w-4"/> ບັນທຶກລູກຄ້າ
+                        </Button>
+                    </div>
                 </CardContent>
             </Card>
 
