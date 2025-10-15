@@ -3,6 +3,7 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
+import { deleteTransaction } from '@/services/transactionService';
 import type { Sale } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -10,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Link from 'next/link';
-import { ArrowLeft, History, Eye } from 'lucide-react';
+import { ArrowLeft, History, Eye, Trash2 } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 export default function SalesHistoryPage() {
@@ -52,6 +53,18 @@ export default function SalesHistoryPage() {
     setSelectedYear('all');
     setSelectedMonth('all');
   }
+
+  const handleDeleteSale = async (sale: Sale) => {
+    if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບທຸລະກຳ #${sale.invoiceNumber}? ການກະທຳນີ້ຈະສົ່ງສິນຄ້າຄືນສະຕັອກ ແລະ ບໍ່ສາມາດຍົກເລີກໄດ້.`)) {
+        try {
+            await deleteTransaction(sale);
+            alert('ລຶບທຸລະກຳສຳເລັດ!');
+        } catch (error) {
+            console.error("Error deleting transaction: ", error);
+            alert(`ເກີດຂໍ້ຜິດພາດໃນການລຶບທຸລະກຳ: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -161,9 +174,14 @@ export default function SalesHistoryPage() {
                                                 <TableCell>{sale.customerName || '-'}</TableCell>
                                                 <TableCell>{sale.saleDate.toDate().toLocaleTimeString('lo-LA')}</TableCell>
                                                 <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
-                                                <TableCell className="text-center">
-                                                    <Button variant="outline" size="sm" onClick={() => setSelectedSale(sale)}>
-                                                        <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
+                                                <TableCell className="text-center space-x-1">
+                                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedSale(sale)}>
+                                                        <Eye className="h-4 w-4"/>
+                                                        <span className="sr-only">ເບິ່ງ</span>
+                                                    </Button>
+                                                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDeleteSale(sale)}>
+                                                        <Trash2 className="h-4 w-4" />
+                                                        <span className="sr-only">ລຶບ</span>
                                                     </Button>
                                                 </TableCell>
                                             </TableRow>
