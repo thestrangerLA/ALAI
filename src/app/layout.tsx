@@ -7,7 +7,6 @@ import { FirebaseClientProvider } from "@/firebase/client-provider";
 
 const fontSans = Noto_Sans_Lao({
   subsets: ["lao", "latin"],
-  variable: "--font-sans",
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
 });
 
@@ -22,11 +21,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="lo">
+    <html lang="lo" className={fontSans.className}>
       <body
         className={cn(
-          "min-h-screen bg-background font-sans antialiased",
-          fontSans.variable
+          "min-h-screen bg-background antialiased"
         )}
       >
         <FirebaseClientProvider>{children}</FirebaseClientProvider>
