@@ -3,12 +3,12 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, BookUser, UserPlus, FileSearch, User } from 'lucide-react';
+import { ArrowLeft, BookUser, UserPlus, FileSearch, User, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { addCustomer, listenToCustomers } from '@/services/customerService';
+import { addCustomer, listenToCustomers, deleteCustomer } from '@/services/customerService';
 import type { Customer } from '@/lib/types';
 
 
@@ -33,6 +33,17 @@ export default function CustomersPage() {
         alert(`ບັນທຶກລູກຄ້າ "${newCustomerName}" ສຳເລັດ!`);
     } else {
         alert(`ເກີດຂໍ້ຜິດພາດ: ${result.message}`);
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId: string, customerName: string) => {
+    if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບລູກຄ້າ "${customerName}"?`)) {
+        const result = await deleteCustomer(customerId);
+        if (result.success) {
+            alert(`ລຶບລູກຄ້າ "${customerName}" ສຳເລັດ!`);
+        } else {
+            alert(`ເກີດຂໍ້ຜິດພາດ: ${result.message}`);
+        }
     }
   };
 
@@ -101,10 +112,16 @@ export default function CustomersPage() {
                 <CardContent>
                     {customers.length > 0 ? (
                         <ul className="space-y-3">
-                            {customers.map((customer, index) => (
-                                <li key={customer.id || index} className="flex items-center gap-3 p-2 bg-gray-50 rounded-md">
-                                    <User className="h-5 w-5 text-gray-600"/>
-                                    <span className="font-medium">{customer.name}</span>
+                            {customers.map((customer) => (
+                                <li key={customer.id} className="flex items-center justify-between gap-3 p-2 bg-gray-50 rounded-md">
+                                    <div className="flex items-center gap-3">
+                                        <User className="h-5 w-5 text-gray-600"/>
+                                        <span className="font-medium">{customer.name}</span>
+                                    </div>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-100 hover:text-red-600" onClick={() => handleDeleteCustomer(customer.id, customer.name)}>
+                                        <Trash2 className="h-4 w-4" />
+                                        <span className="sr-only">ລຶບ</span>
+                                    </Button>
                                 </li>
                             ))}
                         </ul>

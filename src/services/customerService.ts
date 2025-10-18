@@ -7,7 +7,9 @@ import {
   query,
   orderBy,
   where,
-  getDocs
+  getDocs,
+  doc,
+  deleteDoc
 } from "firebase/firestore";
 import type { Customer } from "@/lib/types";
 import { db } from "@/firebase";
@@ -43,6 +45,18 @@ export async function addCustomer(customer: Omit<Customer, 'id' | 'createdAt'>):
     return { success: true, message: "Customer added successfully." };
   } catch (e) {
     console.error("Error adding customer: ", e);
+    const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
+    return { success: false, message: errorMessage };
+  }
+}
+
+export async function deleteCustomer(id: string): Promise<{success: boolean, message: string}> {
+  const customerDoc = doc(db, "customers", id);
+  try {
+    await deleteDoc(customerDoc);
+    return { success: true, message: "Customer deleted successfully." };
+  } catch (e) {
+    console.error("Error deleting customer: ", e);
     const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
     return { success: false, message: errorMessage };
   }
