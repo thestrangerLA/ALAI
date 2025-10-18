@@ -10,7 +10,8 @@ import {
   orderBy,
   getDoc,
   runTransaction,
-  increment
+  increment,
+  getDocs
 } from "firebase/firestore";
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
@@ -75,6 +76,21 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
   }, (error) => {
     console.error("Error listening to sales: ", error);
   });
+}
+
+
+export async function getAllSales(): Promise<Sale[]> {
+  try {
+    const q = query(salesCollectionRef, orderBy("saleDate", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    } as Sale));
+  } catch (error) {
+    console.error("Error getting all sales: ", error);
+    return [];
+  }
 }
 
 export async function deleteSale(sale: Sale) {

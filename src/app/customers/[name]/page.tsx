@@ -5,7 +5,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
 import { listenToDebtors, markAsPaid } from '@/services/debtorService';
 import { deleteTransaction } from '@/services/transactionService';
-import type { Sale, Debtor } from '@/lib/types';
+import type { Sale, Debtor, Customer } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,6 +13,14 @@ import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, User, DollarSign, CheckCircle, Eye, ShoppingCart, Trash2 } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
+import { getAllCustomers } from '@/services/customerService';
+
+export async function generateStaticParams() {
+  const customers = await getAllCustomers();
+  return customers.map((customer) => ({
+    name: encodeURIComponent(customer.name),
+  }));
+}
 
 export default function CustomerDetailPage({ params }: { params: { name: string } }) {
     const customerName = decodeURIComponent(params.name);
@@ -188,4 +196,3 @@ export default function CustomerDetailPage({ params }: { params: { name: string 
         </>
     );
 }
-
