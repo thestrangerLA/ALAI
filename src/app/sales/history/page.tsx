@@ -11,8 +11,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Link from 'next/link';
-import { ArrowLeft, History, Eye, Trash2 } from 'lucide-react';
+import { ArrowLeft, History, Eye, Trash2, Calendar, DollarSign } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
+import { StatCard } from '@/components/stat-card';
 
 export default function SalesHistoryPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
@@ -22,12 +23,54 @@ export default function SalesHistoryPage() {
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
+  const [profitToday, setProfitToday] = useState(0);
+  const [profitThisMonth, setProfitThisMonth] = useState(0);
+  const [profitThisYear, setProfitThisYear] = useState(0);
+
   useEffect(() => {
     const unsubscribe = listenToSales(salesData => {
       setAllSales(salesData);
+      calculateStats(salesData);
     });
     return () => unsubscribe();
   }, []);
+
+  const calculateProfit = (sale: Sale): number => {
+    return sale.items.reduce((totalProfit, item) => {
+        const costPrice = item.costPrice || 0;
+        const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
+        return totalProfit + profitPerItem;
+    }, 0);
+  };
+  
+  const calculateStats = (salesData: Sale[]) => {
+    const now = new Date();
+    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfYear = new Date(now.getFullYear(), 0, 1);
+    
+    let todayProfit = 0;
+    let monthProfit = 0;
+    let yearProfit = 0;
+    
+    salesData.forEach(sale => {
+      const saleDate = sale.saleDate.toDate();
+      const profit = calculateProfit(sale);
+      if (saleDate >= startOfToday) {
+        todayProfit += profit;
+      }
+      if (saleDate >= startOfMonth) {
+        monthProfit += profit;
+      }
+      if (saleDate >= startOfYear) {
+        yearProfit += profit;
+      }
+    });
+
+    setProfitToday(todayProfit);
+    setProfitThisMonth(monthProfit);
+    setProfitThisYear(yearProfit);
+  };
   
   const availableYears = useMemo(() => {
     const years = new Set(allSales.map(sale => sale.saleDate.toDate().getFullYear().toString()));
@@ -69,14 +112,6 @@ export default function SalesHistoryPage() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   };
-
-  const calculateProfit = (sale: Sale): number => {
-    return sale.items.reduce((totalProfit, item) => {
-        const costPrice = item.costPrice || 0;
-        const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
-        return totalProfit + profitPerItem;
-    }, 0);
-  };
   
   const totalFilteredSales = useMemo(() => {
     return filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -115,6 +150,23 @@ export default function SalesHistoryPage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+           <StatCard
+            title="ກຳໄລມື້ນີ້"
+            value={formatCurrency(profitToday)}
+            icon={<DollarSign className="h-5 w-5 text-green-500" />}
+          />
+          <StatCard
+            title={'ກຳໄລເດືອນນີ້'}
+            value={formatCurrency(profitThisMonth)}
+            icon={<Calendar className="h-5 w-5 text-orange-500" />}
+          />
+          <StatCard
+            title={'ກຳໄລປີນີ້'}
+            value={formatCurrency(profitThisYear)}
+            icon={<Calendar className="h-5 w-5 text-blue-500" />}
+          />
+        </div>
         <Card className="hover:shadow-lg transition-shadow">
           <CardHeader>
               <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -221,3 +273,5 @@ export default function SalesHistoryPage() {
     </>
   );
 }
+
+    
