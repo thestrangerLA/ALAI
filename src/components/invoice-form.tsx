@@ -227,7 +227,7 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                                 </Button>
                                  <Button size="sm" variant="secondary" onClick={() => handleAddItem(item, 'custom')}>
                                     ໃສ່ລາຄາເອງ
-                                </Button>
+                                 </Button>
                             </div>
                         </div>
                         ))}

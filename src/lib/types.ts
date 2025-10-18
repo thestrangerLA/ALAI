@@ -20,12 +20,18 @@ export interface InvoiceItem extends StockItem {
   priceType: 'sell' | 'wholesale' | 'custom';
 }
 
+export type SaleItem = Omit<InvoiceItem, 'price'> & { 
+  price: number; 
+  priceType: 'sell' | 'wholesale' | 'custom',
+  costPrice: number;
+};
+
 export interface Sale {
   id: string;
   invoiceNumber: string;
   customerName: string;
   saleDate: Timestamp;
-  items: (Omit<InvoiceItem, 'price'> & { price: number; priceType: 'sell' | 'wholesale' | 'custom' })[];
+  items: SaleItem[];
   totalAmount: number;
   status: 'paid' | 'unpaid';
 }

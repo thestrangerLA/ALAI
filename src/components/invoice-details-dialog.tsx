@@ -39,10 +39,18 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
     }
   }
 
+  const calculateTotalProfit = () => {
+      return sale.items.reduce((totalProfit, item) => {
+          const costPrice = item.costPrice || 0;
+          const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
+          return totalProfit + profitPerItem;
+      }, 0);
+  };
+
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-3xl" id="invoice-details-content">
+      <DialogContent className="sm:max-w-4xl" id="invoice-details-content">
         <DialogHeader>
           <DialogTitle>ລາຍລະອຽດໃບເກັບເງິນ</DialogTitle>
           <DialogDescription>
@@ -69,30 +77,42 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
                         <TableHead>ປະເພດລາຄາ</TableHead>
                         <TableHead className="text-right">ລາຄາ/ໜ່ວຍ</TableHead>
                         <TableHead className="text-right">ລວມ</TableHead>
+                        <TableHead className="text-right">ກຳໄລ</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
-                    {sale.items.map((item, index) => (
-                        <TableRow key={`${item.id}-${index}`}>
-                            <TableCell>{item.productName} ({item.productCode})</TableCell>
-                            <TableCell className="text-center">{item.sellQuantity}</TableCell>
-                            <TableCell>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${item.priceType === 'sell' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
-                                    {item.priceType === 'sell' ? 'ຂາຍ' : 'ສົ່ງ'}
-                                </span>
-                            </TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
-                            <TableCell className="text-right">{formatCurrency(item.price * item.sellQuantity)}</TableCell>
-                        </TableRow>
-                    ))}
+                    {sale.items.map((item, index) => {
+                        const totalCost = (item.costPrice || 0) * item.sellQuantity;
+                        const totalSell = item.price * item.sellQuantity;
+                        const profit = totalSell - totalCost;
+                        
+                        return (
+                            <TableRow key={`${item.id}-${index}`}>
+                                <TableCell>{item.productName} ({item.productCode})</TableCell>
+                                <TableCell className="text-center">{item.sellQuantity}</TableCell>
+                                <TableCell>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${item.priceType === 'sell' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                                        {item.priceType === 'sell' ? 'ຂາຍ' : 'ສົ່ງ'}
+                                    </span>
+                                </TableCell>
+                                <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
+                                <TableCell className="text-right">{formatCurrency(totalSell)}</TableCell>
+                                <TableCell className="text-right font-medium text-blue-600">{formatCurrency(profit)}</TableCell>
+                            </TableRow>
+                        )
+                    })}
                 </TableBody>
             </Table>
 
             <div className="mt-6 flex justify-end">
                 <div className="w-full max-w-xs space-y-2 text-right">
-                     <div className="flex justify-between items-center text-xl font-bold">
+                     <div className="flex justify-between items-center text-lg">
                         <span>ລວມເປັນເງິນທັງໝົດ:</span>
-                        <span>{formatCurrency(sale.totalAmount)}</span>
+                        <span className="font-bold">{formatCurrency(sale.totalAmount)}</span>
+                    </div>
+                     <div className="flex justify-between items-center text-lg text-blue-700">
+                        <span>ກຳໄລລວມ:</span>
+                        <span className="font-bold">{formatCurrency(calculateTotalProfit())}</span>
                     </div>
                 </div>
             </div>

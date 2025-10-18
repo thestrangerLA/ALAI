@@ -69,6 +69,14 @@ export default function SalesHistoryPage() {
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
   };
+
+  const calculateProfit = (sale: Sale): number => {
+    return sale.items.reduce((totalProfit, item) => {
+        const costPrice = item.costPrice || 0;
+        const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
+        return totalProfit + profitPerItem;
+    }, 0);
+  };
   
   const totalFilteredSales = useMemo(() => {
     return filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
@@ -164,6 +172,7 @@ export default function SalesHistoryPage() {
                                                 <TableHead>ຊື່ລູກຄ້າ</TableHead>
                                                 <TableHead>ເວລາ</TableHead>
                                                 <TableHead className="text-right">ຍອດລວມ</TableHead>
+                                                <TableHead className="text-right">ກຳໄລ</TableHead>
                                                 <TableHead className="text-center">ຈັດການ</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -174,6 +183,7 @@ export default function SalesHistoryPage() {
                                                 <TableCell>{sale.customerName || '-'}</TableCell>
                                                 <TableCell>{sale.saleDate.toDate().toLocaleTimeString('lo-LA')}</TableCell>
                                                 <TableCell className="text-right">{formatCurrency(sale.totalAmount)}</TableCell>
+                                                <TableCell className="text-right font-medium text-blue-600">{formatCurrency(calculateProfit(sale))}</TableCell>
                                                 <TableCell className="text-center space-x-1">
                                                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedSale(sale)}>
                                                         <Eye className="h-4 w-4"/>
