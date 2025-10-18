@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import { getAllSales, listenToSales } from '@/services/salesService';
+import { listenToSales } from '@/services/salesService';
 import { deleteTransaction } from '@/services/transactionService';
 import type { Sale } from '@/lib/types';
 import { Button } from '@/components/ui/button';
@@ -11,15 +11,6 @@ import Link from 'next/link';
 import { ArrowLeft, History, Eye, Trash2, DollarSign, LineChart } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 import { StatCard } from '@/components/stat-card';
-
-
-export async function generateStaticParams() {
-  const sales = await getAllSales();
-  const uniqueDates = new Set(sales.map(sale => sale.saleDate.toDate().toLocaleDateString('en-CA')));
-  return Array.from(uniqueDates).map(date => ({
-    date: date,
-  }));
-}
 
 
 export default function DailySalesHistoryPage({ params }: { params: { date: string } }) {

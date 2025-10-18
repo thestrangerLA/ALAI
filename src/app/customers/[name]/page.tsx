@@ -13,14 +13,6 @@ import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, User, DollarSign, CheckCircle, Eye, ShoppingCart, Trash2 } from 'lucide-react';
 import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
-import { getAllCustomers } from '@/services/customerService';
-
-export async function generateStaticParams() {
-  const customers = await getAllCustomers();
-  return customers.map((customer) => ({
-    name: encodeURIComponent(customer.name),
-  }));
-}
 
 export default function CustomerDetailPage({ params }: { params: { name: string } }) {
     const customerName = decodeURIComponent(params.name);

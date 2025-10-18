@@ -78,21 +78,6 @@ export function listenToSales(callback: (sales: Sale[]) => void) {
   });
 }
 
-
-export async function getAllSales(): Promise<Sale[]> {
-  try {
-    const q = query(salesCollectionRef, orderBy("saleDate", "desc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Sale));
-  } catch (error) {
-    console.error("Error getting all sales: ", error);
-    return [];
-  }
-}
-
 export async function deleteSale(sale: Sale) {
   const saleDocRef = doc(db, "sales", sale.id);
 

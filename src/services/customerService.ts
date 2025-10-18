@@ -29,20 +29,6 @@ export function listenToCustomers(callback: (customers: Customer[]) => void) {
   });
 }
 
-export async function getAllCustomers(): Promise<Customer[]> {
-  try {
-    const q = query(customersCollectionRef, orderBy("name", "asc"));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Customer));
-  } catch (error) {
-    console.error("Error getting all customers: ", error);
-    return [];
-  }
-}
-
 export async function addCustomer(customer: Omit<Customer, 'id' | 'createdAt'>): Promise<{success: boolean, message: string}> {
   try {
     // Check if customer name already exists
