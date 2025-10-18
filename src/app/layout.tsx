@@ -5,9 +5,10 @@ import "./globals.css";
 import { cn } from "@/lib/utils";
 import { FirebaseClientProvider } from "@/firebase/client-provider";
 
-const fontSans = Noto_Sans_Lao({
+const fontSansLao = Noto_Sans_Lao({
   subsets: ["lao", "latin"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
+  variable: '--font-sans-lao',
 });
 
 export const metadata: Metadata = {
@@ -21,10 +22,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="lo" className={fontSans.className}>
+    <html lang="lo" suppressHydrationWarning>
       <body
         className={cn(
-          "min-h-screen bg-background antialiased"
+          "min-h-screen bg-background font-sans antialiased",
+          fontSansLao.variable
         )}
       >
         <FirebaseClientProvider>{children}</FirebaseClientProvider>
