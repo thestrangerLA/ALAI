@@ -219,15 +219,9 @@ export const InvoiceForm = forwardRef<InvoiceFormHandle, InvoiceFormProps>(({ al
                             <p className="font-semibold">{item.productName} ({item.productCode})</p>
                             <p className="text-sm text-gray-500">ຄົງເຫຼືອ: {item.quantity}</p>
                             <div className="flex justify-end gap-2 mt-2">
-                                <Button size="sm" variant="outline" onClick={() => handleAddItem(item, 'sell')}>
-                                    ລາຄາຂາຍ: {formatCurrency(item.sellPrice)}
-                                </Button>
                                 <Button size="sm" variant="outline" onClick={() => handleAddItem(item, 'wholesale')}>
                                     ລາຄາສົ່ງ: {formatCurrency(item.wholesalePrice)}
                                 </Button>
-                                 <Button size="sm" variant="secondary" onClick={() => handleAddItem(item, 'custom')}>
-                                    ໃສ່ລາຄາເອງ
-                                 </Button>
                             </div>
                         </div>
                         ))}
