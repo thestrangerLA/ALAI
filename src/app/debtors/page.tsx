@@ -240,7 +240,11 @@ export default function DebtorsPage() {
       </main>
     </div>
     {selectedDebtor && (
-        <InvoiceDetailsDialog sale={selectedDebtor} isOpen={!!selectedDebtor} onOpenChange={() => setSelectedDebtor(null)} />
+        <InvoiceDetailsDialog 
+            sale={selectedDebtor} 
+            isOpen={!!selectedDebtor} 
+            onOpenChange={() => setSelectedDebtor(null)} 
+        />
     )}
     </>
   );

@@ -17,9 +17,10 @@ interface InvoiceDetailsDialogProps {
   sale: Sale;
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
+  showProfit?: boolean;
 }
 
-export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDetailsDialogProps) {
+export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange, showProfit = false }: InvoiceDetailsDialogProps) {
 
   const formatCurrency = (value: number) => {
     if (typeof value !== 'number' || isNaN(value)) return '0 ₭';
@@ -40,6 +41,7 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
   }
 
   const calculateTotalProfit = () => {
+      if (!showProfit) return 0;
       return sale.items.reduce((totalProfit, item) => {
           const costPrice = item.costPrice || 0;
           const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
@@ -77,7 +79,7 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
                         <TableHead>ປະເພດລາຄາ</TableHead>
                         <TableHead className="text-right">ລາຄາ/ໜ່ວຍ</TableHead>
                         <TableHead className="text-right">ລວມ</TableHead>
-                        <TableHead className="text-right">ກຳໄລ</TableHead>
+                        {showProfit && <TableHead className="text-right">ກຳໄລ</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -97,7 +99,7 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
                                 </TableCell>
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
                                 <TableCell className="text-right">{formatCurrency(totalSell)}</TableCell>
-                                <TableCell className="text-right font-medium text-blue-600">{formatCurrency(profit)}</TableCell>
+                                {showProfit && <TableCell className="text-right font-medium text-blue-600">{formatCurrency(profit)}</TableCell>}
                             </TableRow>
                         )
                     })}
@@ -110,10 +112,10 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange }: InvoiceDeta
                         <span>ລວມເປັນເງິນທັງໝົດ:</span>
                         <span className="font-bold">{formatCurrency(sale.totalAmount)}</span>
                     </div>
-                     <div className="flex justify-between items-center text-lg text-blue-700">
+                     {showProfit && <div className="flex justify-between items-center text-lg text-blue-700">
                         <span>ກຳໄລລວມ:</span>
                         <span className="font-bold">{formatCurrency(calculateTotalProfit())}</span>
-                    </div>
+                    </div>}
                 </div>
             </div>
              <div className="mt-8 flex justify-end gap-2 no-print">

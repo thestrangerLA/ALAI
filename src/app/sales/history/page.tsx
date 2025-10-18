@@ -211,7 +211,12 @@ export default function SalesHistoryPage() {
       </main>
     </div>
     {selectedSale && (
-        <InvoiceDetailsDialog sale={selectedSale} isOpen={!!selectedSale} onOpenChange={() => setSelectedSale(null)} />
+        <InvoiceDetailsDialog 
+            sale={selectedSale} 
+            isOpen={!!selectedSale} 
+            onOpenChange={() => setSelectedSale(null)}
+            showProfit={true}
+        />
     )}
     </>
   );
