@@ -1,9 +1,9 @@
 
-import type { Sale, Debtor } from '@/lib/types';
+import type { Sale } from '@/lib/types'; // Note: Debtor is structurally identical to Sale
 import { deleteSale } from './salesService';
 import { deleteDebtor } from './debtorService';
 
-export async function deleteTransaction(transaction: Sale | Debtor): Promise<void> {
+export async function deleteTransaction(transaction: Sale): Promise<void> {
     if (!transaction || !transaction.id) {
         throw new Error('Invalid transaction data provided.');
     }
@@ -12,7 +12,7 @@ export async function deleteTransaction(transaction: Sale | Debtor): Promise<voi
     if (transaction.status === 'paid') {
         await deleteSale(transaction as Sale);
     } else if (transaction.status === 'unpaid') {
-        await deleteDebtor(transaction as Debtor);
+        await deleteDebtor(transaction as Sale);
     } else {
         // If status is undefined or something else, throw an error.
         // This makes the logic cleaner and avoids accidental deletions.

@@ -11,7 +11,8 @@ import {
   getDoc,
   runTransaction,
   increment,
-  getDocs
+  getDocs,
+  where
 } from "firebase/firestore";
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
@@ -101,4 +102,44 @@ export async function deleteSale(sale: Sale) {
     // 3. Delete the sale document
     transaction.delete(saleDocRef);
   });
+}
+
+
+export async function getAllSales(): Promise<Sale[]> {
+    const q = query(salesCollectionRef, orderBy("saleDate", "desc"));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+}
+
+const calculateProfit = (sale: Sale): number => {
+    return sale.items.reduce((totalProfit, item) => {
+      const costPrice = item.costPrice || 0;
+      const profitPerItem = (item.price * item.sellQuantity) - (costPrice * item.sellQuantity);
+      return totalProfit + profitPerItem;
+    }, 0);
+};
+
+export async function getSalesForDate(dateString: string) {
+    const startOfDay = new Date(dateString);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+    const endOfDay = new Date(dateString);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    const startTimestamp = Timestamp.fromDate(startOfDay);
+    const endTimestamp = Timestamp.fromDate(endOfDay);
+
+    const q = query(
+        salesCollectionRef,
+        where("saleDate", ">=", startTimestamp),
+        where("saleDate", "<=", endTimestamp)
+    );
+
+    const snapshot = await getDocs(q);
+    const sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+    sales.sort((a,b) => b.saleDate.toMillis() - a.saleDate.toMillis());
+
+    const totalSales = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+    const totalProfit = sales.reduce((sum, sale) => sum + calculateProfit(sale), 0);
+
+    return { sales, totalSales, totalProfit };
 }

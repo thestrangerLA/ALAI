@@ -9,12 +9,15 @@ import {
   where,
   getDocs,
   doc,
-  deleteDoc
+  deleteDoc,
+  Timestamp
 } from "firebase/firestore";
-import type { Customer } from "@/lib/types";
+import type { Customer, Sale, Debtor } from "@/lib/types";
 import { db } from "@/firebase";
 
 const customersCollectionRef = collection(db, "customers");
+const salesCollectionRef = collection(db, "sales");
+const debtorsCollectionRef = collection(db, "debtors");
 
 export function listenToCustomers(callback: (customers: Customer[]) => void) {
   const q = query(customersCollectionRef, orderBy("createdAt", "desc"));
@@ -60,4 +63,52 @@ export async function deleteCustomer(id: string): Promise<{success: boolean, mes
     const errorMessage = e instanceof Error ? e.message : "An unknown error occurred.";
     return { success: false, message: errorMessage };
   }
+}
+
+export async function getAllCustomers(): Promise<Customer[]> {
+  const q = query(customersCollectionRef, orderBy("createdAt", "desc"));
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Customer));
+}
+
+// Function to get all transactions and stats for a specific customer
+export async function getCustomerTransactions(customerName: string) {
+    const salesQuery = query(salesCollectionRef, where("customerName", "==", customerName));
+    const debtorsQuery = query(debtorsCollectionRef, where("customerName", "==", customerName));
+
+    const [salesSnapshot, debtorsSnapshot] = await Promise.all([
+        getDocs(salesQuery),
+        getDocs(debtorsQuery)
+    ]);
+
+    const sales = salesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Sale));
+    const debtors = debtorsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Debtor));
+
+    const allTransactions = [...sales, ...debtors];
+    
+    allTransactions.sort((a, b) => {
+        const dateA = a.saleDate instanceof Timestamp ? a.saleDate.toMillis() : new Date(a.saleDate as any).getTime();
+        const dateB = b.saleDate instanceof Timestamp ? b.saleDate.toMillis() : new Date(b.saleDate as any).getTime();
+        return dateB - dateA;
+    });
+
+    let totalSpent = 0;
+    let totalDebt = 0;
+    let paidInvoices = 0;
+    let unpaidInvoices = 0;
+
+    allTransactions.forEach(tx => {
+        if (tx.status === 'paid') {
+            totalSpent += tx.totalAmount;
+            paidInvoices++;
+        } else {
+            totalDebt += tx.totalAmount;
+            unpaidInvoices++;
+        }
+    });
+    
+    return { 
+        transactions: allTransactions, 
+        stats: { totalSpent, totalDebt, paidInvoices, unpaidInvoices } 
+    };
 }
