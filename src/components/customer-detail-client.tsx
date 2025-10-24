@@ -17,13 +17,6 @@ import { Timestamp } from 'firebase/firestore';
 
 interface CustomerDetailClientProps {
     customerName: string;
-    initialTransactions: any[];
-    initialStats: {
-        totalSpent: number;
-        totalDebt: number;
-        paidInvoices: number;
-        unpaidInvoices: number;
-    };
 }
 
 // Type guard to check if a value is a Firestore Timestamp
@@ -31,32 +24,27 @@ function isTimestamp(value: any): value is Timestamp {
     return value && typeof value.toDate === 'function';
 }
 
-
-export default function CustomerDetailClient({ customerName, initialTransactions, initialStats }: CustomerDetailClientProps) {
-    const [allSales, setAllSales] = useState<Sale[]>(
-        initialTransactions
-            .filter(tx => tx.status === 'paid')
-            .map(tx => ({...tx, saleDate: new Timestamp(tx.saleDate.seconds, tx.saleDate.nanoseconds)} as Sale))
-    );
-    const [allDebtors, setAllDebtors] = useState<Debtor[]>(
-        initialTransactions
-            .filter(tx => tx.status === 'unpaid')
-            .map(tx => ({...tx, saleDate: new Timestamp(tx.saleDate.seconds, tx.saleDate.nanoseconds)} as Debtor))
-    );
+export default function CustomerDetailClient({ customerName }: CustomerDetailClientProps) {
+    const [allSales, setAllSales] = useState<Sale[]>([]);
+    const [allDebtors, setAllDebtors] = useState<Debtor[]>([]);
     const [selectedTransaction, setSelectedTransaction] = useState<Sale | Debtor | null>(null);
-    const [customerTransactions, setCustomerTransactions] = useState<(Sale | Debtor)[]>(
-         initialTransactions.map(tx => ({...tx, saleDate: new Timestamp(tx.saleDate.seconds, tx.saleDate.nanoseconds)}))
-    );
-    
-    const [stats, setStats] = useState(initialStats);
-
+    const [customerTransactions, setCustomerTransactions] = useState<(Sale | Debtor)[]>([]);
+    const [stats, setStats] = useState({
+        totalSpent: 0,
+        totalDebt: 0,
+        paidInvoices: 0,
+        unpaidInvoices: 0,
+    });
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const unsubscribeSales = listenToSales((salesData) => {
              setAllSales(salesData.map(s => ({...s, saleDate: isTimestamp(s.saleDate) ? s.saleDate : new Timestamp((s.saleDate as any).seconds, (s.saleDate as any).nanoseconds)})));
+             setIsLoading(false);
         });
         const unsubscribeDebtors = listenToDebtors((debtorsData) => {
             setAllDebtors(debtorsData.map(d => ({...d, saleDate: isTimestamp(d.saleDate) ? d.saleDate : new Timestamp((d.saleDate as any).seconds, (d.saleDate as any).nanoseconds)})));
+            setIsLoading(false);
         });
         return () => {
             unsubscribeSales();
@@ -162,7 +150,9 @@ export default function CustomerDetailClient({ customerName, initialTransactions
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                           {customerTransactions.length > 0 ? (
+                           {isLoading ? (
+                                <div className="h-24 text-center content-center">ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
+                           ) : customerTransactions.length > 0 ? (
                              <Table>
                                 <TableHeader>
                                     <TableRow>

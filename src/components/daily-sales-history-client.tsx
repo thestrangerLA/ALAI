@@ -17,9 +17,6 @@ import { Timestamp } from 'firebase/firestore';
 
 interface DailySalesHistoryClientProps {
     dateString: string;
-    initialSales: any[];
-    initialTotalSales: number;
-    initialTotalProfit: number;
 }
 
 const calculateProfit = (sale: Sale): number => {
@@ -30,11 +27,10 @@ const calculateProfit = (sale: Sale): number => {
     }, 0);
 };
 
-export default function DailySalesHistoryClient({ dateString, initialSales, initialTotalSales, initialTotalProfit }: DailySalesHistoryClientProps) {
-  const [dailySales, setDailySales] = useState<Sale[]>(
-      initialSales.map(s => ({...s, saleDate: new Timestamp(s.saleDate.seconds, s.saleDate.nanoseconds)} as Sale))
-  );
+export default function DailySalesHistoryClient({ dateString }: DailySalesHistoryClientProps) {
+  const [dailySales, setDailySales] = useState<Sale[]>([]);
   const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const unsubscribe = listenToSales(allSales => {
@@ -45,6 +41,7 @@ export default function DailySalesHistoryClient({ dateString, initialSales, init
       });
       salesForDay.sort((a,b) => b.saleDate.toMillis() - a.saleDate.toMillis());
       setDailySales(salesForDay);
+      setIsLoading(false);
     });
     return () => unsubscribe();
   }, [dateString]);
@@ -100,7 +97,7 @@ export default function DailySalesHistoryClient({ dateString, initialSales, init
                     title="ຍອດຂາຍລວມ"
                     value={formatCurrency(totalSales)}
                     icon={<DollarSign className="h-5 w-5 text-green-500" />}
-                    description={`ຈາກ ${dailySales.length} ບິນ`}
+                    description={!isLoading ? `ຈາກ ${dailySales.length} ບິນ` : '...'}
                 />
                  <StatCard
                     title="ກຳໄລລວມ"
@@ -116,6 +113,9 @@ export default function DailySalesHistoryClient({ dateString, initialSales, init
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
+                    {isLoading ? (
+                         <div className="h-24 text-center content-center">ກຳລັງໂຫຼດຂໍ້ມູນ...</div>
+                    ) : (
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -155,6 +155,7 @@ export default function DailySalesHistoryClient({ dateString, initialSales, init
                         )}
                         </TableBody>
                     </Table>
+                    )}
                 </CardContent>
             </Card>
         </main>
