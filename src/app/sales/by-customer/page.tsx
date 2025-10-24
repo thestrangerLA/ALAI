@@ -10,7 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, DollarSign, ChevronRight, Filter } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, ChevronRight, Filter, ShoppingCart } from 'lucide-react';
 
 type CustomerReport = {
     totalSpent: number;
@@ -60,10 +60,18 @@ export default function SalesByCustomerPage() {
 
     }, [selectedYear, selectedMonth, allTransactions]);
 
-    const totalOutstandingDebt = useMemo(() => {
-        return filteredTransactions
-            .filter(tx => tx.status === 'unpaid')
-            .reduce((sum, debtor) => sum + debtor.totalAmount, 0);
+    const { totalOutstandingDebt, totalPaidSales } = useMemo(() => {
+        return filteredTransactions.reduce(
+            (acc, tx) => {
+                if (tx.status === 'unpaid') {
+                    acc.totalOutstandingDebt += tx.totalAmount;
+                } else {
+                    acc.totalPaidSales += tx.totalAmount;
+                }
+                return acc;
+            },
+            { totalOutstandingDebt: 0, totalPaidSales: 0 }
+        );
     }, [filteredTransactions]);
 
     const customerReports = useMemo(() => {
@@ -123,13 +131,19 @@ export default function SalesByCustomerPage() {
                             <Users className="h-6 w-6 text-white" />
                         </div>
                         <div>
-                            <h1 className="text-2xl font-bold tracking-tight">ລາຍງານການຂາຍຕາມລູກຄ້າ</h1>
+                            <h1 className="text-2xl font-bold tracking-tight">ປະຫວັດການຂາຍ (ແຍກຕາມລູກຄ້າ)</h1>
                             <p className="text-sm text-muted-foreground">ສະຫຼຸບຍອດຊື້ ແລະ ໜີ້ຄ້າງຊຳລະຂອງລູກຄ້າແຕ່ລະຄົນ</p>
                         </div>
                     </div>
                 </header>
                 <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
                      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                        <StatCard
+                            title="ຍອດຂາຍລວມ (ຈ່າຍແລ້ວ)"
+                            value={formatCurrency(totalPaidSales)}
+                            icon={<ShoppingCart className="h-5 w-5 text-green-500" />}
+                            description={`ຈາກ ${filteredTransactions.filter(tx => tx.status === 'paid').length} ບິນ`}
+                        />
                         <StatCard
                             title="ຍອດໜີ້ຄ້າງຊຳລະ (ກັ່ນຕອງ)"
                             value={formatCurrency(totalOutstandingDebt)}
