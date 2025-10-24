@@ -3,14 +3,17 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
-import { listenToDebtors } from '@/services/debtorService';
+import { listenToDebtors, markAsPaid } from '@/services/debtorService';
 import type { Sale, Debtor } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Users, DollarSign, ChevronRight, Filter, ShoppingCart } from 'lucide-react';
+import { ArrowLeft, Users, DollarSign, Filter, ShoppingCart, CheckCircle, Eye } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
 
 type CustomerReport = {
     totalSpent: number;
@@ -24,6 +27,7 @@ export default function SalesByCustomerPage() {
     const [allSales, setAllSales] = useState<Sale[]>([]);
     const [allDebtors, setAllDebtors] = useState<Debtor[]>([]);
     const [filteredTransactions, setFilteredTransactions] = useState<(Sale | Debtor)[]>([]);
+    const [selectedTransaction, setSelectedTransaction] = useState<Sale | Debtor | null>(null);
 
     // Filter states
     const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -112,6 +116,13 @@ export default function SalesByCustomerPage() {
         setSelectedMonth('all');
     }
 
+    const handleMarkAsPaid = async (debtor: Debtor) => {
+        if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການບັນທຶກການຈ່າຍເງິນສຳລັບ Invoice #${debtor.invoiceNumber}?`)) {
+            const result = await markAsPaid(debtor);
+            alert(result.message);
+        }
+    };
+
     const formatCurrency = (value: number) => {
         return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
     };
@@ -175,7 +186,7 @@ export default function SalesByCustomerPage() {
                                     </Select>
                                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
                                         <SelectTrigger className="w-[120px]">
-                                            <SelectValue placeholder="ເລືອກເດືອນ" />
+                                            <SelectValue placeholder="ເລືอกເດືອນ" />
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
@@ -190,13 +201,13 @@ export default function SalesByCustomerPage() {
                         </CardHeader>
                         <CardContent>
                             {customerReports.length > 0 ? (
-                                <div className="space-y-4">
+                                <Accordion type="multiple" className="w-full space-y-2">
                                     {customerReports.map(([name, report]) => (
-                                        <Link href={`/customers/${encodeURIComponent(name)}`} key={name} className="block">
-                                            <Card className="hover:bg-slate-50 hover:shadow-md transition-all">
-                                                <CardContent className="p-4 flex justify-between items-center">
-                                                     <div>
-                                                        <p className="text-lg font-semibold">{name}</p>
+                                        <AccordionItem value={name} key={name} className='bg-slate-50 rounded-lg border'>
+                                            <AccordionTrigger className='hover:bg-slate-100 rounded-t-lg px-4 py-3 text-lg'>
+                                                <div className='flex justify-between w-full pr-4'>
+                                                    <div>
+                                                        <p className="font-semibold">{name}</p>
                                                         <p className="text-sm text-muted-foreground">
                                                             {report.paidInvoices + report.unpaidInvoices} ທຸລະກຳ
                                                         </p>
@@ -205,12 +216,50 @@ export default function SalesByCustomerPage() {
                                                         <p className='font-semibold text-green-600'>ຍອດຊື້: {formatCurrency(report.totalSpent)}</p>
                                                         <p className='font-semibold text-red-600'>ຍອດໜີ້: {formatCurrency(report.totalDebt)}</p>
                                                     </div>
-                                                    <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                                </CardContent>
-                                            </Card>
-                                        </Link>
+                                                </div>
+                                            </AccordionTrigger>
+                                            <AccordionContent className='p-0'>
+                                                 <Table>
+                                                    <TableHeader>
+                                                        <TableRow>
+                                                            <TableHead>ວັນທີ</TableHead>
+                                                            <TableHead>ເລກທີ່ Invoice</TableHead>
+                                                            <TableHead>ສະຖານະ</TableHead>
+                                                            <TableHead className="text-right">ຍອດລວມ</TableHead>
+                                                            <TableHead className="text-center">ຈັດການ</TableHead>
+                                                        </TableRow>
+                                                    </TableHeader>
+                                                    <TableBody>
+                                                        {report.transactions.map(tx => (
+                                                            <TableRow key={tx.id}>
+                                                                <TableCell>{tx.saleDate.toDate().toLocaleDateString('lo-LA')}</TableCell>
+                                                                <TableCell className="font-medium">{tx.invoiceNumber}</TableCell>
+                                                                <TableCell>
+                                                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${tx.status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                                                        {tx.status === 'paid' ? 'ຈ່າຍແລ້ວ' : 'ຄ້າງຊຳລະ'}
+                                                                    </span>
+                                                                </TableCell>
+                                                                <TableCell className="text-right font-medium" style={{color: tx.status === 'paid' ? 'var(--green-600)' : 'var(--red-600)'}}>{formatCurrency(tx.totalAmount)}</TableCell>
+                                                                <TableCell className="text-center space-x-1">
+                                                                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setSelectedTransaction(tx)}>
+                                                                        <Eye className="h-4 w-4"/>
+                                                                        <span className="sr-only">ເບິ່ງ</span>
+                                                                    </Button>
+                                                                    {tx.status === 'unpaid' && (
+                                                                        <Button size="icon" className="bg-green-600 hover:bg-green-700 h-8 w-8" onClick={() => handleMarkAsPaid(tx as Debtor)}>
+                                                                            <CheckCircle className="h-4 w-4"/>
+                                                                            <span className="sr-only">ບັນທຶກການຈ່າຍເງິນ</span>
+                                                                        </Button>
+                                                                    )}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        ))}
+                                                    </TableBody>
+                                                </Table>
+                                            </AccordionContent>
+                                        </AccordionItem>
                                     ))}
-                                </div>
+                                </Accordion>
                             ) : (
                                  <div className="h-24 text-center content-center">-- ບໍ່ພົບຂໍ້ມູນທີ່ກົງກັບການກັ່ນຕອງ --</div>
                             )}
@@ -218,6 +267,13 @@ export default function SalesByCustomerPage() {
                      </Card>
                 </main>
             </div>
+            {selectedTransaction && (
+                <InvoiceDetailsDialog 
+                    sale={selectedTransaction} 
+                    isOpen={!!selectedTransaction} 
+                    onOpenChange={() => setSelectedTransaction(null)} 
+                />
+            )}
         </>
     );
 }
