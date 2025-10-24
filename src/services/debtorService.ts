@@ -15,6 +15,7 @@ import {
 } from "firebase/firestore";
 import type { Debtor, Sale } from "@/lib/types";
 import { db } from "@/firebase";
+import { addCustomer } from "./customerService";
 
 const debtorsCollectionRef = collection(db, "debtors");
 const stockCollectionRef = collection(db, "stockReceive"); 
@@ -24,6 +25,12 @@ export async function saveDebtor(debtorData: Omit<Debtor, 'id' | 'saleDate'> & {
   const batch = writeBatch(db);
 
   try {
+    // 0. If a customer name is provided, ensure the customer exists.
+    if (debtorData.customerName && debtorData.customerName.trim() !== '') {
+      // This function already handles checking for duplicates.
+      addCustomer({ name: debtorData.customerName.trim() });
+    }
+    
     // 1. Create a new debtor document
     const debtorRef = doc(debtorsCollectionRef);
     batch.set(debtorRef, {

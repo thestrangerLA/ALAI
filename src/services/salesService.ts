@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import type { Sale } from "@/lib/types";
 import { db } from "@/firebase";
+import { addCustomer } from "./customerService";
 
 const salesCollectionRef = collection(db, "sales");
 const stockCollectionRef = collection(db, "stockReceive"); 
@@ -24,6 +25,14 @@ export async function saveSale(saleData: Omit<Sale, 'id' | 'saleDate'> & {saleDa
   const batch = writeBatch(db);
 
   try {
+    // 0. If a customer name is provided, ensure the customer exists.
+    if (saleData.customerName && saleData.customerName.trim() !== '') {
+      // This function already handles checking for duplicates, so we can just call it.
+      // We don't need to await or handle the result unless we want to stop the sale if customer creation fails.
+      // For a smoother UX, we'll let it try to add in the background.
+      addCustomer({ name: saleData.customerName.trim() });
+    }
+
     // 1. Create a new sale document
     const saleRef = doc(salesCollectionRef);
     batch.set(saleRef, {
