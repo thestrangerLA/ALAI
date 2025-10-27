@@ -28,7 +28,7 @@ import { Trash2, Search, Save } from 'lucide-react';
 interface PurchaseFormDialogProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onSave: (purchaseData: Omit<Purchase, 'id'>) => void;
+  onSave: (purchaseData: Omit<Purchase, 'id' | 'purchaseDate'> & { purchaseDate: Date }) => void;
   stockItems: StockItem[];
 }
 
@@ -208,3 +208,5 @@ export function PurchaseFormDialog({ isOpen, onOpenChange, onSave, stockItems }:
     </Dialog>
   );
 }
+
+    
