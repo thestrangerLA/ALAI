@@ -4,6 +4,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
 import { ArrowLeft, Truck, DollarSign, Calendar, PlusCircle, Eye } from 'lucide-react';
@@ -16,13 +17,23 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function PurchasesPage() {
-  const [purchases, setPurchases] = useState<Purchase[]>([]);
+  const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
+  const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [isFormDialogOpen, setFormDialogOpen] = useState(false);
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
+  // Filter states
+  const [selectedYear, setSelectedYear] = useState<string>('all');
+  const [selectedMonth, setSelectedMonth] = useState<string>('all');
+  
+  const [purchaseThisMonth, setPurchaseThisMonth] = useState(0);
+
   useEffect(() => {
-    const unsubscribePurchases = listenToPurchases(setPurchases);
+    const unsubscribePurchases = listenToPurchases((purchases) => {
+        setAllPurchases(purchases);
+        calculateStats(purchases);
+    });
     const unsubscribeStock = listenToStockItems(setStockItems);
     return () => {
       unsubscribePurchases();
@@ -30,7 +41,52 @@ export default function PurchasesPage() {
     };
   }, []);
 
-  const totalPurchaseAmount = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
+  const calculateStats = (purchasesData: Purchase[]) => {
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    
+    let monthPurchase = 0;
+    
+    purchasesData.forEach(purchase => {
+      const purchaseDate = purchase.purchaseDate.toDate();
+      if (purchaseDate >= startOfMonth) {
+        monthPurchase += purchase.totalAmount;
+      }
+    });
+
+    setPurchaseThisMonth(monthPurchase);
+  };
+  
+  const availableYears = useMemo(() => {
+    const years = new Set(allPurchases.map(p => p.purchaseDate.toDate().getFullYear().toString()));
+    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+  }, [allPurchases]);
+
+  useEffect(() => {
+    let purchasesToFilter = allPurchases;
+
+    if (selectedYear !== 'all') {
+      purchasesToFilter = purchasesToFilter.filter(p => p.purchaseDate.toDate().getFullYear().toString() === selectedYear);
+    }
+
+    if (selectedMonth !== 'all') {
+      purchasesToFilter = purchasesToFilter.filter(p => (p.purchaseDate.toDate().getMonth() + 1).toString() === selectedMonth);
+    }
+    
+    setFilteredPurchases(purchasesToFilter);
+
+  }, [selectedYear, selectedMonth, allPurchases]);
+
+  const handleResetFilters = () => {
+    setSelectedYear('all');
+    setSelectedMonth('all');
+  }
+
+  const totalPurchaseAmount = allPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+
+  const totalFilteredPurchaseAmount = useMemo(() => {
+    return filteredPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+  }, [filteredPurchases]);
   
   const handleSavePurchase = async (purchaseData: Omit<Purchase, 'id'>) => {
     const result = await addPurchase(purchaseData);
@@ -44,7 +100,7 @@ export default function PurchasesPage() {
   
   const groupedPurchases = useMemo(() => {
     const groups: { [key: string]: Purchase[] } = {};
-    purchases.forEach(purchase => {
+    filteredPurchases.forEach(purchase => {
       const dateString = purchase.purchaseDate.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD
       if (!groups[dateString]) {
         groups[dateString] = [];
@@ -52,7 +108,7 @@ export default function PurchasesPage() {
       groups[dateString].push(purchase);
     });
     return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
-  }, [purchases]);
+  }, [filteredPurchases]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -84,13 +140,13 @@ export default function PurchasesPage() {
                   title="ຍອດຊື້ລວມທັງໝົດ"
                   value={formatCurrency(totalPurchaseAmount)}
                   icon={<DollarSign className="h-5 w-5 text-green-500" />}
-                  description={purchases.length > 0 ? `ຈາກ ${purchases.length} ລາຍການ` : "ຍັງບໍ່ທັນມີຂໍ້ມູນ"}
+                  description={allPurchases.length > 0 ? `ຈາກ ${allPurchases.length} ລາຍການ` : "ຍັງບໍ່ທັນມີຂໍ້ມູນ"}
               />
               <StatCard
                   title="ຍອດຊື້ເດືອນນີ້"
-                  value={formatCurrency(0)}
+                  value={formatCurrency(purchaseThisMonth)}
                   icon={<Calendar className="h-5 w-5 text-orange-500" />}
-                  description="ຍັງບໍ່ທັນມີຂໍ້ມູນ"
+                  description="ຍອດການຊື້ສະເພາະເດືອນປັດຈຸບັນ"
               />
           </div>
           <Card>
@@ -99,12 +155,38 @@ export default function PurchasesPage() {
                   <div>
                       <CardTitle>ລາຍການຊື້ສິນຄ້າເຂົ້າ</CardTitle>
                       <CardDescription>
-                        ປະຫວັດການສັ່ງຊື້ສິນຄ້າທັງໝົດ.
+                        ຍອດຊື້ທີ່ກັ່ນຕອງ: {formatCurrency(totalFilteredPurchaseAmount)}
                       </CardDescription>
                   </div>
-                  <Button onClick={() => setFormDialogOpen(true)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> ບັນທຶກການຊື້ໃໝ່
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Select value={selectedYear} onValueChange={setSelectedYear}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="ເລືອກປີ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">ທຸກໆປີ</SelectItem>
+                            {availableYears.map(year => (
+                            <SelectItem key={year} value={year}>{year}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[120px]">
+                            <SelectValue placeholder="ເລືອກເດືອນ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">ທຸກໆເດືອນ</SelectItem>
+                            {Array.from({length: 12}, (_, i) => i + 1).map(month => (
+                            <SelectItem key={month} value={month.toString()}>{`ເດືອນ ${month}`}</SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={handleResetFilters}>ລ້າງຕົວກອງ</Button>
+
+                    <Button onClick={() => setFormDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> ບັນທຶກການຊື້ໃໝ່
+                    </Button>
+                  </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -154,7 +236,7 @@ export default function PurchasesPage() {
                 </Accordion>
               ) : (
                 <div className="h-48 text-center content-center text-gray-500">
-                    <p>-- ຍັງບໍ່ມີຂໍ້ມູນການຊື້ສິນຄ້າ --</p>
+                    <p>-- ບໍ່ພົບຂໍ້ມູນການຊື້ສິນຄ້າທີ່ກົງກັບການກັ່ນຕອງ --</p>
                 </div>
               )}
             </CardContent>
@@ -177,3 +259,5 @@ export default function PurchasesPage() {
     </>
   );
 }
+
+    
