@@ -88,7 +88,7 @@ export default function PurchasesPage() {
     return filteredPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
   }, [filteredPurchases]);
   
-  const handleSavePurchase = async (purchaseData: Omit<Purchase, 'id'>) => {
+  const handleSavePurchase = async (purchaseData: Omit<Purchase, 'id' | 'purchaseDate'> & { purchaseDate: Date }) => {
     const result = await addPurchase(purchaseData);
     if (result.success) {
       alert('ບັນທຶກການຊື້ສຳເລັດ!');
