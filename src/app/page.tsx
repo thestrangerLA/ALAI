@@ -59,6 +59,12 @@ export default function Home() {
         icon: <FileText className="w-8 h-8 text-purple-500" />,
         title: 'ລາຍງານການຂາຍ',
         description: 'ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ປະຫວັດການຂາຍ'
+      },
+      {
+        href: '/debtors',
+        icon: <Users className="w-8 h-8 text-red-500" />,
+        title: 'ລາຍການລູກໜີ້',
+        description: 'ເບິ່ງລາຍການບິນທີ່ຍັງບໍ່ທັນຊຳລະເງິນ'
       }
     ];
 
