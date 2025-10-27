@@ -1,21 +1,25 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Truck, DollarSign, Calendar, PlusCircle } from 'lucide-react';
+import { ArrowLeft, Truck, DollarSign, Calendar, PlusCircle, Eye } from 'lucide-react';
 import { listenToPurchases, addPurchase } from '@/services/purchaseService';
 import { listenToStockItems } from '@/services/stockService';
 import type { Purchase, StockItem } from '@/lib/types';
 import { PurchaseFormDialog } from '@/components/purchase-form-dialog';
+import { PurchaseDetailsDialog } from '@/components/purchase-details-dialog';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 export default function PurchasesPage() {
   const [purchases, setPurchases] = useState<Purchase[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
-  const [isDialogOpen, setDialogOpen] = useState(false);
+  const [isFormDialogOpen, setFormDialogOpen] = useState(false);
+  const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
   useEffect(() => {
     const unsubscribePurchases = listenToPurchases(setPurchases);
@@ -32,11 +36,23 @@ export default function PurchasesPage() {
     const result = await addPurchase(purchaseData);
     if (result.success) {
       alert('ບັນທຶກການຊື້ສຳເລັດ!');
-      setDialogOpen(false);
+      setFormDialogOpen(false);
     } else {
       alert(`ເກີດຂໍ້ຜິດພາດ: ${result.message}`);
     }
   };
+  
+  const groupedPurchases = useMemo(() => {
+    const groups: { [key: string]: Purchase[] } = {};
+    purchases.forEach(purchase => {
+      const dateString = purchase.purchaseDate.toDate().toLocaleDateString('en-CA'); // YYYY-MM-DD
+      if (!groups[dateString]) {
+        groups[dateString] = [];
+      }
+      groups[dateString].push(purchase);
+    });
+    return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
+  }, [purchases]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -86,19 +102,56 @@ export default function PurchasesPage() {
                         ປະຫວັດການສັ່ງຊື້ສິນຄ້າທັງໝົດ.
                       </CardDescription>
                   </div>
-                  <Button onClick={() => setDialogOpen(true)}>
+                  <Button onClick={() => setFormDialogOpen(true)}>
                     <PlusCircle className="mr-2 h-4 w-4" /> ບັນທຶກການຊື້ໃໝ່
                   </Button>
               </div>
             </CardHeader>
             <CardContent>
-              {purchases.length > 0 ? (
-                <div className="space-y-2">
-                  {/* Later, we will display purchase history here */}
-                   <div className="h-48 text-center content-center text-gray-500">
-                      <p>-- ປະຫວັດການຊື້ຈະສະແດງຢູ່ບ່ອນນີ້ --</p>
-                  </div>
-                </div>
+              {groupedPurchases.length > 0 ? (
+                <Accordion type="multiple" className="w-full">
+                  {groupedPurchases.map(([date, dailyPurchases]) => {
+                    const dailyTotal = dailyPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+                    return (
+                      <AccordionItem value={date} key={date}>
+                        <AccordionTrigger>
+                            <div className='flex justify-between w-full pr-4'>
+                                <span>{new Date(date).toLocaleDateString('lo-LA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                                <span className='font-semibold text-green-600'>{formatCurrency(dailyTotal)}</span>
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>ເວລາ</TableHead>
+                                        <TableHead>ຜູ້ສະໜອງ</TableHead>
+                                        <TableHead>ຈຳນວນລາຍການ</TableHead>
+                                        <TableHead className="text-right">ຍອດລວມ</TableHead>
+                                        <TableHead className="text-center">ຈັດການ</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                {dailyPurchases.map(purchase => (
+                                    <TableRow key={purchase.id}>
+                                        <TableCell>{purchase.purchaseDate.toDate().toLocaleTimeString('lo-LA')}</TableCell>
+                                        <TableCell className="font-medium">{purchase.supplierName || '-'}</TableCell>
+                                        <TableCell>{purchase.items.length} ລາຍການ</TableCell>
+                                        <TableCell className="text-right font-semibold text-green-600">{formatCurrency(purchase.totalAmount)}</TableCell>
+                                        <TableCell className="text-center">
+                                            <Button variant="outline" size="sm" onClick={() => setSelectedPurchase(purchase)}>
+                                                <Eye className="h-4 w-4 mr-1"/> ເບິ່ງລາຍລະອຽດ
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                </TableBody>
+                            </Table>
+                        </AccordionContent>
+                      </AccordionItem>
+                    )
+                  })}
+                </Accordion>
               ) : (
                 <div className="h-48 text-center content-center text-gray-500">
                     <p>-- ຍັງບໍ່ມີຂໍ້ມູນການຊື້ສິນຄ້າ --</p>
@@ -109,11 +162,18 @@ export default function PurchasesPage() {
         </main>
       </div>
       <PurchaseFormDialog
-        isOpen={isDialogOpen}
-        onOpenChange={setDialogOpen}
+        isOpen={isFormDialogOpen}
+        onOpenChange={setFormDialogOpen}
         onSave={handleSavePurchase}
         stockItems={stockItems}
       />
+      {selectedPurchase && (
+        <PurchaseDetailsDialog
+            isOpen={!!selectedPurchase}
+            onOpenChange={() => setSelectedPurchase(null)}
+            purchase={selectedPurchase}
+        />
+      )}
     </>
   );
 }
