@@ -43,3 +43,19 @@ export interface Customer {
   name: string;
   createdAt?: Timestamp;
 }
+
+export interface PurchaseItem {
+    id: string; // Corresponds to StockItem id
+    productCode: string;
+    productName: string;
+    quantity: number;
+    costPrice: number;
+}
+
+export interface Purchase {
+    id: string;
+    supplierName: string;
+    purchaseDate: Timestamp;
+    items: PurchaseItem[];
+    totalAmount: number;
+}
