@@ -92,23 +92,27 @@ export async function deleteSale(sale: Sale) {
   const saleDocRef = doc(db, "sales", sale.id);
 
   await runTransaction(db, async (transaction) => {
-    // 1. Verify the sale document exists
+    // Phase 1: Read all necessary data first.
     const saleDoc = await transaction.get(saleDocRef);
     if (!saleDoc.exists()) {
       throw new Error("Sale document not found. It might have been already deleted.");
     }
     
-    // 2. Iterate over items to return them to stock
-    for (const item of sale.items) {
-      const stockRef = doc(db, "stockReceive", item.id);
-      const stockDoc = await transaction.get(stockRef);
-      // Only update stock if the item still exists in the stock collection
-      if (stockDoc.exists()) {
-        transaction.update(stockRef, { quantity: increment(item.sellQuantity) });
-      }
-    }
+    // Get all stock document references
+    const stockRefs = sale.items.map(item => doc(db, "stockReceive", item.id));
+    // Read all stock documents
+    const stockDocs = await Promise.all(stockRefs.map(ref => transaction.get(ref)));
 
-    // 3. Delete the sale document
+    // Phase 2: Perform all writes.
+    // Iterate over the items and their corresponding documents to perform updates
+    sale.items.forEach((item, index) => {
+      const stockDoc = stockDocs[index];
+      if (stockDoc.exists()) {
+        transaction.update(stockRefs[index], { quantity: increment(item.sellQuantity) });
+      }
+    });
+
+    // Finally, delete the sale document
     transaction.delete(saleDocRef);
   });
 }
