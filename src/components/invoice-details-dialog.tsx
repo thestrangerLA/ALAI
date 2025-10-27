@@ -48,11 +48,19 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange, showProfit = 
           return totalProfit + profitPerItem;
       }, 0);
   };
+  
+  const calculateTotalCost = () => {
+      if (!showProfit) return 0;
+      return sale.items.reduce((total, item) => {
+          const costPrice = item.costPrice || 0;
+          return total + (costPrice * item.sellQuantity);
+      }, 0);
+  }
 
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-4xl" id="invoice-details-content">
+      <DialogContent className="sm:max-w-5xl" id="invoice-details-content">
         <DialogHeader>
           <DialogTitle>ລາຍລະອຽດໃບເກັບເງິນ</DialogTitle>
           <DialogDescription>
@@ -77,14 +85,17 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange, showProfit = 
                         <TableHead>ລາຍການ</TableHead>
                         <TableHead className="text-center">ຈຳນວນ</TableHead>
                         <TableHead>ປະເພດລາຄາ</TableHead>
-                        <TableHead className="text-right">ລາຄາ/ໜ່ວຍ</TableHead>
-                        <TableHead className="text-right">ລວມ</TableHead>
+                        {showProfit && <TableHead className="text-right">ຕົ້ນທຶນ/ໜ່ວຍ</TableHead>}
+                        <TableHead className="text-right">ລາຄາຂາຍ/ໜ່ວຍ</TableHead>
+                        {showProfit && <TableHead className="text-right">ຕົ້ນທຶນລວມ</TableHead>}
+                        <TableHead className="text-right">ຍອດຂາຍລວມ</TableHead>
                         {showProfit && <TableHead className="text-right">ກຳໄລ</TableHead>}
                     </TableRow>
                 </TableHeader>
                 <TableBody>
                     {sale.items.map((item, index) => {
-                        const totalCost = (item.costPrice || 0) * item.sellQuantity;
+                        const costPrice = item.costPrice || 0;
+                        const totalCost = costPrice * item.sellQuantity;
                         const totalSell = item.price * item.sellQuantity;
                         const profit = totalSell - totalCost;
                         
@@ -97,7 +108,9 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange, showProfit = 
                                         {item.priceType === 'sell' ? 'ຂາຍ' : 'ສົ່ງ'}
                                     </span>
                                 </TableCell>
+                                {showProfit && <TableCell className="text-right">{formatCurrency(costPrice)}</TableCell>}
                                 <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
+                                {showProfit && <TableCell className="text-right">{formatCurrency(totalCost)}</TableCell>}
                                 <TableCell className="text-right">{formatCurrency(totalSell)}</TableCell>
                                 {showProfit && <TableCell className="text-right font-medium text-blue-600">{formatCurrency(profit)}</TableCell>}
                             </TableRow>
@@ -107,15 +120,23 @@ export function InvoiceDetailsDialog({ sale, isOpen, onOpenChange, showProfit = 
             </Table>
 
             <div className="mt-6 flex justify-end">
-                <div className="w-full max-w-xs space-y-2 text-right">
+                <div className="w-full max-w-md space-y-2 text-right">
                      <div className="flex justify-between items-center text-lg">
-                        <span>ລວມເປັນເງິນທັງໝົດ:</span>
+                        <span>ຍອດຂາຍລວມທັງໝົດ:</span>
                         <span className="font-bold">{formatCurrency(sale.totalAmount)}</span>
                     </div>
-                     {showProfit && <div className="flex justify-between items-center text-lg text-blue-700">
-                        <span>ກຳໄລລວມ:</span>
-                        <span className="font-bold">{formatCurrency(calculateTotalProfit())}</span>
-                    </div>}
+                     {showProfit && (
+                        <>
+                            <div className="flex justify-between items-center text-lg text-red-600">
+                                <span>ຕົ້ນທຶນລວມ:</span>
+                                <span className="font-bold">{formatCurrency(calculateTotalCost())}</span>
+                            </div>
+                            <div className="flex justify-between items-center text-lg text-blue-700 border-t pt-2 mt-2">
+                                <span>ກຳໄລລວມ:</span>
+                                <span className="font-bold">{formatCurrency(calculateTotalProfit())}</span>
+                            </div>
+                        </>
+                    )}
                 </div>
             </div>
              <div className="mt-8 flex justify-end gap-2 no-print">
