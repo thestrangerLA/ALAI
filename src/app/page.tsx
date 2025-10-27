@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import { listenToDebtors } from '@/services/debtorService';
 import Link from 'next/link';
-import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package, BookUser } from 'lucide-react';
+import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package, BookUser, Truck } from 'lucide-react';
 import type { StockItem, Debtor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -39,8 +39,8 @@ export default function Home() {
       {
         href: '/stock',
         icon: <HardHat className="w-8 h-8 text-blue-500" />,
-        title: 'ຈັດການສິນຄ້າ',
-        description: 'ເພີ່ມ, ລົບ, ແກ້ໄຂ ແລະ ເບິ່ງສະຕັອກສິນຄ້າ'
+        title: 'ສິນຄ້າໃນຄັງ',
+        description: 'ເພີ່ມ, ລົບ, ແກ້ໄຂ ແລະ ເບິ່ງສະຕັอกສິນຄ້າ'
       },
       {
         href: '/invoice',
@@ -53,6 +53,12 @@ export default function Home() {
         icon: <BookUser className="w-8 h-8 text-cyan-500" />,
         title: 'ຂໍ້ມູນລູກຄ້າ',
         description: 'ຈັດການຂໍ້ມູນ ແລະ ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າ'
+      },
+       {
+        href: '/purchases',
+        icon: <Truck className="w-8 h-8 text-orange-500" />,
+        title: 'ຊື້ເຄື່ອງເຂົ້າ',
+        description: 'ບັນທຶກປະຫວັດການຊື້ສິນຄ້າເຂົ້າຮ້ານ'
       },
       {
         href: '/sales',

@@ -75,7 +75,7 @@ export default function StockPage() {
                 <HardHat className="h-6 w-6 text-white" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold tracking-tight">ຈັດການສະຕັອກສິນຄ້າ</h1>
+                <h1 className="text-2xl font-bold tracking-tight">ສິນຄ້າໃນຄັງ</h1>
                 <p className="text-sm text-muted-foreground">ເພີ່ມ, ແກ້ໄຂ, ແລະເບິ່ງສິນຄ້າຄົງຄັງທັງໝົດ</p>
             </div>
         </div>
