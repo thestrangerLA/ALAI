@@ -51,8 +51,8 @@ export default function PurchasesPage() {
   }, [allPurchases, allOtherExpenses]);
 
   const availableYears = useMemo(() => {
-    const years = new Set(allTransactionDates.map(ts => ts.toDate().getFullYear().toString()));
-    return Array.from(years).sort((a, b) => parseInt(b) - parseInt(a));
+    const years = new Set(allTransactionDates.map(ts => ts ? ts.toDate().getFullYear().toString() : null).filter(Boolean));
+    return Array.from(years as Set<string>).sort((a, b) => parseInt(b) - parseInt(a));
   }, [allTransactionDates]);
 
   useEffect(() => {
@@ -61,10 +61,16 @@ export default function PurchasesPage() {
       const getDate = (item: T) => item.purchaseDate || item.date;
 
       if (selectedYear !== 'all') {
-        itemsToFilter = itemsToFilter.filter(item => getDate(item).toDate().getFullYear().toString() === selectedYear);
+        itemsToFilter = itemsToFilter.filter(item => {
+          const date = getDate(item);
+          return date ? date.toDate().getFullYear().toString() === selectedYear : false;
+        });
       }
       if (selectedMonth !== 'all') {
-        itemsToFilter = itemsToFilter.filter(item => (getDate(item).toDate().getMonth() + 1).toString() === selectedMonth);
+        itemsToFilter = itemsToFilter.filter(item => {
+          const date = getDate(item);
+          return date ? (date.toDate().getMonth() + 1).toString() === selectedMonth : false;
+        });
       }
       return itemsToFilter;
     };
@@ -166,7 +172,7 @@ export default function PurchasesPage() {
                   <div className="space-y-4 py-4">
                       <div>
                           <label htmlFor="exp-desc">ລາຍລະອຽດ</label>
-                          <Input id="exp-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="ຕົວຢ່າງ: ຄ່າໄຟຟ້າ, ຄ่าน້ຳປະປາ..." />
+                          <Input id="exp-desc" value={description} onChange={e => setDescription(e.target.value)} placeholder="ຕົວຢ່າງ: ຄ່າໄຟຟ້າ, ຄ່ານ້ຳປະປາ..." />
                       </div>
                       <div>
                           <label htmlFor="exp-amount">ຈຳນວນເງິນ (ກີບ)</label>
@@ -305,5 +311,3 @@ export default function PurchasesPage() {
     </>
   );
 }
-
-    
