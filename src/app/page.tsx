@@ -8,6 +8,7 @@ import Link from 'next/link';
 import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package, BookUser, Truck } from 'lucide-react';
 import type { StockItem, Debtor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/stat-card';
 
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
     const [totalStockItems, setTotalStockItems] = useState(0);
     const [totalDebt, setTotalDebt] = useState(0);
     const [totalDebtors, setTotalDebtors] = useState(0);
+    const [shippingCostBalance, setShippingCostBalance] = useState(5839000); // Placeholder value
     
     useEffect(() => {
         const unsubscribeStock = listenToStockItems((items: StockItem[]) => {
@@ -100,27 +102,24 @@ export default function Home() {
     {/* Main Content */}
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Stat Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-base font-medium text-gray-600">ຈຳນວນສິນຄ້າທັງໝົດ</CardTitle>
-                    <Package className="w-5 h-5 text-blue-500"/>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{totalStock.toLocaleString()} ອັນ</div>
-                    <p className="text-xs text-muted-foreground">ຈາກ {totalStockItems.toLocaleString()} ລາຍການ</p>
-                </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-base font-medium text-gray-600">ຍອດໜີ້ລວມທັງໝົດ</CardTitle>
-                    <DollarSign className="w-5 h-5 text-red-500"/>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-3xl font-bold">{formatCurrency(totalDebt)}</div>
-                     <p className="text-xs text-muted-foreground">ຈາກ {totalDebtors.toLocaleString()} ບິນທີ່ຍັງຄ້າງຊຳລະ</p>
-                </CardContent>
-            </Card>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <StatCard
+                title="ຈຳນວນສິນຄ້າທັງໝົດ"
+                value={totalStock.toLocaleString('lo-LA') + ' ອັນ'}
+                icon={<Package className="w-5 h-5 text-blue-500"/>}
+                description={`ຈາກ ${totalStockItems.toLocaleString('lo-LA')} ລາຍການ`}
+            />
+            <StatCard
+                title="ຍອດໜີ້ລວມທັງໝົດ"
+                value={formatCurrency(totalDebt)}
+                icon={<DollarSign className="w-5 h-5 text-red-500"/>}
+                description={`ຈາກ ${totalDebtors.toLocaleString('lo-LA')} ບິນທີ່ຍັງຄ້າງຊຳລະ`}
+            />
+            <StatCard
+                title="ຄ່າຂົນສົ່ງຄົງເຫຼືອ"
+                value={formatCurrency(shippingCostBalance)}
+                icon={<Truck className="w-5 h-5 text-red-500"/>}
+            />
         </div>
         
         {/* Navigation Cards */}
