@@ -141,9 +141,11 @@ export default function PurchasesPage() {
   const groupedOtherExpenses = useMemo(() => {
     const groups: { [key: string]: OtherExpense[] } = {};
     filteredOtherExpenses.forEach(expense => {
-      const dateString = expense.date.toDate().toLocaleDateString('en-CA');
-      if (!groups[dateString]) groups[dateString] = [];
-      groups[dateString].push(expense);
+      if (expense.date) {
+        const dateString = expense.date.toDate().toLocaleDateString('en-CA');
+        if (!groups[dateString]) groups[dateString] = [];
+        groups[dateString].push(expense);
+      }
     });
     return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
   }, [filteredOtherExpenses]);
@@ -311,3 +313,5 @@ export default function PurchasesPage() {
     </>
   );
 }
+
+    
