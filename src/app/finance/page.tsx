@@ -10,13 +10,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Landmark, TrendingUp, TrendingDown, Users, DollarSign, FileText } from 'lucide-react';
+import { ArrowLeft, Landmark, TrendingUp, TrendingDown, Users, DollarSign, FileText, LineChart } from 'lucide-react';
 
 export default function FinancePage() {
   const [totalSales, setTotalSales] = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);
   const [totalDebt, setTotalDebt] = useState(0);
-  const [bankTransfer] = useState(13511000);
+  const [bankTransfer, setBankTransfer] = useState(13511000);
 
   useEffect(() => {
     const unsubscribeSales = listenToSales(salesData => {
@@ -38,6 +38,20 @@ export default function FinancePage() {
       unsubscribeDebtors();
     };
   }, []);
+
+  const profit = totalSales - totalPurchases;
+
+  const handleBankTransferClick = () => {
+    const newValueStr = window.prompt("ກະລຸນາປ້ອນຈຳນວນເງິນໂອນໃໝ່:", bankTransfer.toString());
+    if (newValueStr) {
+      const newValue = parseFloat(newValueStr.replace(/,/g, ''));
+      if (!isNaN(newValue)) {
+        setBankTransfer(newValue);
+      } else {
+        alert("ຈຳນວນເງິນບໍ່ຖືກຕ້ອງ.");
+      }
+    }
+  };
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { style: 'currency', currency: 'LAK' }).format(value);
@@ -98,17 +112,26 @@ export default function FinancePage() {
             icon={<DollarSign className="h-5 w-5 text-red-500" />}
             description="ລວມຍອດການຊື້ສິນຄ້າເຂົ້າຮ້ານທັງໝົດ"
           />
+          <StatCard
+            title="ກຳໄລ (ຂາຍ - ຊື້)"
+            value={formatCurrency(profit)}
+            icon={<LineChart className="h-5 w-5 text-blue-500" />}
+            description="ກຳໄລຈາກຍອດຂາຍຫັກລົບຕົ້ນທຶນຊື້"
+          />
            <StatCard
             title="ຍອດໜີ້ຄ້າງຊຳລະ"
             value={formatCurrency(totalDebt)}
             icon={<DollarSign className="h-5 w-5 text-orange-500" />}
              description="ລວມຍອດໜີ້ຈາກບິນທີ່ຍັງບໍ່ທັນຊຳລະ"
           />
-           <StatCard
-            title="ເງິນໂອນ"
-            value={formatCurrency(bankTransfer)}
-            icon={<Landmark className="h-5 w-5 text-indigo-500" />}
-          />
+          <div onClick={handleBankTransferClick} className="cursor-pointer">
+             <StatCard
+              title="ເງິນໂອນ"
+              value={formatCurrency(bankTransfer)}
+              icon={<Landmark className="h-5 w-5 text-indigo-500" />}
+              description="ກົດເພື່ອແກ້ໄຂຈຳນວນເງິນ"
+            />
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-4">
