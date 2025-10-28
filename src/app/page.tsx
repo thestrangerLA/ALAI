@@ -57,12 +57,6 @@ export default function Home() {
         title: 'ຂໍ້ມູນລູກຄ້າ',
         description: 'ຈັດການຂໍ້ມູນ ແລະ ເບິ່ງປະຫວັດການຊື້ຂອງລູກຄ້າ'
       },
-       {
-        href: '/purchases',
-        icon: <Truck className="w-8 h-8 text-orange-500" />,
-        title: 'ຊື້ເຄື່ອງເຂົ້າ',
-        description: 'ບັນທຶກປະຫວັດການຊື້ສິນຄ້າເຂົ້າຮ້ານ'
-      },
       {
         href: '/finance',
         icon: <Landmark className="w-8 h-8 text-purple-500" />,
