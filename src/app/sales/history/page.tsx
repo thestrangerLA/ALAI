@@ -7,8 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import Link from 'next/link';
-import { ArrowLeft, History, Calendar, DollarSign, ChevronRight } from 'lucide-react';
+import { ArrowLeft, History, Calendar, DollarSign } from 'lucide-react';
 import { StatCard } from '@/components/stat-card';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { SalesHistoryTable } from '@/components/sales-history-table';
+import { InvoiceDetailsDialog } from '@/components/invoice-details-dialog';
+import { deleteTransaction } from '@/services/transactionService';
 
 export default function SalesHistoryPage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
@@ -20,6 +24,8 @@ export default function SalesHistoryPage() {
   const [profitToday, setProfitToday] = useState(0);
   const [profitThisMonth, setProfitThisMonth] = useState(0);
   const [profitThisYear, setProfitThisYear] = useState(0);
+
+  const [selectedSale, setSelectedSale] = useState<Sale | null>(null);
 
   useEffect(() => {
     const unsubscribe = listenToSales(salesData => {
@@ -111,6 +117,22 @@ export default function SalesHistoryPage() {
     return Object.entries(groups).sort(([dateA], [dateB]) => dateB.localeCompare(dateA));
   }, [filteredSales]);
 
+  const handleViewDetails = (sale: Sale) => {
+    setSelectedSale(sale);
+  };
+
+  const handleDeleteSale = async (sale: Sale) => {
+    if (window.confirm(`ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບທຸລະກຳ #${sale.invoiceNumber}? ການກະທຳນີ້ຈະສົ່ງສິນຄ້າຄືນສະຕັອກ ແລະ ບໍ່ສາມາດຍົກເລີກໄດ້.`)) {
+      try {
+        await deleteTransaction(sale);
+        alert('ລຶບທຸລະກຳສຳເລັດ!');
+      } catch (error) {
+        console.error("Error deleting transaction: ", error);
+        alert(`ເກີດຂໍ້ຜິດພາດໃນການລຶບທຸລະກຳ: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      }
+    }
+  };
+
   return (
     <>
     <div className="flex min-h-screen w-full flex-col bg-gradient-to-br from-gray-50 to-slate-100">
@@ -187,29 +209,35 @@ export default function SalesHistoryPage() {
           </CardHeader>
           <CardContent>
              {groupedSales.length > 0 ? (
-                <div className="space-y-4">
-                    {groupedSales.map(([date, sales]) => {
-                        const dailyTotal = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
-                        const dailyProfit = sales.reduce((sum, sale) => sum + calculateProfit(sale), 0);
-                        return (
-                            <Link href={`/sales/history/${date}`} key={date} className="block">
-                                <Card className="hover:bg-slate-50 hover:shadow-md transition-all">
-                                    <CardContent className="p-4 flex justify-between items-center">
-                                        <div>
-                                            <p className="text-lg font-semibold">{new Date(date).toLocaleDateString('lo-LA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                            <p className="text-sm text-muted-foreground">{sales.length} ທຸລະກຳ</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="font-semibold text-green-600">ຍອດຂາຍ: {formatCurrency(dailyTotal)}</p>
-                                            <p className="font-semibold text-blue-600">ກຳໄລ: {formatCurrency(dailyProfit)}</p>
-                                        </div>
-                                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                                    </CardContent>
-                                </Card>
-                            </Link>
-                        )
-                    })}
-                </div>
+                <Accordion type="multiple" className="w-full space-y-2">
+                  {groupedSales.map(([date, sales]) => {
+                      const dailyTotal = sales.reduce((sum, sale) => sum + sale.totalAmount, 0);
+                      const dailyProfit = sales.reduce((sum, sale) => sum + calculateProfit(sale), 0);
+                      return (
+                          <AccordionItem value={date} key={date} className="bg-slate-50 rounded-lg border">
+                              <AccordionTrigger className='hover:bg-slate-100 rounded-t-lg px-4 py-3 text-lg'>
+                                  <div className='flex justify-between w-full pr-4 items-center'>
+                                      <div>
+                                          <p className="font-semibold text-base">{new Date(date).toLocaleDateString('lo-LA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                          <p className="text-sm text-muted-foreground text-left">{sales.length} ທຸລະກຳ</p>
+                                      </div>
+                                      <div className="text-right">
+                                          <p className='font-semibold text-green-600 text-base'>ຍອດຂາຍ: {formatCurrency(dailyTotal)}</p>
+                                          <p className='font-semibold text-blue-600 text-base'>ກຳໄລ: {formatCurrency(dailyProfit)}</p>
+                                      </div>
+                                  </div>
+                              </AccordionTrigger>
+                              <AccordionContent className='p-0'>
+                                <SalesHistoryTable 
+                                  sales={sales}
+                                  onViewDetails={handleViewDetails}
+                                  onDelete={handleDeleteSale}
+                                />
+                              </AccordionContent>
+                          </AccordionItem>
+                      )
+                  })}
+              </Accordion>
             ) : (
                 <div className="h-24 text-center content-center">-- ບໍ່ພົບຂໍ້ມູນການຂາຍທີ່ກົງກັບການກັ່ນຕອງ --</div>
             )}
@@ -217,6 +245,14 @@ export default function SalesHistoryPage() {
         </Card>
       </main>
     </div>
+    {selectedSale && (
+        <InvoiceDetailsDialog 
+            sale={selectedSale} 
+            isOpen={!!selectedSale} 
+            onOpenChange={() => setSelectedSale(null)}
+            showProfit={true}
+        />
+    )}
     </>
   );
 }

@@ -1,29 +1,24 @@
+// This file is no longer used as the daily history is now shown in an accordion
+// on the main history page. It can be safely deleted.
+// We are keeping it to avoid breaking navigation during the transition.
+// To re-enable, you would need to change the Link in sales/history/page.tsx back.
 
-import { getAllSales } from '@/services/salesService';
-import DailySalesHistoryClient from '@/components/daily-sales-history-client';
-import { notFound } from 'next/navigation';
+'use client';
 
-export async function generateStaticParams() {
-  const sales = await getAllSales();
-  
-  const uniqueDates = new Set<string>();
-  sales.forEach(sale => {
-    uniqueDates.add(sale.saleDate.toDate().toLocaleDateString('en-CA'));
-  });
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
-  return Array.from(uniqueDates).map((date) => ({
-    date: date,
-  }));
-}
+export default function DeprecatedDailySalesPage() {
+    const router = useRouter();
+    useEffect(() => {
+        // Redirect back to the main history page
+        router.replace('/sales/history');
+    }, [router]);
 
-export default async function DailySalesHistoryPage({ params }: { params: { date: string } }) {
-    const { date: dateString } = params;
-    
-    // Data is now fetched on the client side.
-    // We just pass the date string.
     return (
-        <DailySalesHistoryClient
-            dateString={dateString}
-        />
+        <div className="flex min-h-screen w-full flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-slate-100">
+            <p>ຫນ้านີ້ບໍ່ໄດ້ຖືກນໍາໃຊ້ອີກຕໍ່ໄປ. ກະລຸນາກັບໄປທີ່ປະຫວັດການຂາຍ.</p>
+            <p>Redirecting you back...</p>
+        </div>
     );
 }
