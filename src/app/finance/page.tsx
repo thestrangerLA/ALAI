@@ -16,6 +16,7 @@ export default function FinancePage() {
   const [totalSales, setTotalSales] = useState(0);
   const [totalPurchases, setTotalPurchases] = useState(0);
   const [totalDebt, setTotalDebt] = useState(0);
+  const [bankTransfer] = useState(13511000);
 
   useEffect(() => {
     const unsubscribeSales = listenToSales(salesData => {
@@ -84,7 +85,7 @@ export default function FinancePage() {
         </div>
       </header>
       <main className="flex flex-1 flex-col gap-4 p-4 sm:px-6 sm:py-8 md:gap-8">
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="ຍອດຂາຍລວມທັງໝົດ"
             value={formatCurrency(totalSales)}
@@ -102,6 +103,11 @@ export default function FinancePage() {
             value={formatCurrency(totalDebt)}
             icon={<DollarSign className="h-5 w-5 text-orange-500" />}
              description="ລວມຍອດໜີ້ຈາກບິນທີ່ຍັງບໍ່ທັນຊຳລະ"
+          />
+           <StatCard
+            title="ເງິນໂອນ"
+            value={formatCurrency(bankTransfer)}
+            icon={<Landmark className="h-5 w-5 text-indigo-500" />}
           />
         </div>
 
