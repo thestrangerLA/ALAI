@@ -6,6 +6,7 @@ import { listenToSales } from '@/services/salesService';
 import { listenToPurchases } from '@/services/purchaseService';
 import { listenToDebtors } from '@/services/debtorService';
 import { listenToOtherExpenses } from '@/services/otherExpensesService';
+import { listenToAppSettings, updateBankTransfer } from '@/services/appSettingsService';
 import type { Sale, Purchase, Debtor, OtherExpense } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -28,19 +29,25 @@ export default function FinancePage() {
   const [selectedYear, setSelectedYear] = useState<string>('all');
   const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
-  const [bankTransfer, setBankTransfer] = useState(13511000);
+  const [bankTransfer, setBankTransfer] = useState(0);
 
   useEffect(() => {
     const unsubscribeSales = listenToSales(setAllSales);
     const unsubscribePurchases = listenToPurchases(setAllPurchases);
     const unsubscribeDebtors = listenToDebtors(setAllDebtors);
     const unsubscribeExpenses = listenToOtherExpenses(setAllOtherExpenses);
+    const unsubscribeAppSettings = listenToAppSettings((settings) => {
+        if (settings && settings.bankTransferBalance) {
+            setBankTransfer(settings.bankTransferBalance);
+        }
+    });
 
     return () => {
       unsubscribeSales();
       unsubscribePurchases();
       unsubscribeDebtors();
       unsubscribeExpenses();
+      unsubscribeAppSettings();
     };
   }, []);
   
@@ -101,12 +108,12 @@ export default function FinancePage() {
   }, [filteredSales, filteredPurchases, filteredOtherExpenses, filteredDebtors]);
 
 
-  const handleBankTransferClick = () => {
+  const handleBankTransferClick = async () => {
     const newValueStr = window.prompt("ກະລຸນາປ້ອນຈຳນວນເງິນໂອນໃໝ່:", bankTransfer.toString());
     if (newValueStr) {
       const newValue = parseFloat(newValueStr.replace(/,/g, ''));
       if (!isNaN(newValue)) {
-        setBankTransfer(newValue);
+        await updateBankTransfer(newValue);
       } else {
         alert("ຈຳນວນເງິນບໍ່ຖືກຕ້ອງ.");
       }
@@ -228,7 +235,7 @@ export default function FinancePage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>ສະຫຼຸບຍอดรวมทั้งหมด</CardTitle>
+                <CardTitle>ສະຫຼຸບຍອດລວມທັງໝົດ</CardTitle>
                 <CardDescription>ຂໍ້ມູນທັງໝົດທີ່ບັນທຶກໄວ້ໃນລະບົບ</CardDescription>
             </CardHeader>
              <CardContent>
@@ -295,5 +302,3 @@ export default function FinancePage() {
     </>
   );
 }
-
-    
