@@ -5,10 +5,11 @@ import { useEffect, useState } from 'react';
 import { listenToStockItems } from '@/services/stockService';
 import { listenToDebtors } from '@/services/debtorService';
 import Link from 'next/link';
-import { HardHat, ShoppingCart, FileText, Users, DollarSign, Package, BookUser, Truck, TrendingUp, TrendingDown } from 'lucide-react';
+import { HardHat, ShoppingCart, BookUser, Truck, Landmark } from 'lucide-react';
 import type { StockItem, Debtor } from '@/lib/types';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/stat-card';
+import { Package, DollarSign } from 'lucide-react';
 
 
 export default function Home() {
@@ -63,22 +64,10 @@ export default function Home() {
         description: 'ບັນທຶກປະຫວັດການຊື້ສິນຄ້າເຂົ້າຮ້ານ'
       },
       {
-        href: '/debtors',
-        icon: <Users className="w-8 h-8 text-red-500" />,
-        title: 'ລາຍການລູກໜີ້',
-        description: 'ເບິ່ງລາຍການບິນທີ່ຍັງບໍ່ທັນຊຳລະເງິນ'
-      },
-      {
-        href: '/sales',
-        icon: <TrendingUp className="w-8 h-8 text-emerald-500" />,
-        title: 'ລາຍງານລາຍຮັບ',
-        description: 'ເບິ່ງສະຫຼຸບຍອດຂາຍ ແລະ ປະຫວັດການຂາຍ'
-      },
-      {
-        href: '/purchases',
-        icon: <TrendingDown className="w-8 h-8 text-rose-500" />,
-        title: 'ລາຍງານລາຍຈ່າຍ',
-        description: 'ເບິ່ງປະຫວັດການຊື້ສິນຄ້າເຂົ້າຮ້ານ'
+        href: '/finance',
+        icon: <Landmark className="w-8 h-8 text-purple-500" />,
+        title: 'ລະບົບບັນຊີການເງິນ',
+        description: 'ລາຍງານລາຍຮັບ-ລາຍຈ່າຍ ແລະ ຈັດການໜີ້ສິນ'
       }
     ];
 
