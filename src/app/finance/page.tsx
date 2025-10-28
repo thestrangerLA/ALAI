@@ -5,21 +5,24 @@ import { useState, useEffect, useMemo } from 'react';
 import { listenToSales } from '@/services/salesService';
 import { listenToPurchases } from '@/services/purchaseService';
 import { listenToDebtors } from '@/services/debtorService';
-import type { Sale, Purchase, Debtor } from '@/lib/types';
+import { listenToOtherExpenses } from '@/services/otherExpensesService';
+import type { Sale, Purchase, Debtor, OtherExpense } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatCard } from '@/components/stat-card';
 import Link from 'next/link';
-import { ArrowLeft, Landmark, TrendingUp, TrendingDown, Users, DollarSign, FileText, LineChart, Filter } from 'lucide-react';
+import { ArrowLeft, Landmark, TrendingUp, TrendingDown, Users, DollarSign, FileText, LineChart, Filter, Receipt } from 'lucide-react';
 
 export default function FinancePage() {
   const [allSales, setAllSales] = useState<Sale[]>([]);
   const [allPurchases, setAllPurchases] = useState<Purchase[]>([]);
+  const [allOtherExpenses, setAllOtherExpenses] = useState<OtherExpense[]>([]);
   const [allDebtors, setAllDebtors] = useState<Debtor[]>([]);
   
   const [filteredSales, setFilteredSales] = useState<Sale[]>([]);
   const [filteredPurchases, setFilteredPurchases] = useState<Purchase[]>([]);
+  const [filteredOtherExpenses, setFilteredOtherExpenses] = useState<OtherExpense[]>([]);
   const [filteredDebtors, setFilteredDebtors] = useState<Debtor[]>([]);
 
   const [selectedYear, setSelectedYear] = useState<string>('all');
@@ -31,20 +34,23 @@ export default function FinancePage() {
     const unsubscribeSales = listenToSales(setAllSales);
     const unsubscribePurchases = listenToPurchases(setAllPurchases);
     const unsubscribeDebtors = listenToDebtors(setAllDebtors);
+    const unsubscribeExpenses = listenToOtherExpenses(setAllOtherExpenses);
 
     return () => {
       unsubscribeSales();
       unsubscribePurchases();
       unsubscribeDebtors();
+      unsubscribeExpenses();
     };
   }, []);
   
   const allTransactions = useMemo(() => {
     const salesDates = allSales.map(s => s.saleDate);
     const purchaseDates = allPurchases.map(p => p.purchaseDate);
+    const expenseDates = allOtherExpenses.map(e => e.date);
     const debtorDates = allDebtors.map(d => d.saleDate);
-    return [...salesDates, ...purchaseDates, ...debtorDates];
-  }, [allSales, allPurchases, allDebtors]);
+    return [...salesDates, ...purchaseDates, ...debtorDates, ...expenseDates];
+  }, [allSales, allPurchases, allDebtors, allOtherExpenses]);
 
   const availableYears = useMemo(() => {
     const years = new Set(allTransactions.map(ts => ts.toDate().getFullYear().toString()));
@@ -52,10 +58,10 @@ export default function FinancePage() {
   }, [allTransactions]);
 
   useEffect(() => {
-    const filterByDate = (items: (Sale | Purchase | Debtor)[]) => {
+    const filterByDate = (items: any[]) => {
       let itemsToFilter = items;
       
-      const getDate = (item: Sale | Purchase | Debtor) => 'saleDate' in item ? item.saleDate : item.purchaseDate;
+      const getDate = (item: any) => item.saleDate || item.purchaseDate || item.date;
 
       if (selectedYear !== 'all') {
         itemsToFilter = itemsToFilter.filter(item => getDate(item).toDate().getFullYear().toString() === selectedYear);
@@ -69,25 +75,30 @@ export default function FinancePage() {
 
     setFilteredSales(filterByDate(allSales) as Sale[]);
     setFilteredPurchases(filterByDate(allPurchases) as Purchase[]);
+    setFilteredOtherExpenses(filterByDate(allOtherExpenses) as OtherExpense[]);
     setFilteredDebtors(filterByDate(allDebtors) as Debtor[]);
 
-  }, [selectedYear, selectedMonth, allSales, allPurchases, allDebtors]);
+  }, [selectedYear, selectedMonth, allSales, allPurchases, allDebtors, allOtherExpenses]);
 
   const overallStats = useMemo(() => {
     const totalSales = allSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
     const totalPurchases = allPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+    const totalOtherExpenses = allOtherExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = totalPurchases + totalOtherExpenses;
     const totalDebt = allDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
-    const profit = totalSales - totalPurchases;
-    return { totalSales, totalPurchases, totalDebt, profit };
-  }, [allSales, allPurchases, allDebtors]);
+    const profit = totalSales - totalExpenses;
+    return { totalSales, totalPurchases, totalOtherExpenses, totalExpenses, totalDebt, profit };
+  }, [allSales, allPurchases, allOtherExpenses, allDebtors]);
 
   const filteredStats = useMemo(() => {
     const totalSales = filteredSales.reduce((sum, sale) => sum + sale.totalAmount, 0);
     const totalPurchases = filteredPurchases.reduce((sum, p) => sum + p.totalAmount, 0);
+    const totalOtherExpenses = filteredOtherExpenses.reduce((sum, e) => sum + e.amount, 0);
+    const totalExpenses = totalPurchases + totalOtherExpenses;
     const totalDebt = filteredDebtors.reduce((sum, debtor) => sum + debtor.totalAmount, 0);
-    const profit = totalSales - totalPurchases;
-    return { totalSales, totalPurchases, totalDebt, profit };
-  }, [filteredSales, filteredPurchases, filteredDebtors]);
+    const profit = totalSales - totalExpenses;
+    return { totalSales, totalPurchases, totalOtherExpenses, totalExpenses, totalDebt, profit };
+  }, [filteredSales, filteredPurchases, filteredOtherExpenses, filteredDebtors]);
 
 
   const handleBankTransferClick = () => {
@@ -120,9 +131,9 @@ export default function FinancePage() {
     },
     {
         href: '/purchases',
-        icon: <TrendingDown className="w-8 h-8 text-rose-500" />,
+        icon: <Receipt className="w-8 h-8 text-rose-500" />,
         title: 'ລາຍງານລາຍຈ່າຍ',
-        description: 'ເບິ່ງປະຫວັດການຊື້ສິນຄ້າເຂົ້າຮ້ານ'
+        description: 'ເບິ່ງປະຫວັດການຊື້ ແລະ ຄ່າໃຊ້ຈ່າຍອື່ນໆ'
     },
     {
         href: '/debtors',
@@ -182,7 +193,7 @@ export default function FinancePage() {
         
         <Card>
             <CardHeader>
-                <CardTitle>ສະຫຼຸບຕາມການກັ່ນຕອງ</CardTitle>
+                <CardTitle>ສະຫຼຸບตามการกรอง</CardTitle>
                 <CardDescription>ຂໍ້ມູນສະແດງຕາມ ປີ: {selectedYear === 'all' ? 'ທັງໝົດ' : selectedYear}, ເດືອນ: {selectedMonth === 'all' ? 'ທັງໝົດ' : selectedMonth}</CardDescription>
             </CardHeader>
             <CardContent>
@@ -194,16 +205,16 @@ export default function FinancePage() {
                     description={`ຈາກ ${filteredSales.length} ບິນ`}
                   />
                   <StatCard
-                    title="ຍອດຊື້ (ກັ່ນຕອງ)"
-                    value={formatCurrency(filteredStats.totalPurchases)}
+                    title="ລາຍຈ່າຍ (ກັ່ນຕອງ)"
+                    value={formatCurrency(filteredStats.totalExpenses)}
                     icon={<DollarSign className="h-5 w-5 text-red-500" />}
-                    description={`ຈາກ ${filteredPurchases.length} ລາຍການ`}
+                    description={`ຊື້: ${formatCurrency(filteredStats.totalPurchases)} | ອື່ນໆ: ${formatCurrency(filteredStats.totalOtherExpenses)}`}
                   />
                   <StatCard
                     title="ກຳໄລ (ກັ່ນຕອງ)"
                     value={formatCurrency(filteredStats.profit)}
                     icon={<LineChart className="h-5 w-5 text-blue-500" />}
-                    description="ກຳໄລຈາກຍອດຂາຍຫັກລົບຕົ້ນທຶນຊື້"
+                    description="ກຳໄລຈາກຍອດຂາຍຫັກລົບລາຍຈ່າຍ"
                   />
                    <StatCard
                     title="ຍອດໜີ້ (ກັ່ນຕອງ)"
@@ -217,11 +228,11 @@ export default function FinancePage() {
 
         <Card>
             <CardHeader>
-                <CardTitle>ສະຫຼຸບຍອດລວມທັງໝົດ</CardTitle>
+                <CardTitle>ສະຫຼຸບຍอดรวมทั้งหมด</CardTitle>
                 <CardDescription>ຂໍ້ມູນທັງໝົດທີ່ບັນທຶກໄວ້ໃນລະບົບ</CardDescription>
             </CardHeader>
              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
                   <StatCard
                     title="ຍອດຂາຍລວມທັງໝົດ"
                     value={formatCurrency(overallStats.totalSales)}
@@ -229,10 +240,10 @@ export default function FinancePage() {
                     description={`ຈາກ ${allSales.length} ບິນ`}
                   />
                   <StatCard
-                    title="ຍອດຊື້ລວມທັງໝົດ"
-                    value={formatCurrency(overallStats.totalPurchases)}
+                    title="ລາຍຈ່າຍລວມທັງໝົດ"
+                    value={formatCurrency(overallStats.totalExpenses)}
                     icon={<DollarSign className="h-5 w-5 text-red-500" />}
-                     description={`ຈາກ ${allPurchases.length} ລາຍການ`}
+                     description={`ຊື້: ${formatCurrency(overallStats.totalPurchases)} | ອື່ນໆ: ${formatCurrency(overallStats.totalOtherExpenses)}`}
                   />
                   <StatCard
                     title="ກຳໄລລວມທັງໝົດ"
@@ -247,7 +258,7 @@ export default function FinancePage() {
                   />
                   <div onClick={handleBankTransferClick} className="cursor-pointer">
                      <StatCard
-                      title="ເງິນໂອນ"
+                      title="ເງິນໂอน"
                       value={formatCurrency(bankTransfer)}
                       icon={<Landmark className="h-5 w-5 text-indigo-500" />}
                       description="ກົດເພື່ອແກ້ໄຂຈຳນວນເງິນ"
@@ -284,3 +295,5 @@ export default function FinancePage() {
     </>
   );
 }
+
+    

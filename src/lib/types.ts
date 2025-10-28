@@ -59,3 +59,12 @@ export interface Purchase {
     items: PurchaseItem[];
     totalAmount: number;
 }
+
+export interface OtherExpense {
+    id: string;
+    description: string;
+    amount: number;
+    date: Timestamp;
+}
+
+    
