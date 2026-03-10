@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
@@ -16,7 +15,6 @@ import { useFirestore } from '@/firebase';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toDateSafe } from '@/lib/timestamp';
 
-// Define the shape of our calculation data
 export interface SavedCalculation {
     id: string;
     savedAt: any;
@@ -145,17 +143,12 @@ export default function TourCostCalculatorListPage() {
             try {
                 const docRef = doc(firestore, 'tourCalculations', id);
                 await deleteDoc(docRef);
-                alert("ລຶບຂໍ້ມູນສຳເລັດ.");
             } catch (error) {
                 console.error("Error deleting calculation:", error);
                 alert("ເກີດຂໍ້ຜິດພາດໃນການລຶບຂໍ້ມູນ.");
             }
         }
     };
-
-    const handleRowClick = (id: string) => {
-        router.push(`/tour/cost-calculator/${id}`);
-    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-background">
@@ -229,7 +222,7 @@ export default function TourCostCalculatorListPage() {
                                             {filteredCalculations.length > 0 ? filteredCalculations.map(calc => {
                                                 const savedAtDate = toDateSafe(calc.savedAt);
                                                 return (
-                                                <TableRow key={calc.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleRowClick(calc.id)}>
+                                                <TableRow key={calc.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => router.push(`/tour/cost-calculator/${calc.id}`)}>
                                                     <TableCell>{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy') : '...'}</TableCell>
                                                     <TableCell className="font-semibold">{calc.tourInfo?.groupCode}</TableCell>
                                                     <TableCell>{calc.tourInfo?.program || '-'}</TableCell>

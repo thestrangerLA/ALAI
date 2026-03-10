@@ -1,4 +1,10 @@
+import { FirebaseClientProvider } from "@/firebase";
 import "./globals.css";
+
+export const metadata = {
+  title: "Tour Cost Calculator",
+  description: "Calculate and manage tour costs easily",
+};
 
 export default function RootLayout({
   children,
@@ -7,7 +13,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="lo">
-      <body>{children}</body>
+      <body>
+        <FirebaseClientProvider>
+          {children}
+        </FirebaseClientProvider>
+      </body>
     </html>
   );
 }
