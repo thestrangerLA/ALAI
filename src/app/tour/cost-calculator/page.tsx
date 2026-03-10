@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
@@ -90,10 +91,10 @@ export default function TourCostCalculatorListPage() {
             const groupCode = calc.tourInfo?.groupCode?.toLowerCase() || '';
             const program = calc.tourInfo?.program?.toLowerCase() || '';
             const destination = calc.tourInfo?.destinationCountry?.toLowerCase() || '';
-            const query = searchQuery.toLowerCase();
-            return groupCode.includes(query) || 
-                   program.includes(query) ||
-                   destination.includes(query);
+            const queryText = searchQuery.toLowerCase();
+            return groupCode.includes(queryText) || 
+                   program.includes(queryText) ||
+                   destination.includes(queryText);
         });
     }, [savedCalculations, searchQuery, selectedMonth]);
 
@@ -160,7 +161,7 @@ export default function TourCostCalculatorListPage() {
         <div className="flex min-h-screen w-full flex-col bg-background">
              <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-primary px-4 text-primary-foreground sm:px-6">
                 <Button variant="outline" size="icon" className="h-10 w-10 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" asChild>
-                    <Link href="/tour">
+                    <Link href="/">
                         <ArrowLeft className="h-5 w-5" />
                         <span className="sr-only">ກັບໄປໜ້າຫຼັກ</span>
                     </Link>
@@ -176,7 +177,7 @@ export default function TourCostCalculatorListPage() {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                         <Input
                             type="search"
-                            placeholder="ຄົ້ນຫາ (Code, ໂປຣແກຣມ, ຈຸດໝາຍ)..."
+                            placeholder="ຄົ້ນຫາ..."
                             className="pl-9 sm:w-[300px] bg-white text-black"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
@@ -229,7 +230,7 @@ export default function TourCostCalculatorListPage() {
                                                 const savedAtDate = toDateSafe(calc.savedAt);
                                                 return (
                                                 <TableRow key={calc.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleRowClick(calc.id)}>
-                                                    <TableCell>{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy HH:mm') : '...'}</TableCell>
+                                                    <TableCell>{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy') : '...'}</TableCell>
                                                     <TableCell className="font-semibold">{calc.tourInfo?.groupCode}</TableCell>
                                                     <TableCell>{calc.tourInfo?.program || '-'}</TableCell>
                                                     <TableCell>{calc.tourInfo?.destinationCountry || '-'}</TableCell>
@@ -239,17 +240,13 @@ export default function TourCostCalculatorListPage() {
                                                             <DropdownMenuTrigger asChild>
                                                                 <Button size="icon" variant="ghost">
                                                                     <MoreHorizontal className="h-4 w-4" />
-                                                                    <span className="sr-only">Open menu</span>
+                                                                    <span className="sr-only">Toggle menu</span>
                                                                 </Button>
                                                             </DropdownMenuTrigger>
                                                             <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>ຈັດການຂໍ້ມູນ</DropdownMenuLabel>
-                                                                <DropdownMenuItem onSelect={() => router.push(`/tour/cost-calculator/${calc.id}`)}>
-                                                                    ແກ້ໄຂ (Edit)
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem onSelect={(e) => handleDeleteCalculation(e as any, calc.id)} className="text-red-500">
-                                                                    ລຶບ (Delete)
-                                                                </DropdownMenuItem>
+                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                                <DropdownMenuItem onSelect={() => router.push(`/tour/cost-calculator/${calc.id}`)}>Edit</DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={(e) => handleDeleteCalculation(e as any, calc.id)} className="text-red-500">Delete</DropdownMenuItem>
                                                             </DropdownMenuContent>
                                                         </DropdownMenu>
                                                     </TableCell>
