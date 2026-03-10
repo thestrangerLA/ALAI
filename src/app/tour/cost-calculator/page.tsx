@@ -1,0 +1,275 @@
+"use client"
+
+import { useState, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
+import { format, isSameMonth, isSameYear } from 'date-fns';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Input } from '@/components/ui/input';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PlusCircle, Calculator, MoreHorizontal, Search, ArrowLeft } from 'lucide-react';
+import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { useFirestore } from '@/firebase';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toDateSafe } from '@/lib/timestamp';
+
+// Define the shape of our calculation data
+export interface SavedCalculation {
+    id: string;
+    savedAt: any;
+    tourInfo: {
+        mouContact: string;
+        groupCode: string;
+        destinationCountry: string;
+        program: string;
+        startDate: any;
+        endDate: any;
+        numDays: number;
+        numNights: number;
+        numPeople: number;
+        travelerInfo: string;
+    };
+    allCosts: any;
+}
+
+export default function TourCostCalculatorListPage() {
+    const router = useRouter();
+    const firestore = useFirestore();
+
+    const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>([]);
+    const [calculationsLoading, setCalculationsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedMonth, setSelectedMonth] = useState<string>('all');
+
+    useEffect(() => {
+        if (!firestore) return;
+
+        setCalculationsLoading(true);
+        const calculationsColRef = collection(firestore, 'tourCalculations');
+        const q = query(calculationsColRef, orderBy('savedAt', 'desc'));
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const calcs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as SavedCalculation));
+            setSavedCalculations(calcs);
+            setCalculationsLoading(false);
+        }, (error) => {
+            console.error("Error fetching calculations:", error);
+            setCalculationsLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, [firestore]);
+
+    const availableMonths = useMemo(() => {
+        const monthSet = new Set<string>();
+        savedCalculations.forEach(calc => {
+            const date = toDateSafe(calc.savedAt);
+            if (date) {
+                monthSet.add(format(date, 'yyyy-MM'));
+            }
+        });
+        return Array.from(monthSet).sort((a,b) => b.localeCompare(a));
+    }, [savedCalculations]);
+
+    const filteredCalculations = useMemo(() => {
+         const filteredByMonth = savedCalculations.filter(calc => {
+            if (selectedMonth === 'all') {
+                return true;
+            }
+            const savedAtDate = toDateSafe(calc.savedAt);
+            if (!savedAtDate) return false;
+            
+            const [year, month] = selectedMonth.split('-').map(Number);
+            const selectedDate = new Date(year, month - 1);
+            return isSameMonth(savedAtDate, selectedDate) && isSameYear(savedAtDate, selectedDate);
+        });
+        
+        return filteredByMonth.filter(calc => {
+            const groupCode = calc.tourInfo?.groupCode?.toLowerCase() || '';
+            const program = calc.tourInfo?.program?.toLowerCase() || '';
+            const destination = calc.tourInfo?.destinationCountry?.toLowerCase() || '';
+            const query = searchQuery.toLowerCase();
+            return groupCode.includes(query) || 
+                   program.includes(query) ||
+                   destination.includes(query);
+        });
+    }, [savedCalculations, searchQuery, selectedMonth]);
+
+    const handleAddNewCalculation = async () => {
+        if (!firestore) return;
+
+        try {
+            const newCalculationData = {
+                savedAt: serverTimestamp(),
+                tourInfo: {
+                    mouContact: '',
+                    groupCode: `LTH${format(new Date(), 'yyyyMMddHHmmss')}`,
+                    destinationCountry: '',
+                    program: '',
+                    startDate: null,
+                    endDate: null,
+                    numDays: 1,
+                    numNights: 0,
+                    numPeople: 1,
+                    travelerInfo: ''
+                },
+                allCosts: {
+                    accommodations: [],
+                    trips: [],
+                    flights: [],
+                    trainTickets: [],
+                    entranceFees: [],
+                    meals: [],
+                    guides: [],
+                    documents: [],
+                    overseasPackages: [],
+                },
+            };
+            const calculationsColRef = collection(firestore, 'tourCalculations');
+            const newDocRef = await addDoc(calculationsColRef, newCalculationData);
+            router.push(`/tour/cost-calculator/${newDocRef.id}`);
+        } catch (error) {
+            console.error("Error adding new calculation:", error);
+            alert("ເກີດຂໍ້ຜິດພາດໃນການສ້າງຂໍ້ມູນໃໝ່.");
+        }
+    };
+    
+    const handleDeleteCalculation = async (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (!firestore) return;
+
+        if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
+            try {
+                const docRef = doc(firestore, 'tourCalculations', id);
+                await deleteDoc(docRef);
+                alert("ລຶບຂໍ້ມູນສຳເລັດ.");
+            } catch (error) {
+                console.error("Error deleting calculation:", error);
+                alert("ເກີດຂໍ້ຜິດພາດໃນການລຶບຂໍ້ມູນ.");
+            }
+        }
+    };
+
+    const handleRowClick = (id: string) => {
+        router.push(`/tour/cost-calculator/${id}`);
+    }
+
+    return (
+        <div className="flex min-h-screen w-full flex-col bg-background">
+             <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-primary px-4 text-primary-foreground sm:px-6">
+                <Button variant="outline" size="icon" className="h-10 w-10 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" asChild>
+                    <Link href="/tour">
+                        <ArrowLeft className="h-5 w-5" />
+                        <span className="sr-only">ກັບໄປໜ້າຫຼັກ</span>
+                    </Link>
+                </Button>
+                <div className="flex-1">
+                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+                        <Calculator className="h-7 w-7"/>
+                        ລາຍການຄຳນວນຕົ້ນທຶນທັງໝົດ
+                    </h1>
+                </div>
+                 <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                            type="search"
+                            placeholder="ຄົ້ນຫາ (Code, ໂປຣແກຣມ, ຈຸດໝາຍ)..."
+                            className="pl-9 sm:w-[300px] bg-white text-black"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </div>
+                    <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+                        <SelectTrigger className="w-[180px] bg-white text-black">
+                            <SelectValue placeholder="ເລືອກເດືອນ" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">ທຸກເດືອນ</SelectItem>
+                            {availableMonths.map(month => (
+                                <SelectItem key={month} value={month}>
+                                    {format(new Date(month + '-02'), 'LLLL yyyy')}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    <Button onClick={handleAddNewCalculation} className="bg-white text-primary hover:bg-white/90">
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        ເພີ່ມການຄຳນວນໃໝ່
+                    </Button>
+                </div>
+            </header>
+            <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-6">
+                <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-4">
+                     {calculationsLoading ? (
+                        <Card>
+                            <CardContent className="p-20 text-center text-muted-foreground">
+                                <p className="text-lg">ກຳລັງໂຫຼດຂໍ້ມູນການຄຳນວນ...</p>
+                            </CardContent>
+                        </Card>
+                     ) : (
+                        <Card className="shadow-lg">
+                             <CardContent className="p-0">
+                                <div className="overflow-x-auto">
+                                    <Table>
+                                        <TableHeader className="bg-muted/50">
+                                            <TableRow>
+                                                <TableHead className="w-[150px]">ວັນທີບັນທຶກ</TableHead>
+                                                <TableHead>Group Code</TableHead>
+                                                <TableHead>ໂປຣແກຣມ</TableHead>
+                                                <TableHead>ຈຸດໝາຍ</TableHead>
+                                                <TableHead className="text-center">ຈຳນວນຄົນ</TableHead>
+                                                <TableHead className="text-right pr-6">ການກະທຳ</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {filteredCalculations.length > 0 ? filteredCalculations.map(calc => {
+                                                const savedAtDate = toDateSafe(calc.savedAt);
+                                                return (
+                                                <TableRow key={calc.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => handleRowClick(calc.id)}>
+                                                    <TableCell>{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy HH:mm') : '...'}</TableCell>
+                                                    <TableCell className="font-semibold">{calc.tourInfo?.groupCode}</TableCell>
+                                                    <TableCell>{calc.tourInfo?.program || '-'}</TableCell>
+                                                    <TableCell>{calc.tourInfo?.destinationCountry || '-'}</TableCell>
+                                                    <TableCell className="text-center">{calc.tourInfo?.numPeople}</TableCell>
+                                                    <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
+                                                         <DropdownMenu>
+                                                            <DropdownMenuTrigger asChild>
+                                                                <Button size="icon" variant="ghost">
+                                                                    <MoreHorizontal className="h-4 w-4" />
+                                                                    <span className="sr-only">Open menu</span>
+                                                                </Button>
+                                                            </DropdownMenuTrigger>
+                                                            <DropdownMenuContent align="end">
+                                                                <DropdownMenuLabel>ຈັດການຂໍ້ມູນ</DropdownMenuLabel>
+                                                                <DropdownMenuItem onSelect={() => router.push(`/tour/cost-calculator/${calc.id}`)}>
+                                                                    ແກ້ໄຂ (Edit)
+                                                                </DropdownMenuItem>
+                                                                <DropdownMenuItem onSelect={(e) => handleDeleteCalculation(e as any, calc.id)} className="text-red-500">
+                                                                    ລຶບ (Delete)
+                                                                </DropdownMenuItem>
+                                                            </DropdownMenuContent>
+                                                        </DropdownMenu>
+                                                    </TableCell>
+                                                </TableRow>
+                                                );
+                                            }) : (
+                                                <TableRow>
+                                                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
+                                                        ບໍ່ພົບຂໍ້ມູນການຄຳນວນ.
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
+            </main>
+        </div>
+    );
+}
