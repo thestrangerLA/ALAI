@@ -1,0 +1,239 @@
+{
+  "entities": {
+    "TourCalculation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TourCalculation",
+      "type": "object",
+      "description": "Represents a saved calculation for a tour's total cost, including detailed tour information and various categorized expenses.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TourCalculation entity."
+        },
+        "savedAt": {
+          "type": "string",
+          "description": "Timestamp indicating when this tour calculation was last saved.",
+          "format": "date-time"
+        },
+        "tourInfo": {
+          "type": "array",
+          "description": "Details about the tour's itinerary and participants.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "allCosts": {
+          "type": "array",
+          "description": "A list of references to all cost items associated with this tour calculation, categorized by type. (Relationship: TourCalculation 1:N CostItem)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "savedAt",
+        "tourInfo",
+        "allCosts"
+      ]
+    },
+    "TourInfo": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "TourInfo",
+      "type": "object",
+      "description": "Details about a specific tour, including contact, destination, dates, and participant numbers.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the TourInfo entity. (Relationship: TourInfo 1:1 TourCalculation)"
+        },
+        "tourCalculationId": {
+          "type": "string",
+          "description": "Reference to the TourCalculation this information belongs to. (Relationship: TourCalculation 1:1 TourInfo)"
+        },
+        "mouContact": {
+          "type": "string",
+          "description": "Contact person or organization associated with the Memorandum of Understanding (MOU) for this tour."
+        },
+        "groupCode": {
+          "type": "string",
+          "description": "A unique code identifying the specific tour group or package."
+        },
+        "destinationCountry": {
+          "type": "string",
+          "description": "The primary country or region designated as the tour's destination."
+        },
+        "program": {
+          "type": "string",
+          "description": "A descriptive name or summary of the tour program or itinerary."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "The planned start date of the tour. Can be null if not yet determined.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "The planned end date of the tour. Can be null if not yet determined.",
+          "format": "date-time"
+        },
+        "numDays": {
+          "type": "number",
+          "description": "The total number of days the tour is expected to last."
+        },
+        "numNights": {
+          "type": "number",
+          "description": "The total number of nights the tour is expected to last."
+        },
+        "numPeople": {
+          "type": "number",
+          "description": "The estimated or actual number of people participating in the tour."
+        },
+        "travelerInfo": {
+          "type": "string",
+          "description": "Any additional descriptive information regarding the travelers or group."
+        }
+      },
+      "required": [
+        "id",
+        "tourCalculationId",
+        "mouContact",
+        "groupCode",
+        "destinationCountry",
+        "program",
+        "numDays",
+        "numNights",
+        "numPeople"
+      ]
+    },
+    "CostItem": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "CostItem",
+      "type": "object",
+      "description": "Represents a single cost item for a tour calculation, detailing its description, quantity, cost, and currency.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the CostItem entity."
+        },
+        "tourCalculationId": {
+          "type": "string",
+          "description": "Reference to the TourCalculation this cost item belongs to. (Relationship: TourCalculation 1:N CostItem)"
+        },
+        "category": {
+          "type": "string",
+          "description": "The category of this cost item (e.g., 'accommodations', 'flights', 'meals')."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the specific cost item (e.g., 'Hotel A - 3 nights', 'Flight LAX-CDG')."
+        },
+        "costPerUnit": {
+          "type": "number",
+          "description": "The cost for one unit of this item."
+        },
+        "numberOfUnits": {
+          "type": "number",
+          "description": "The quantity of units for this cost item."
+        },
+        "totalCost": {
+          "type": "number",
+          "description": "The calculated total cost for this item (costPerUnit multiplied by numberOfUnits)."
+        },
+        "currency": {
+          "type": "string",
+          "description": "The currency code for the cost (e.g., LAK, USD, EUR)."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional additional notes or details about the cost item."
+        }
+      },
+      "required": [
+        "id",
+        "tourCalculationId",
+        "category",
+        "description",
+        "costPerUnit",
+        "numberOfUnits",
+        "totalCost",
+        "currency"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/tourCalculations/{tourCalculationId}",
+        "definition": {
+          "entityName": "TourCalculation",
+          "schema": {
+            "$ref": "#/backend/entities/TourCalculation"
+          },
+          "description": "Stores a high-level summary of a tour cost calculation. Includes denormalized 'ownerId' for authorization independence and key 'tourInfo' fields ('groupCode', 'program', 'destinationCountry', 'numPeople') for efficient list queries without 'get()' calls.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns this tour calculation."
+            },
+            {
+              "name": "tourCalculationId",
+              "description": "The unique identifier for the specific tour cost calculation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tourCalculations/{tourCalculationId}/tourInfo/details",
+        "definition": {
+          "entityName": "TourInfo",
+          "schema": {
+            "$ref": "#/backend/entities/TourInfo"
+          },
+          "description": "Contains detailed itinerary and participant information for a specific tour calculation. This is a singleton document (named 'details') within its subcollection. Includes denormalized 'ownerId' and 'tourCalculationId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent tour calculation."
+            },
+            {
+              "name": "tourCalculationId",
+              "description": "The unique identifier of the parent tour calculation this information belongs to."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/tourCalculations/{tourCalculationId}/costItems/{costItemId}",
+        "definition": {
+          "entityName": "CostItem",
+          "schema": {
+            "$ref": "#/backend/entities/CostItem"
+          },
+          "description": "Stores individual cost entries associated with a specific tour calculation. Includes denormalized 'ownerId' and 'tourCalculationId' for authorization independence.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The unique identifier of the user who owns the parent tour calculation."
+            },
+            {
+              "name": "tourCalculationId",
+              "description": "The unique identifier of the parent tour calculation this cost item belongs to."
+            },
+            {
+              "name": "costItemId",
+              "description": "The unique identifier for the specific cost item."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The recommended Firestore structure prioritizes Authorization Independence and Query-Accurate Permissions (QAPs) by adopting a hierarchical path for user-owned data and denormalizing critical authorization and query fields. Each user's tour calculations are stored under their unique user ID, ensuring strict data segregation and straightforward ownership-based security rules.\n\n1.  **`/users/{userId}/tourCalculations/{tourCalculationId}` (TourCalculation):** This top-level collection stores summary information for each tour calculation. To achieve Authorization Independence and support QAPs, each `TourCalculation` document will include `ownerId` (matching `request.auth.uid`) directly within the document. Additionally, key fields from the associated `TourInfo` (namely `groupCode`, `program`, `destinationCountry`, and `numPeople`) are denormalized into this document. This denormalization enables efficient `list` queries (as seen in the client's search and filter functionality) without requiring expensive or insecure `get()` operations on parent or related documents within security rules. For instance, filtering by `groupCode` or sorting by `savedAt` can be done directly on this collection with rule checks solely on `resource.data.ownerId` and the path's `userId` segment.\n\n2.  **`/users/{userId}/tourCalculations/{tourCalculationId}/tourInfo/details` (TourInfo):** This is a singleton subcollection document (`details` as the document ID) for a 1:1 relationship with its parent `TourCalculation`. It holds the comprehensive `TourInfo` details. To ensure Authorization Independence, this document also denormalizes `ownerId` (from the parent `TourCalculation`) and `tourCalculationId` into its own fields. This allows security rules to validate access to this specific `TourInfo` document directly, using `resource.data.ownerId` and `resource.data.tourCalculationId`, eliminating the need to `get()` the parent `TourCalculation` document.\n\n3.  **`/users/{userId}/tourCalculations/{tourCalculationId}/costItems/{costItemId}` (CostItem):** This subcollection stores individual `CostItem` entries for a specific tour calculation. Similar to `TourInfo`, each `CostItem` document denormalizes `ownerId` (from the parent `TourCalculation`) and `tourCalculationId`. This is crucial for Authorization Independence and QAPs. When querying (listing) `CostItem`s for a specific `tourCalculationId`, security rules can verify `request.auth.uid == resource.data.ownerId` and `resource.data.tourCalculationId == path[3]` (where `path[3]` is `tourCalculationId`). This robustly secures `list` operations without relying on parent `get()` calls, maintaining performance and rule simplicity.\n\nThis design ensures that all authorization checks can be performed directly on the `request.auth.uid`, `request.path` and `resource.data` of the document being accessed, fulfilling the Authorization Independence mandate. QAPs are supported as `list` queries can be secured by filtering on denormalized `ownerId` and `tourCalculationId` fields, preventing insecure `list` behavior where unauthorized documents might be returned."
+  }
+}

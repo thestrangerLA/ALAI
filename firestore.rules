@@ -1,12 +1,113 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access to all documents
-    // for development purposes.
-    // WARNING: DO NOT use this in production.
-    match /{document=**} {
-      allow read, write: if true;
+
+    /**
+     * TOUR COST CALCULATOR - SECURITY ARCHITECTURE
+     *
+     * Core Philosophy: This ruleset enforces a strict User-Ownership model. All data is logically 
+     * and physically segmented by the User's unique identifier (UID).
+     *
+     * Data Structure: The hierarchy follows a /users/{userId}/... pattern. This ensures that 
+     * authorization is naturally inherited and enforced by the path itself, preventing 
+     * cross-user data leakage.
+     *
+     * Key Security Decisions:
+     * 1. Authorization Independence: Every document contains denormalized ownership fields 
+     *    (ownerId) and relationship fields (tourCalculationId). This allows the rules to 
+     *    validate access without performing expensive get() calls to parent documents.
+     * 2. Strict User Scoping: Users can only list, read, or write data within their own 
+     *    document tree. Listing of other users' calculations is strictly prohibited.
+     * 3. Relational Integrity: On creation, we enforce that the internal 'ownerId' matches 
+     *    the authenticated user and the path variable. On update, 'ownerId' is made immutable.
+     * 4. Prototyping Flexibility: While authorization is strictly enforced based on ownership, 
+     *    the internal shape of tour information and costs is kept flexible to allow for 
+     *    rapid UI iteration and field changes.
+     */
+
+    // --- GLOBAL HELPER FUNCTIONS ---
+
+    /** @description Checks if the request is from an authenticated user. */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /** @description Checks if the authenticated user matches the provided userId. */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /** @description Combines ownership check with a check for the document's existence for write operations. */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    // --- COLLECTION RULES ---
+
+    /**
+     * @description Rules for the top-level Tour Calculation summary documents.
+     * @path /users/{userId}/tourCalculations/{tourCalculationId}
+     * @allow (create) User 'abc' creating a doc at /users/abc/tourCalculations/123 with { ownerId: 'abc' }.
+     * @deny (list) User 'abc' attempting to list /users/xyz/tourCalculations.
+     * @principle Enforces path-based ownership and validates relational link to user.
+     */
+    match /users/{userId}/tourCalculations/{tourCalculationId} {
+      allow get, list: if isOwner(userId);
+      
+      allow create: if isOwner(userId) && request.resource.data.ownerId == userId;
+      
+      allow update: if isExistingOwner(userId) && request.resource.data.ownerId == resource.data.ownerId;
+      
+      allow delete: if isExistingOwner(userId);
+
+      /**
+       * @description Rules for the detailed tour information (singleton 'details' doc).
+       * @path /users/{userId}/tourCalculations/{tourCalculationId}/tourInfo/{infoId}
+       * @allow (get) User 'abc' reading their own tour details.
+       * @deny (update) User 'abc' trying to change the 'ownerId' of their tour details.
+       * @principle Ensures deep subcollection access is tied to the parent user hierarchy.
+       */
+      match /tourInfo/{infoId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) && request.resource.data.ownerId == userId && request.resource.data.tourCalculationId == tourCalculationId;
+        
+        allow update: if isExistingOwner(userId) && request.resource.data.ownerId == resource.data.ownerId;
+        
+        allow delete: if isExistingOwner(userId);
+      }
+
+      /**
+       * @description Rules for individual cost items (accommodations, flights, etc.).
+       * @path /users/{userId}/tourCalculations/{tourCalculationId}/costItems/{costItemId}
+       * @allow (list) User 'abc' listing cost items for their calculation 'calc123'.
+       * @deny (create) User 'abc' creating a cost item for calculation 'calc123' but setting ownerId to 'xyz'.
+       * @principle Maintains data integrity between the path, the parent calculation, and the owner.
+       */
+      match /costItems/{costItemId} {
+        allow get, list: if isOwner(userId);
+        
+        allow create: if isOwner(userId) && request.resource.data.ownerId == userId && request.resource.data.tourCalculationId == tourCalculationId;
+        
+        allow update: if isExistingOwner(userId) && request.resource.data.ownerId == resource.data.ownerId;
+        
+        allow delete: if isExistingOwner(userId);
+      }
+    }
+
+    /**
+     * @description Basic user profile rule.
+     * @path /users/{userId}
+     * @allow (create) User 'abc' creating their own user profile document.
+     * @deny (get) User 'abc' trying to read User 'xyz''s profile.
+     * @principle Standard self-creation and ownership-only access for root user docs.
+     */
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false; // Users should not be listable.
+      allow create: if isOwner(userId);
+      allow update: if isExistingOwner(userId);
+      allow delete: if isExistingOwner(userId);
     }
   }
 }
