@@ -230,7 +230,7 @@ export default function TourCostCalculatorListPage() {
                                                      <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button size="icon" variant="ghost" className="hover:bg-gray-100">
-                                                                <MoreHorizontal className="h-5 w-5" />
+                                                                <MoreHorizontal className="h-4 w-4" />
                                                                 <span className="sr-only">Toggle menu</span>
                                                             </Button>
                                                         </DropdownMenuTrigger>
