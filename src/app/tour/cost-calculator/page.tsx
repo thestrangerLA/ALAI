@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
@@ -5,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { format, isSameMonth, isSameYear } from 'date-fns';
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -151,33 +152,33 @@ export default function TourCostCalculatorListPage() {
     };
 
     return (
-        <div className="flex min-h-screen w-full flex-col bg-background">
-             <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-primary px-4 text-primary-foreground sm:px-6">
-                <Button variant="outline" size="icon" className="h-10 w-10 bg-transparent text-primary-foreground border-primary-foreground hover:bg-primary-foreground/10" asChild>
+        <div className="flex min-h-screen w-full flex-col bg-[#f0f9f1]">
+             <header className="sticky top-0 z-30 flex h-20 items-center gap-4 bg-[#67a36f] px-4 text-white sm:px-6">
+                <Button variant="outline" size="icon" className="h-10 w-10 bg-transparent text-white border-white/40 hover:bg-white/10" asChild>
                     <Link href="/">
                         <ArrowLeft className="h-5 w-5" />
                         <span className="sr-only">ກັບໄປໜ້າຫຼັກ</span>
                     </Link>
                 </Button>
-                <div className="flex-1">
-                    <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-                        <Calculator className="h-7 w-7"/>
+                <div className="flex items-center gap-2">
+                    <Calculator className="h-7 w-7"/>
+                    <h1 className="text-2xl font-bold tracking-tight">
                         ລາຍການຄຳນວນຕົ້ນທຶນທັງໝົດ
                     </h1>
                 </div>
-                 <div className="flex items-center gap-3">
+                 <div className="ml-auto flex items-center gap-3">
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                         <Input
                             type="search"
                             placeholder="ຄົ້ນຫາ..."
-                            className="pl-9 sm:w-[300px] bg-white text-black"
+                            className="pl-9 sm:w-[300px] bg-white text-black border-none"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
                     <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-                        <SelectTrigger className="w-[180px] bg-white text-black">
+                        <SelectTrigger className="w-[180px] bg-white text-black border-none">
                             <SelectValue placeholder="ເລືອກເດືອນ" />
                         </SelectTrigger>
                         <SelectContent>
@@ -189,74 +190,70 @@ export default function TourCostCalculatorListPage() {
                             ))}
                         </SelectContent>
                     </Select>
-                    <Button onClick={handleAddNewCalculation} className="bg-white text-primary hover:bg-white/90">
-                        <PlusCircle className="mr-2 h-4 w-4" />
+                    <Button onClick={handleAddNewCalculation} variant="ghost" className="text-white hover:bg-white/10 flex items-center gap-2">
+                        <PlusCircle className="h-5 w-5" />
                         ເພີ່ມການຄຳນວນໃໝ່
                     </Button>
                 </div>
             </header>
-            <main className="flex w-full flex-1 flex-col gap-8 p-4 sm:px-6 sm:py-6">
-                <div className="w-full max-w-screen-2xl mx-auto flex flex-col gap-4">
+            <main className="flex w-full flex-1 flex-col gap-8 p-0">
+                <div className="w-full">
                      {calculationsLoading ? (
-                        <Card>
-                            <CardContent className="p-20 text-center text-muted-foreground">
-                                <p className="text-lg">ກຳລັງໂຫຼດຂໍ້ມູນການຄຳນວນ...</p>
-                            </CardContent>
-                        </Card>
+                        <div className="p-20 text-center text-muted-foreground">
+                            <p className="text-lg">ກຳລັງໂຫຼດຂໍ້ມູນການຄຳນວນ...</p>
+                        </div>
                      ) : (
-                        <Card className="shadow-lg">
-                             <CardContent className="p-0">
-                                <div className="overflow-x-auto">
-                                    <Table>
-                                        <TableHeader className="bg-muted/50">
-                                            <TableRow>
-                                                <TableHead className="w-[150px]">ວັນທີບັນທຶກ</TableHead>
-                                                <TableHead>Group Code</TableHead>
-                                                <TableHead>ໂປຣແກຣມ</TableHead>
-                                                <TableHead>ຈຸດໝາຍ</TableHead>
-                                                <TableHead className="text-center">ຈຳນວນຄົນ</TableHead>
-                                                <TableHead className="text-right pr-6">ການກະທຳ</TableHead>
+                        <div className="bg-white min-h-screen shadow-sm">
+                            <div className="overflow-x-auto">
+                                <Table>
+                                    <TableHeader className="bg-[#f8fcf9]">
+                                        <TableRow className="border-b border-gray-100 hover:bg-transparent">
+                                            <TableHead className="w-[150px] font-bold text-gray-500 text-base py-5 pl-8">ວັນທີບັນທຶກ</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5">Group Code</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5">ໂປຣແກຣມ</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5">ຈຸດໝາຍ</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5 text-center">ຈຳນວນຄົນ</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5 text-right pr-8">ການກະທຳ</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {filteredCalculations.length > 0 ? filteredCalculations.map(calc => {
+                                            const savedAtDate = toDateSafe(calc.savedAt);
+                                            return (
+                                            <TableRow key={calc.id} className="cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-50" onClick={() => router.push(`/tour/cost-calculator/${calc.id}`)}>
+                                                <TableCell className="py-5 pl-8 text-base">{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy') : '...'}</TableCell>
+                                                <TableCell className="py-5 font-bold text-base text-gray-800">{calc.tourInfo?.groupCode}</TableCell>
+                                                <TableCell className="py-5 text-base">{calc.tourInfo?.program || '-'}</TableCell>
+                                                <TableCell className="py-5 text-base">{calc.tourInfo?.destinationCountry || '-'}</TableCell>
+                                                <TableCell className="py-5 text-center text-base">{calc.tourInfo?.numPeople}</TableCell>
+                                                <TableCell className="py-5 text-right pr-8" onClick={(e) => e.stopPropagation()}>
+                                                     <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button size="icon" variant="ghost" className="hover:bg-gray-100">
+                                                                <MoreHorizontal className="h-5 w-5" />
+                                                                <span className="sr-only">Toggle menu</span>
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                                            <DropdownMenuItem onSelect={() => router.push(`/tour/cost-calculator/${calc.id}`)}>Edit</DropdownMenuItem>
+                                                            <DropdownMenuItem onSelect={(e) => handleDeleteCalculation(e as any, calc.id)} className="text-red-500">Delete</DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </TableCell>
                                             </TableRow>
-                                        </TableHeader>
-                                        <TableBody>
-                                            {filteredCalculations.length > 0 ? filteredCalculations.map(calc => {
-                                                const savedAtDate = toDateSafe(calc.savedAt);
-                                                return (
-                                                <TableRow key={calc.id} className="cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => router.push(`/tour/cost-calculator/${calc.id}`)}>
-                                                    <TableCell>{savedAtDate ? format(savedAtDate, 'dd/MM/yyyy') : '...'}</TableCell>
-                                                    <TableCell className="font-semibold">{calc.tourInfo?.groupCode}</TableCell>
-                                                    <TableCell>{calc.tourInfo?.program || '-'}</TableCell>
-                                                    <TableCell>{calc.tourInfo?.destinationCountry || '-'}</TableCell>
-                                                    <TableCell className="text-center">{calc.tourInfo?.numPeople}</TableCell>
-                                                    <TableCell className="text-right pr-6" onClick={(e) => e.stopPropagation()}>
-                                                         <DropdownMenu>
-                                                            <DropdownMenuTrigger asChild>
-                                                                <Button size="icon" variant="ghost">
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                    <span className="sr-only">Toggle menu</span>
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent align="end">
-                                                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                                                <DropdownMenuItem onSelect={() => router.push(`/tour/cost-calculator/${calc.id}`)}>Edit</DropdownMenuItem>
-                                                                <DropdownMenuItem onSelect={(e) => handleDeleteCalculation(e as any, calc.id)} className="text-red-500">Delete</DropdownMenuItem>
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </TableCell>
-                                                </TableRow>
-                                                );
-                                            }) : (
-                                                <TableRow>
-                                                    <TableCell colSpan={6} className="h-32 text-center text-muted-foreground">
-                                                        ບໍ່ພົບຂໍ້ມູນການຄຳນວນ.
-                                                    </TableCell>
-                                                </TableRow>
-                                            )}
-                                        </TableBody>
-                                    </Table>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                            );
+                                        }) : (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                                                    ບໍ່ພົບຂໍ້ມູນການຄຳນວນ.
+                                                </TableCell>
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </div>
                     )}
                 </div>
             </main>
