@@ -1,4 +1,3 @@
-
 "use client"
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
@@ -203,7 +202,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         return () => unsubscribe();
     }, [calculationId, isClient, firestore, user]);
     
-    const deepCopyAndConvertDates = (obj: any) => {
+    const deepCopyAndConvertDates = (obj: any): any => {
         if (obj === null || typeof obj !== 'object') {
             return obj;
         }
