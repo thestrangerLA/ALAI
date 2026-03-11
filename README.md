@@ -19,7 +19,7 @@
 
 ## ຂັ້ນຕອນການຕິດຕັ້ງ ແລະ ອັບໂຫຼດໄປ GitHub
 
-ຫາກທ່ານຕ້ອງການອັບໂຫຼດໂຄ້ດນີ້ໄປຫາ Repository ຂອງທ່ານ (`https://github.com/thestrangerLA/calcualte-Tour.git`), ໃຫ້ເປີດ Terminal ແລ້ວພິມຄຳສັ່ງດັ່ງນີ້:
+ຫາກທ່ານຕ້ອງການອັບໂຫຼດໂຄ້ດນີ້ໄປຫາ Repository ຂອງທ່ານ (`https://github.com/thestrangerLA/ALAI.git`), ໃຫ້ເປີດ Terminal ແລ້ວພິມຄຳສັ່ງດັ່ງນີ້:
 
 1. **ຕັ້ງຄ່າ Git ໃນໂຟນເດີໂຄງການ:**
    ```bash
@@ -28,7 +28,7 @@
 
 2. **ເຊື່ອມຕໍ່ກັບ GitHub ຂອງທ່ານ:**
    ```bash
-   git remote add origin https://github.com/thestrangerLA/calcualte-Tour.git
+   git remote add origin https://github.com/thestrangerLA/ALAI.git
    ```
 
 3. **ເພີ່ມໄຟລ໌ ແລະ Commit:**

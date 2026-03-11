@@ -1,10 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'export', // ກຳນົດໃຫ້ເປັນ Static Export ສຳລັບ GitHub Pages
+  output: 'export',
   images: {
-    unoptimized: true, // ຈຳເປັນສຳລັບ Static Export
+    unoptimized: true,
   },
-  trailingSlash: true, // ຊ່ວຍໃຫ້ການເຂົ້າເຖິງ URL ໃນ Static Hosting ມີຄວາມສະຖຽນຂຶ້ນ
+  // ໝາຍເຫດ: ຫາກທ່ານ Deploy ໄປຫາ GitHub Pages ທີ່ບໍ່ແມ່ນ Custom Domain
+  // ທ່ານອາດຈະຕ້ອງກຳນົດ basePath ເປັນຊື່ Repository ຂອງທ່ານ ເຊັ່ນ:
+  // basePath: '/ALAI',
 };
 
 export default nextConfig;
