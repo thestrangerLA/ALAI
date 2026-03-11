@@ -89,10 +89,10 @@ export interface SavedCalculation {
 }
 
 const initialRates: ExchangeRates = {
-    USD: { THB: 35, LAK: 21000, CNY: 7.2 },
-    THB: { USD: 0.028, LAK: 600, CNY: 0.2 },
-    CNY: { USD: 0.14, THB: 5, LAK: 3000 },
-    LAK: { USD: 0.000048, THB: 0.0016, CNY: 0.00034 },
+    USD: { THB: 38, LAK: 25000, CNY: 8 },
+    THB: { USD: 0.032, LAK: 700, CNY: 0.25 },
+    CNY: { USD: 0.20, THB: 6, LAK: 3500 },
+    LAK: { USD: 0.00005, THB: 0.0015, CNY: 0.00035 },
 };
 
 const CostCategoryContent = ({ title, icon, children, summary }: { title: string, icon: React.ReactNode, children: React.ReactNode, summary: React.ReactNode }) => (
