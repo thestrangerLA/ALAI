@@ -78,7 +78,7 @@ export interface TourCosts {
 
 export interface SavedCalculation {
     id: string;
-    savedAt: DateValue;
+    savedAt: any;
     tourInfo: TourInfo;
     allCosts: TourCosts;
     exchangeRates?: ExchangeRates;
@@ -337,7 +337,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         
         const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
-        const dataToSave: Partial<SavedCalculation> = {
+        const dataToSave: any = {
             ownerId: user.uid,
             tourInfo: deepCopyAndConvertDates(tourInfo),
             allCosts: deepCopyAndConvertDates(allCosts),
