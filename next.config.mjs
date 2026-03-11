@@ -4,8 +4,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // ໝາຍເຫດ: ຫາກທ່ານ Deploy ໄປຫາ GitHub Pages ທີ່ບໍ່ແມ່ນ Custom Domain
-  // ທ່ານອາດຈະຕ້ອງກຳນົດ basePath ເປັນຊື່ Repository ຂອງທ່ານ ເຊັ່ນ:
+  // If your repository is not at the root domain (e.g., username.github.io/repo-name/),
+  // uncomment and set the following line:
   // basePath: '/ALAI',
 };
 
