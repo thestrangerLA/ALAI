@@ -78,7 +78,7 @@ export interface TourCosts {
 
 export interface SavedCalculation {
     id: string;
-    savedAt: any;
+    savedAt: any; // Changed from DateValue to any to support serverTimestamp()
     tourInfo: TourInfo;
     allCosts: TourCosts;
     exchangeRates?: ExchangeRates;
@@ -87,7 +87,6 @@ export interface SavedCalculation {
     totals?: Record<string, number>;
 }
 
-// Default rates updated to match the standard values in the reference image
 const initialRates: ExchangeRates = {
     USD: { THB: 35, LAK: 25000, CNY: 8 },
     THB: { USD: 0.032, LAK: 700, CNY: 0.25 },
@@ -122,7 +121,6 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         setIsClient(true);
     }, []);
 
-    // Ensure user is signed in anonymously if not already
     useEffect(() => {
         if (!isUserLoading && !user && auth) {
             initiateAnonymousSignIn(auth);
@@ -202,6 +200,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         return () => unsubscribe();
     }, [calculationId, isClient, firestore, user]);
     
+    // Fixed recursive return type for TypeScript
     const deepCopyAndConvertDates = (obj: any): any => {
         if (obj === null || typeof obj !== 'object') {
             return obj;
@@ -224,7 +223,6 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         return newObj;
     };
 
-    // --- Total Calculation Memos ---
     const accommodationTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
         allCosts.accommodations?.forEach(acc => {
