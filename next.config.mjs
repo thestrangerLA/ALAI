@@ -4,9 +4,10 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  // If your repository is not at the root domain (e.g., username.github.io/repo-name/),
-  // uncomment and set the following line:
-  // basePath: '/ALAI',
+  // If your site is deployed to https://thestrangerLA.github.io/lao-hug-calculate/
+  // uncomment the following lines:
+  // basePath: '/lao-hug-calculate',
+  // assetPrefix: '/lao-hug-calculate',
 };
 
 export default nextConfig;

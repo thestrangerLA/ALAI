@@ -1,4 +1,4 @@
-# Tour Cost Calculator
+# Tour Cost Calculator (Lao Hug)
 
 ລະບົບຄຳນວນຕົ້ນທຶນທົວ ແລະ ຈັດການຂໍ້ມູນການຈອງທົວແບບຄົບວົງຈອນ.
 
@@ -19,7 +19,7 @@
 
 ## ຂັ້ນຕອນການຕິດຕັ້ງ ແລະ ອັບໂຫຼດໄປ GitHub
 
-ຫາກທ່ານຕ້ອງການອັບໂຫຼດໂຄ້ດນີ້ໄປຫາ Repository ຂອງທ່ານ (`https://github.com/thestrangerLA/ALAI.git`), ໃຫ້ເປີດ Terminal ແລ້ວພິມຄຳສັ່ງດັ່ງນີ້:
+ຫາກທ່ານຕ້ອງການອັບໂຫຼດໂຄ້ດນີ້ໄປຫາ Repository ຂອງທ່ານ (`https://github.com/thestrangerLA/lao-hug-calculate.git`), ໃຫ້ເປີດ Terminal ແລ້ວພິມຄຳສັ່ງດັ່ງນີ້:
 
 1. **ຕັ້ງຄ່າ Git ໃນໂຟນເດີໂຄງການ:**
    ```bash
@@ -28,13 +28,13 @@
 
 2. **ເຊື່ອມຕໍ່ກັບ GitHub ຂອງທ່ານ:**
    ```bash
-   git remote add origin https://github.com/thestrangerLA/ALAI.git
+   git remote add origin https://github.com/thestrangerLA/lao-hug-calculate.git
    ```
 
 3. **ເພີ່ມໄຟລ໌ ແລະ Commit:**
    ```bash
    git add .
-   git commit -m "Initial commit: Tour Cost Calculator system"
+   git commit -m "Initial commit: Lao Hug Tour Cost Calculator"
    ```
 
 4. **Push ໂຄ້ດຂຶ້ນໄປ:**
