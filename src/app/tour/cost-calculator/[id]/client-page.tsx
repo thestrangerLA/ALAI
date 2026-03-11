@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer, Earth, Ticket } from "lucide-react";
+import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer, Earth, Ticket, Loader2 } from "lucide-react";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { TotalCostCard } from '@/components/tour/TotalCostCard';
@@ -144,7 +144,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     
     const [itemVisibility, setItemVisibility] = useState<Record<string, boolean>>({});
 
-    const [loading, setLoading] = useState(!initialCalculation);
+    const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isSavingRates, setIsSavingRates] = useState(false);
 
@@ -168,10 +168,10 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
 
     useEffect(() => {
         if (!isClient || !calculationId || calculationId === 'default' || !firestore || !user) {
-            if (isClient && !isUserLoading && !user) setLoading(false);
             return;
         };
 
+        setLoading(true);
         const docRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
         const unsubscribe = onSnapshot(docRef, (snapshot) => {
@@ -187,19 +187,20 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                 });
                 if (data.exchangeRates) setExchangeRates(data.exchangeRates);
                 if (data.profitPercentage !== undefined) setProfitPercentage(data.profitPercentage);
+                setError(null);
                 setLoading(false);
             } else {
-                setError("Calculation not found.");
+                setError("ຂໍອະໄພ, ບໍ່ພົບຂໍ້ມູນການຄຳນວນນີ້ໃນລະບົບຂອງທ່ານ.");
                 setLoading(false);
             }
         }, (err) => {
             console.error("Error listening to document:", err);
-            setError("Failed to load calculation data.");
+            setError("ເກີດຂໍ້ຜິດພາດໃນການເຊື່ອມຕໍ່ຂໍ້ມູນ.");
             setLoading(false);
         });
 
         return () => unsubscribe();
-    }, [calculationId, isClient, firestore, user, isUserLoading]);
+    }, [calculationId, isClient, firestore, user]);
     
     const deepCopyAndConvertDates = (obj: any) => {
         if (obj === null || typeof obj !== 'object') {
@@ -223,7 +224,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         return newObj;
     };
 
-    // --- Total Calculation Memos (Move up for handleDataChange access) ---
+    // --- Total Calculation Memos ---
     const accommodationTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
         allCosts.accommodations?.forEach(acc => {
@@ -332,7 +333,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     }, [totalsByCategory]);
     
     const handleDataChange = useCallback(async () => {
-        if (!calculationId || loading || !firestore || !user) return;
+        if (!calculationId || !firestore || !user) return;
         
         const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
@@ -343,7 +344,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
             exchangeRates: exchangeRates,
             profitPercentage: profitPercentage,
             savedAt: serverTimestamp(),
-            totals: grandTotals, // Denormalize totals for the list view
+            totals: grandTotals,
         };
 
         try {
@@ -353,7 +354,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
             throw e;
         }
 
-    }, [calculationId, tourInfo, allCosts, loading, exchangeRates, profitPercentage, firestore, user, grandTotals]);
+    }, [calculationId, tourInfo, allCosts, exchangeRates, profitPercentage, firestore, user, grandTotals]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -461,18 +462,28 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         );
     };
 
-    if (loading || isUserLoading || !isClient) {
+    if (isUserLoading || (loading && !error)) {
         return (
             <div className="flex flex-col items-center justify-center h-screen bg-background">
-                <p className="text-2xl font-semibold mb-4">ກຳລັງໂຫຼດຂໍ້ມູນ...</p>
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-xl font-semibold text-muted-foreground">ກຳລັງກວດສອບສິດ ແລະ ໂຫຼດຂໍ້ມູນ...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-           <div className="flex items-center justify-center h-screen bg-background text-destructive">
-               <p className="text-xl font-bold">{error}</p>
+           <div className="flex flex-col items-center justify-center h-screen bg-background p-4 text-center">
+               <div className="bg-destructive/10 p-6 rounded-full mb-6">
+                   <FileText className="h-12 w-12 text-destructive" />
+               </div>
+               <h2 className="text-2xl font-bold text-destructive mb-2">ບໍ່ພົບຂໍ້ມູນ</h2>
+               <p className="text-muted-foreground mb-8 max-w-md">{error}</p>
+               <Button asChild variant="outline">
+                   <Link href="/tour/cost-calculator">
+                       <ArrowLeft className="mr-2 h-4 w-4" /> ກັບໄປໜ້າລາຍການ
+                   </Link>
+               </Button>
            </div>
         );
    }
