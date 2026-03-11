@@ -20,7 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ExchangeRateCard, type ExchangeRates } from '@/components/tour/ExchangeRateCard';
 import { doc, setDoc, serverTimestamp, Timestamp, deleteDoc, onSnapshot } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser, useAuth, initiateAnonymousSignIn } from '@/firebase';
 import { toDateSafe } from '@/lib/timestamp';
 import { useDebouncedCallback } from 'use-debounce';
 
@@ -84,6 +84,7 @@ export interface SavedCalculation {
     allCosts: TourCosts;
     exchangeRates?: ExchangeRates;
     profitPercentage?: number;
+    ownerId: string;
 }
 
 const initialRates: ExchangeRates = {
@@ -111,12 +112,21 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     const router = useRouter();
     const params = useParams();
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const auth = useAuth();
     const calculationId = params.id as string;
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
+
+    // Ensure user is signed in anonymously if not already
+    useEffect(() => {
+        if (!isUserLoading && !user && auth) {
+            initiateAnonymousSignIn(auth);
+        }
+    }, [user, isUserLoading, auth]);
     
     const [tourInfo, setTourInfo] = useState<TourInfo>(initialCalculation?.tourInfo || {
         mouContact: '', groupCode: '', destinationCountry: '', program: '',
@@ -138,10 +148,10 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     const [isSavingRates, setIsSavingRates] = useState(false);
 
     const debouncedSaveRates = useDebouncedCallback(async (rates: ExchangeRates) => {
-        if (!calculationId || !firestore) return;
+        if (!calculationId || !firestore || !user) return;
         setIsSavingRates(true);
         try {
-            const calculationDocRef = doc(firestore, 'tourCalculations', calculationId);
+            const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
             await setDoc(calculationDocRef, { exchangeRates: rates }, { merge: true });
         } catch (error) {
             console.error("Failed to save exchange rates:", error);
@@ -156,12 +166,12 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     };
 
     useEffect(() => {
-        if (!isClient || !calculationId || calculationId === 'default' || !firestore) {
-            setLoading(false);
+        if (!isClient || !calculationId || calculationId === 'default' || !firestore || !user) {
+            if (isClient && !isUserLoading && !user) setLoading(false);
             return;
         };
 
-        const docRef = doc(firestore, 'tourCalculations', calculationId);
+        const docRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
         const unsubscribe = onSnapshot(docRef, (snapshot) => {
             if (snapshot.exists()) {
@@ -188,7 +198,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         });
 
         return () => unsubscribe();
-    }, [calculationId, isClient, firestore]);
+    }, [calculationId, isClient, firestore, user, isUserLoading]);
     
     const deepCopyAndConvertDates = (obj: any) => {
         if (obj === null || typeof obj !== 'object') {
@@ -213,11 +223,12 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     };
     
     const handleDataChange = useCallback(async () => {
-        if (!calculationId || loading || !firestore) return;
+        if (!calculationId || loading || !firestore || !user) return;
         
-        const calculationDocRef = doc(firestore, 'tourCalculations', calculationId);
+        const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
         const dataToSave: Partial<SavedCalculation> = {
+            ownerId: user.uid,
             tourInfo: deepCopyAndConvertDates(tourInfo),
             allCosts: deepCopyAndConvertDates(allCosts),
             exchangeRates: exchangeRates,
@@ -232,7 +243,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
             throw e;
         }
 
-    }, [calculationId, tourInfo, allCosts, loading, exchangeRates, profitPercentage, firestore]);
+    }, [calculationId, tourInfo, allCosts, loading, exchangeRates, profitPercentage, firestore, user]);
 
     const toggleItemVisibility = (itemId: string) => {
         setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
@@ -245,15 +256,17 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     const handleSaveCalculation = async () => {
         try {
             await handleDataChange();
+            alert("ບັນທຶກຂໍ້ມູນສຳເລັດ!");
         } catch (e) {
             console.error("Error saving:", e);
+            alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ.");
         }
     };
     
     const handleDeleteCalculation = async () => {
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            if (!firestore) return;
-            const calculationDocRef = doc(firestore, 'tourCalculations', calculationId);
+            if (!firestore || !user) return;
+            const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
             await deleteDoc(calculationDocRef);
             router.push('/tour/cost-calculator');
         }
@@ -446,18 +459,18 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         );
     };
 
-    if (loading || !isClient) {
+    if (loading || isUserLoading || !isClient) {
         return (
-            <div className="flex flex-col items-center justify-center h-screen">
-                <p className="text-2xl font-semibold mb-4">ກຳລັງໂຫຼດ...</p>
+            <div className="flex flex-col items-center justify-center h-screen bg-background">
+                <p className="text-2xl font-semibold mb-4">ກຳລັງໂຫຼດຂໍ້ມູນ...</p>
             </div>
         );
     }
 
     if (error) {
         return (
-           <div className="flex items-center justify-center h-screen">
-               <p>{error}</p>
+           <div className="flex items-center justify-center h-screen bg-background text-destructive">
+               <p className="text-xl font-bold">{error}</p>
            </div>
         );
    }

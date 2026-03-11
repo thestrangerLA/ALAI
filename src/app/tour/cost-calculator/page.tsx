@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Calculator, MoreHorizontal, Search, ArrowLeft } from 'lucide-react';
 import { collection, query, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { useFirestore, useUser, useAuth, initiateAnonymousSignIn } from '@/firebase';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toDateSafe } from '@/lib/timestamp';
 
@@ -32,22 +32,33 @@ export interface SavedCalculation {
         travelerInfo: string;
     };
     allCosts: any;
+    ownerId: string;
 }
 
 export default function TourCostCalculatorListPage() {
     const router = useRouter();
     const firestore = useFirestore();
+    const { user, isUserLoading } = useUser();
+    const auth = useAuth();
 
     const [savedCalculations, setSavedCalculations] = useState<SavedCalculation[]>([]);
     const [calculationsLoading, setCalculationsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedMonth, setSelectedMonth] = useState<string>('all');
 
+    // Ensure user is signed in anonymously if not already
     useEffect(() => {
-        if (!firestore) return;
+        if (!isUserLoading && !user && auth) {
+            initiateAnonymousSignIn(auth);
+        }
+    }, [user, isUserLoading, auth]);
+
+    useEffect(() => {
+        if (!firestore || !user) return;
 
         setCalculationsLoading(true);
-        const calculationsColRef = collection(firestore, 'tourCalculations');
+        // Path must match security rules: /users/{userId}/tourCalculations/{id}
+        const calculationsColRef = collection(firestore, 'users', user.uid, 'tourCalculations');
         const q = query(calculationsColRef, orderBy('savedAt', 'desc'));
 
         const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -60,7 +71,7 @@ export default function TourCostCalculatorListPage() {
         });
 
         return () => unsubscribe();
-    }, [firestore]);
+    }, [firestore, user]);
 
     const availableMonths = useMemo(() => {
         const monthSet = new Set<string>();
@@ -98,10 +109,14 @@ export default function TourCostCalculatorListPage() {
     }, [savedCalculations, searchQuery, selectedMonth]);
 
     const handleAddNewCalculation = async () => {
-        if (!firestore) return;
+        if (!firestore || !user) {
+            alert("ກະລຸນາລໍຖ້າການເຊື່ອມຕໍ່ລະບົບ...");
+            return;
+        }
 
         try {
             const newCalculationData = {
+                ownerId: user.uid, // Required by security rules
                 savedAt: serverTimestamp(),
                 tourInfo: {
                     mouContact: '',
@@ -125,24 +140,25 @@ export default function TourCostCalculatorListPage() {
                     guides: [],
                     documents: [],
                     overseasPackages: [],
+                    activities: []
                 },
             };
-            const calculationsColRef = collection(firestore, 'tourCalculations');
+            const calculationsColRef = collection(firestore, 'users', user.uid, 'tourCalculations');
             const newDocRef = await addDoc(calculationsColRef, newCalculationData);
             router.push(`/tour/cost-calculator/${newDocRef.id}`);
         } catch (error) {
             console.error("Error adding new calculation:", error);
-            alert("ເກີດຂໍ້ຜິດພາດໃນການສ້າງຂໍ້ມູນໃໝ່.");
+            alert("ເກີດຂໍ້ຜິດພາດໃນການສ້າງຂໍ້ມູນໃໝ່. ກະລຸນາລອງໃໝ່ອີກຄັ້ງ.");
         }
     };
     
     const handleDeleteCalculation = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
-        if (!firestore) return;
+        if (!firestore || !user) return;
 
         if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
             try {
-                const docRef = doc(firestore, 'tourCalculations', id);
+                const docRef = doc(firestore, 'users', user.uid, 'tourCalculations', id);
                 await deleteDoc(docRef);
             } catch (error) {
                 console.error("Error deleting calculation:", error);
@@ -150,6 +166,14 @@ export default function TourCostCalculatorListPage() {
             }
         }
     };
+
+    if (isUserLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen bg-[#f0f9f1]">
+                <p className="text-lg">ກຳລັງກວດສອບສິດການເຂົ້າເຖິງ...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="flex min-h-screen w-full flex-col bg-[#f0f9f1]">
