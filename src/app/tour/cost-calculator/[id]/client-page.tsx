@@ -85,6 +85,7 @@ export interface SavedCalculation {
     exchangeRates?: ExchangeRates;
     profitPercentage?: number;
     ownerId: string;
+    totals?: Record<string, number>;
 }
 
 const initialRates: ExchangeRates = {
@@ -221,117 +222,8 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         }
         return newObj;
     };
-    
-    const handleDataChange = useCallback(async () => {
-        if (!calculationId || loading || !firestore || !user) return;
-        
-        const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
 
-        const dataToSave: Partial<SavedCalculation> = {
-            ownerId: user.uid,
-            tourInfo: deepCopyAndConvertDates(tourInfo),
-            allCosts: deepCopyAndConvertDates(allCosts),
-            exchangeRates: exchangeRates,
-            profitPercentage: profitPercentage,
-            savedAt: serverTimestamp(),
-        };
-
-        try {
-            await setDoc(calculationDocRef, dataToSave, { merge: true });
-        } catch (e) {
-            console.error("Error saving document: ", e);
-            throw e;
-        }
-
-    }, [calculationId, tourInfo, allCosts, loading, exchangeRates, profitPercentage, firestore, user]);
-
-    const toggleItemVisibility = (itemId: string) => {
-        setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
-    };
-
-    const updateCosts = useCallback((category: keyof TourCosts, data: any[]) => {
-        setAllCosts(prev => ({ ...prev, [category]: data }));
-    }, []);
-    
-    const handleSaveCalculation = async () => {
-        try {
-            await handleDataChange();
-            alert("ບັນທຶກຂໍ້ມູນສຳເລັດ!");
-        } catch (e) {
-            console.error("Error saving:", e);
-            alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ.");
-        }
-    };
-    
-    const handleDeleteCalculation = async () => {
-        if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
-            if (!firestore || !user) return;
-            const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
-            await deleteDoc(calculationDocRef);
-            router.push('/tour/cost-calculator');
-        }
-    };
-
-    // Generic CRUD operations
-    const addItem = <T extends keyof TourCosts>(category: T, newItem: any) => {
-        const currentItems = allCosts[category] as any[] || [];
-        updateCosts(category, [...currentItems, newItem]);
-    };
-
-    const updateItem = <T extends keyof TourCosts>(category: T, itemId: string, field: string, value: any) => {
-        const currentItems = allCosts[category] as any[];
-        const updatedItems = currentItems.map(item => item.id === itemId ? { ...item, [field]: value } : item);
-        updateCosts(category, updatedItems as TourCosts[T]);
-    };
-    
-    const deleteItem = <T extends keyof TourCosts>(category: T, itemId: string) => {
-        const updatedItems = (allCosts[category] || []).filter((item: any) => item.id !== itemId);
-        updateCosts(category, updatedItems as TourCosts[T]);
-    };
-    
-    // Specific Component Logic
-    const addAccommodation = () => addItem('accommodations', { id: uuidv4(), name: '', type: 'hotel', rooms: [{ id: uuidv4(), type: 'ເຕົາດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' }] });
-    const addRoom = (accId: string) => {
-        const accommodations = allCosts.accommodations.map(acc => {
-            if (acc.id === accId) {
-                const newRoom = { id: uuidv4(), type: 'ເຕົາດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' };
-                return { ...acc, rooms: [...acc.rooms, newRoom] };
-            }
-            return acc;
-        });
-        updateCosts('accommodations', accommodations);
-    };
-    const updateRoom = (accId: string, roomId: string, field: keyof Room, value: any) => {
-         const accommodations = allCosts.accommodations.map(acc => {
-            if (acc.id === accId) {
-                const updatedRooms = acc.rooms.map(room => room.id === roomId ? { ...room, [field]: value } : room);
-                return { ...acc, rooms: updatedRooms };
-            }
-            return acc;
-        });
-        updateCosts('accommodations', accommodations);
-    };
-    const deleteRoom = (accId: string, roomId: string) => {
-         const accommodations = allCosts.accommodations.map(acc => {
-            if (acc.id === accId) {
-                return { ...acc, rooms: acc.rooms.filter(room => room.id !== roomId) };
-            }
-            return acc;
-        });
-        updateCosts('accommodations', accommodations);
-    };
-
-    const addTrip = () => addItem('trips', { id: uuidv4(), location: '', route: '', vehicleType: 'ລົດຕູ້ທຳມະດາ', numVehicles: 1, numDays: 1, pricePerVehicle: 0, currency: 'USD' });
-    const addFlight = () => addItem('flights', { id: uuidv4(), from: '', to: '', departureTime: '08:00', pricePerPerson: 0, numPeople: 1, currency: 'USD' });
-    const addTrainTicket = () => addItem('trainTickets', { id: uuidv4(), from: '', to: '', departureTime: '08:00', ticketClass: '', numTickets: 1, pricePerTicket: 0, currency: 'LAK' });
-    const addEntranceFee = () => addItem('entranceFees', { id: uuidv4(), locationName: '', pax: 1, numLocations: 1, price: 0, currency: 'LAK' });
-    const addMealCost = () => addItem('meals', { id: uuidv4(), name: '', pax: 1, breakfast: 0, lunch: 0, dinner: 0, pricePerMeal: 0, currency: 'LAK' });
-    const addGuideFee = () => addItem('guides', { id: uuidv4(), guideName: '', numGuides: 1, numDays: 1, pricePerDay: 0, currency: 'LAK' });
-    const addDocumentFee = () => addItem('documents', { id: uuidv4(), documentName: '', pax: 1, price: 0, currency: 'LAK' });
-    const addOverseasPackage = () => addItem('overseasPackages', { id: uuidv4(), name: '', priceUSD: 0, priceTHB: 0, priceCNY: 0 });
-    const addActivity = () => addItem('activities', { id: uuidv4(), name: '', pax: 1, price: 0, currency: 'LAK' });
-
-    // --- Total Calculation Memos ---
+    // --- Total Calculation Memos (Move up for handleDataChange access) ---
     const accommodationTotals = useMemo(() => {
         const totals: Record<Currency, number> = { USD: 0, THB: 0, LAK: 0, CNY: 0 };
         allCosts.accommodations?.forEach(acc => {
@@ -439,6 +331,116 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         return totals;
     }, [totalsByCategory]);
     
+    const handleDataChange = useCallback(async () => {
+        if (!calculationId || loading || !firestore || !user) return;
+        
+        const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
+
+        const dataToSave: Partial<SavedCalculation> = {
+            ownerId: user.uid,
+            tourInfo: deepCopyAndConvertDates(tourInfo),
+            allCosts: deepCopyAndConvertDates(allCosts),
+            exchangeRates: exchangeRates,
+            profitPercentage: profitPercentage,
+            savedAt: serverTimestamp(),
+            totals: grandTotals, // Denormalize totals for the list view
+        };
+
+        try {
+            await setDoc(calculationDocRef, dataToSave, { merge: true });
+        } catch (e) {
+            console.error("Error saving document: ", e);
+            throw e;
+        }
+
+    }, [calculationId, tourInfo, allCosts, loading, exchangeRates, profitPercentage, firestore, user, grandTotals]);
+
+    const toggleItemVisibility = (itemId: string) => {
+        setItemVisibility(prev => ({ ...prev, [itemId]: !prev[itemId] }));
+    };
+
+    const updateCosts = useCallback((category: keyof TourCosts, data: any[]) => {
+        setAllCosts(prev => ({ ...prev, [category]: data }));
+    }, []);
+    
+    const handleSaveCalculation = async () => {
+        try {
+            await handleDataChange();
+            alert("ບັນທຶກຂໍ້ມູນສຳເລັດ!");
+        } catch (e) {
+            console.error("Error saving:", e);
+            alert("ເກີດຂໍ້ຜິດພາດໃນການບັນທຶກ.");
+        }
+    };
+    
+    const handleDeleteCalculation = async () => {
+        if (window.confirm("ທ່ານແນ່ໃຈບໍ່ວ່າຕ້ອງການລຶບຂໍ້ມູນການຄຳນວນນີ້?")) {
+            if (!firestore || !user) return;
+            const calculationDocRef = doc(firestore, 'users', user.uid, 'tourCalculations', calculationId);
+            await deleteDoc(calculationDocRef);
+            router.push('/tour/cost-calculator');
+        }
+    };
+
+    // Generic CRUD operations
+    const addItem = <T extends keyof TourCosts>(category: T, newItem: any) => {
+        const currentItems = allCosts[category] as any[] || [];
+        updateCosts(category, [...currentItems, newItem]);
+    };
+
+    const updateItem = <T extends keyof TourCosts>(category: T, itemId: string, field: string, value: any) => {
+        const currentItems = allCosts[category] as any[];
+        const updatedItems = currentItems.map(item => item.id === itemId ? { ...item, [field]: value } : item);
+        updateCosts(category, updatedItems as TourCosts[T]);
+    };
+    
+    const deleteItem = <T extends keyof TourCosts>(category: T, itemId: string) => {
+        const updatedItems = (allCosts[category] || []).filter((item: any) => item.id !== itemId);
+        updateCosts(category, updatedItems as TourCosts[T]);
+    };
+    
+    // Specific Component Logic
+    const addAccommodation = () => addItem('accommodations', { id: uuidv4(), name: '', type: 'hotel', rooms: [{ id: uuidv4(), type: 'ເຕົາດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' }] });
+    const addRoom = (accId: string) => {
+        const accommodations = allCosts.accommodations.map(acc => {
+            if (acc.id === accId) {
+                const newRoom = { id: uuidv4(), type: 'ເຕົາດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' };
+                return { ...acc, rooms: [...acc.rooms, newRoom] };
+            }
+            return acc;
+        });
+        updateCosts('accommodations', accommodations);
+    };
+    const updateRoom = (accId: string, roomId: string, field: keyof Room, value: any) => {
+         const accommodations = allCosts.accommodations.map(acc => {
+            if (acc.id === accId) {
+                const updatedRooms = acc.rooms.map(room => room.id === roomId ? { ...room, [field]: value } : room);
+                return { ...acc, rooms: updatedRooms };
+            }
+            return acc;
+        });
+        updateCosts('accommodations', accommodations);
+    };
+    const deleteRoom = (accId: string, roomId: string) => {
+         const accommodations = allCosts.accommodations.map(acc => {
+            if (acc.id === accId) {
+                return { ...acc, rooms: acc.rooms.filter(room => room.id !== roomId) };
+            }
+            return acc;
+        });
+        updateCosts('accommodations', accommodations);
+    };
+
+    const addTrip = () => addItem('trips', { id: uuidv4(), location: '', route: '', vehicleType: 'ລົດຕູ້ທຳມະດາ', numVehicles: 1, numDays: 1, pricePerVehicle: 0, currency: 'USD' });
+    const addFlight = () => addItem('flights', { id: uuidv4(), from: '', to: '', departureTime: '08:00', pricePerPerson: 0, numPeople: 1, currency: 'USD' });
+    const addTrainTicket = () => addItem('trainTickets', { id: uuidv4(), from: '', to: '', departureTime: '08:00', ticketClass: '', numTickets: 1, pricePerTicket: 0, currency: 'LAK' });
+    const addEntranceFee = () => addItem('entranceFees', { id: uuidv4(), locationName: '', pax: 1, numLocations: 1, price: 0, currency: 'LAK' });
+    const addMealCost = () => addItem('meals', { id: uuidv4(), name: '', pax: 1, breakfast: 0, lunch: 0, dinner: 0, pricePerMeal: 0, currency: 'LAK' });
+    const addGuideFee = () => addItem('guides', { id: uuidv4(), guideName: '', numGuides: 1, numDays: 1, pricePerDay: 0, currency: 'LAK' });
+    const addDocumentFee = () => addItem('documents', { id: uuidv4(), documentName: '', pax: 1, price: 0, currency: 'LAK' });
+    const addOverseasPackage = () => addItem('overseasPackages', { id: uuidv4(), name: '', priceUSD: 0, priceTHB: 0, priceCNY: 0 });
+    const addActivity = () => addItem('activities', { id: uuidv4(), name: '', pax: 1, price: 0, currency: 'LAK' });
+
     const handlePrint = () => {
         window.print();
     };

@@ -33,6 +33,7 @@ export interface SavedCalculation {
     };
     allCosts: any;
     ownerId: string;
+    totals?: Record<string, number>;
 }
 
 export default function TourCostCalculatorListPage() {
@@ -142,6 +143,7 @@ export default function TourCostCalculatorListPage() {
                     overseasPackages: [],
                     activities: []
                 },
+                totals: { USD: 0, THB: 0, LAK: 0, CNY: 0 }
             };
             const calculationsColRef = collection(firestore, 'users', user.uid, 'tourCalculations');
             const newDocRef = await addDoc(calculationsColRef, newCalculationData);
@@ -165,6 +167,13 @@ export default function TourCostCalculatorListPage() {
                 alert("ເກີດຂໍ້ຜິດພາດໃນການລຶບຂໍ້ມູນ.");
             }
         }
+    };
+
+    const formatCurrency = (totals?: Record<string, number>) => {
+        if (!totals) return '-';
+        const entries = Object.entries(totals).filter(([, v]) => v > 0);
+        if (entries.length === 0) return '0';
+        return entries.map(([cur, val]) => `${cur} ${new Intl.NumberFormat('en-US').format(val)}`).join(' | ');
     };
 
     if (isUserLoading) {
@@ -236,6 +245,7 @@ export default function TourCostCalculatorListPage() {
                                             <TableHead className="font-bold text-gray-500 text-base py-5">Group Code</TableHead>
                                             <TableHead className="font-bold text-gray-500 text-base py-5">ໂປຣແກຣມ</TableHead>
                                             <TableHead className="font-bold text-gray-500 text-base py-5">ຈຸດໝາຍ</TableHead>
+                                            <TableHead className="font-bold text-gray-500 text-base py-5">ຍອດລວມທັງໝົດ</TableHead>
                                             <TableHead className="font-bold text-gray-500 text-base py-5 text-center">ຈຳນວນຄົນ</TableHead>
                                             <TableHead className="font-bold text-gray-500 text-base py-5 text-right pr-8">ການກະທຳ</TableHead>
                                         </TableRow>
@@ -249,6 +259,7 @@ export default function TourCostCalculatorListPage() {
                                                 <TableCell className="py-5 font-bold text-base text-gray-800">{calc.tourInfo?.groupCode}</TableCell>
                                                 <TableCell className="py-5 text-base">{calc.tourInfo?.program || '-'}</TableCell>
                                                 <TableCell className="py-5 text-base">{calc.tourInfo?.destinationCountry || '-'}</TableCell>
+                                                <TableCell className="py-5 text-base font-semibold text-primary">{formatCurrency(calc.totals)}</TableCell>
                                                 <TableCell className="py-5 text-center text-base">{calc.tourInfo?.numPeople}</TableCell>
                                                 <TableCell className="py-5 text-right pr-8" onClick={(e) => e.stopPropagation()}>
                                                      <DropdownMenu>
@@ -269,7 +280,7 @@ export default function TourCostCalculatorListPage() {
                                             );
                                         }) : (
                                             <TableRow>
-                                                <TableCell colSpan={6} className="h-64 text-center text-muted-foreground">
+                                                <TableCell colSpan={7} className="h-64 text-center text-muted-foreground">
                                                     ບໍ່ພົບຂໍ້ມູນການຄຳນວນ.
                                                 </TableCell>
                                             </TableRow>
