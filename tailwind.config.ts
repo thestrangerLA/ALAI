@@ -1,4 +1,3 @@
-
 import type { Config } from "tailwindcss"
 
 const config = {
@@ -20,7 +19,7 @@ const config = {
     },
     extend: {
       fontFamily: {
-        sans: ["var(--font-sans-lao)", "sans-serif"],
+        sans: ["var(--font-noto-sans-lao)", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
