@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Calculator, BedDouble, Truck, Plane, TrainFront, Camera, UtensilsCrossed, Users, FileText, Earth, Bike } from 'lucide-react';
+import { Calculator, BedDouble, Truck, Plane, TrainFront, Camera, UtensilsCrossed, Users, FileText, Earth, Ticket, Bike } from 'lucide-react';
 
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 

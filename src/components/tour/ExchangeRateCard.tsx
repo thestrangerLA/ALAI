@@ -55,7 +55,6 @@ export function ExchangeRateCard({
         onRatesChange(newRates);
         setIsSaving(true);
         setTimeout(() => {
-             toast({ title: "ບັນທຶກອັດຕາແລກປ່ຽນສຳເລັດ" });
              setIsSaving(false);
         }, 1500);
     }, 1500);
@@ -216,10 +215,10 @@ export function ExchangeRateCard({
                 </Card>
             </div>
             
-            <Card>
-                <CardHeader>
-                    <CardTitle>ປ່ຽນເປັນສະກຸນເງິນທີ່ຕ້ອງການ</CardTitle>
-                    <div className="grid md:grid-cols-2 gap-4 items-end pt-4">
+            <Card className="print:shadow-none print:border">
+                <CardHeader className="print:p-2">
+                    <CardTitle className="print:text-sm print:font-bold">ສະຫຼຸບກຳໄລໃນສະກຸນເງິນທີ່ຕ້ອງການ</CardTitle>
+                    <div className="grid md:grid-cols-2 gap-4 items-end pt-4 print:hidden">
                         <div>
                             <Label htmlFor="target-currency">ເລືອກສະກຸນເງິນ</Label>
                             <Select value={targetCurrency} onValueChange={(v: Currency) => setTargetCurrency(v)}>
@@ -251,46 +250,32 @@ export function ExchangeRateCard({
                             </div>
                         </div>
                     </div>
-                    {showProfitPercentageInput && (
-                         <div className="grid md:grid-cols-2 gap-4 items-end pt-4">
-                             <div>
-                                <Label htmlFor="profit-percentage">ກຳໄລ (%)</Label>
-                                <Input
-                                    id="profit-percentage"
-                                    type="number"
-                                    value={profitPercentage || ''}
-                                    onChange={(e) => onProfitPercentageChange(Number(e.target.value))}
-                                    placeholder="20"
-                                />
-                             </div>
-                         </div>
-                    )}
                 </CardHeader>
-                <CardContent className="grid md:grid-cols-3 gap-4">
-                    <Card className="bg-gray-100 border-gray-200">
-                        <CardHeader className="pb-2">
-                             <CardTitle className="text-sm font-medium">ຕົ້ນທຶນລວມ ({targetCurrency})</CardTitle>
+                <CardContent className="grid md:grid-cols-3 gap-4 print:grid-cols-3 print:p-2">
+                    <Card className="bg-gray-100 border-gray-200 print:shadow-none">
+                        <CardHeader className="pb-2 print:p-1">
+                             <CardTitle className="text-sm font-medium print:text-xs">ຕົ້ນທຶນລວມ ({targetCurrency})</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                             <p className="text-2xl font-bold">{formatNumber(convertedCost)} <span className="text-sm font-medium">{targetCurrency}</span></p>
+                        <CardContent className="print:p-1">
+                             <p className="text-2xl font-bold print:text-sm">{formatNumber(convertedCost)}</p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-green-50 border-green-200">
-                        <CardHeader className="pb-2">
-                             <CardTitle className="text-sm font-medium">
+                    <Card className="bg-green-50 border-green-200 print:shadow-none">
+                        <CardHeader className="pb-2 print:p-1">
+                             <CardTitle className="text-sm font-medium print:text-xs">
                                 ລາຍຮັບ ({targetCurrency})
                              </CardTitle>
                         </CardHeader>
-                        <CardContent>
-                             <p className={`text-2xl font-bold text-green-600`}>{formatNumber(sellingPrice)} <span className="text-sm font-medium">{targetCurrency}</span></p>
+                        <CardContent className="print:p-1">
+                             <p className={`text-2xl font-bold text-green-600 print:text-sm`}>{formatNumber(sellingPrice)}</p>
                         </CardContent>
                     </Card>
-                    <Card className="bg-orange-50 border-orange-200">
-                        <CardHeader className="pb-2">
-                             <CardTitle className="text-sm font-medium">ກຳໄລ ({showProfitPercentageInput ? `${profitPercentage}%` : 'ລາຍຮັບ - ຕົ້ນທຶນ'})</CardTitle>
+                    <Card className="bg-blue-50 border-blue-200 print:shadow-none">
+                        <CardHeader className="pb-2 print:p-1">
+                             <CardTitle className="text-sm font-medium print:text-xs">ກຳໄລສຸດທິ ({targetCurrency})</CardTitle>
                         </CardHeader>
-                        <CardContent>
-                             <p className={`text-2xl font-bold ${profit >= 0 ? 'text-orange-600' : 'text-red-600'}`}>{formatNumber(profit)} <span className="text-sm font-medium">{targetCurrency}</span></p>
+                        <CardContent className="print:p-1">
+                             <p className={`text-2xl font-bold ${profit >= 0 ? 'text-blue-600' : 'text-red-600'} print:text-sm`}>{formatNumber(profit)}</p>
                         </CardContent>
                     </Card>
                 </CardContent>
