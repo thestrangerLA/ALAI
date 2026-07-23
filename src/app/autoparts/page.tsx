@@ -5,7 +5,6 @@ import { ArrowLeft, Landmark, Package, FilePieChart, Wrench, Truck, HandCoins, U
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
 
-
 export default function AutoPartsPage() {
   return (
     <div className="flex min-h-screen w-full flex-col bg-muted/40">
