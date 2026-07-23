@@ -1,4 +1,3 @@
-
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -74,7 +73,7 @@ export default function AutoPartsPage() {
                   ຕິດຕາມລາຍການເກັບເງິນປາຍທາງ (COD)
                 </p>
               </CardContent>
-            </Link>
+            </Card>
           </Link>
            <Link href="/autoparts/reports">
             <Card className="hover:shadow-lg transition-shadow duration-300 cursor-pointer h-full">

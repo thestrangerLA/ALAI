@@ -11,11 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-<<<<<<< HEAD
 import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer, Earth, Bike } from "lucide-react";
-=======
-import { ArrowLeft, Save, Trash2, MapPin, Calendar as CalendarIcon, BedDouble, Truck, Plane, TrainFront, PlusCircle, Camera, UtensilsCrossed, Users, FileText, Clock, Eye, EyeOff, Printer, Earth, Ticket } from "lucide-react";
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
 import { TotalCostCard } from '@/components/tour/TotalCostCard';
@@ -26,16 +22,13 @@ import { ExchangeRateCard, ExchangeRates } from '@/components/tour/ExchangeRateC
 import { doc, setDoc, serverTimestamp, Timestamp, deleteDoc, getFirestore, collection, getDocs, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toDateSafe } from '@/lib/timestamp';
-<<<<<<< HEAD
-=======
 import { useDebouncedCallback } from 'use-debounce';
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 
 // Types
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
 const currencySymbols: Record<Currency, string> = {
-    USD: '$ (ດอลลár)',
+    USD: '$ (ດອນລ່າ)',
     THB: '฿ (ບາດ)',
     LAK: '₭ (ກີບ)',
     CNY: '¥ (ຢວນ)',
@@ -56,11 +49,7 @@ type MealCost = { id: string; name: string; pax: number; breakfast: number; lunc
 type GuideFee = { id: string; guideName: string; numGuides: number; numDays: number; pricePerDay: number; currency: Currency; };
 type DocumentFee = { id: string; documentName: string; pax: number; price: number; currency: Currency; };
 type OverseasPackage = { id: string; name: string; priceUSD: number; priceTHB: number; priceCNY: number; };
-<<<<<<< HEAD
 type Activity = { id: string; name: string; pax: number; price: number; currency: Currency; };
-=======
-type ActivityCost = { id: string; name: string; pax: number; price: number; currency: Currency; };
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 
 interface TourInfo {
     mouContact: string;
@@ -85,11 +74,7 @@ interface TourCosts {
     guides: GuideFee[];
     documents: DocumentFee[];
     overseasPackages: OverseasPackage[];
-<<<<<<< HEAD
     activities: Activity[];
-=======
-    activities: ActivityCost[];
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 }
 
 export interface SavedCalculation {
@@ -139,14 +124,9 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
         numDays: 1, numNights: 0, numPeople: 1, travelerInfo: ''
     });
 
-    const [allCosts, setAllCosts] = useState<TourCosts>({
+    const [allCosts, setAllCosts] = useState<TourCosts>(initialCalculation?.allCosts || {
         accommodations: [], trips: [], flights: [], trainTickets: [],
-<<<<<<< HEAD
-        entranceFees: [], meals: [], guides: [], documents: [], overseasPackages: [], activities: [],
-        ...(initialCalculation?.allCosts || {})
-=======
         entranceFees: [], meals: [], guides: [], documents: [], overseasPackages: [], activities: []
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
     });
 
     const [exchangeRates, setExchangeRates] = useState<ExchangeRates>(initialCalculation?.exchangeRates || initialRates);
@@ -195,14 +175,9 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                     mouContact: '', groupCode: '', destinationCountry: '', program: '',
                     numDays: 1, numNights: 0, numPeople: 1, travelerInfo: ''
                 });
-                setAllCosts({
+                setAllCosts(data.allCosts || {
                     accommodations: [], trips: [], flights: [], trainTickets: [],
-<<<<<<< HEAD
-                    entranceFees: [], meals: [], guides: [], documents: [], overseasPackages: [], activities: [],
-                    ...(data.allCosts || {})
-=======
                     entranceFees: [], meals: [], guides: [], documents: [], overseasPackages: [], activities: []
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
                 });
                 if (data.exchangeRates) setExchangeRates(data.exchangeRates);
                 if (data.profitPercentage !== undefined) setProfitPercentage(data.profitPercentage);
@@ -278,7 +253,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
             await handleDataChange();
             toast({
                 title: "ບັນທຶກການຄຳນວນສຳເລັດ",
-                description: `ຂໍ້ມູນ ${tourInfo.groupCode || 'ບໍ່ມີຊື່'} ໄດ້ຖືກບັນທຶກແລ້ວ.`,
+                description: `ຂໍ້ມູນ ${tourInfo.groupCode || 'ບໍ່ມີຊື່'} ໄດ້ຖືກບັນທຶກແແລ້ວ.`,
             });
         } catch (e) {
             toast({
@@ -320,11 +295,11 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     };
     
     // Specific Component Logic
-    const addAccommodation = () => addItem('accommodations', { id: uuidv4(), name: '', type: 'hotel', rooms: [{ id: uuidv4(), type: 'เตียงเดี่ยว', numRooms: 1, numNights: 1, price: 0, currency: 'USD' }] });
+    const addAccommodation = () => addItem('accommodations', { id: uuidv4(), name: '', type: 'hotel', rooms: [{ id: uuidv4(), type: 'ເຕຽງດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' }] });
     const addRoom = (accId: string) => {
         const accommodations = allCosts.accommodations.map(acc => {
             if (acc.id === accId) {
-                const newRoom = { id: uuidv4(), type: 'เตียงเดี่ยว', numRooms: 1, numNights: 1, price: 0, currency: 'USD' };
+                const newRoom = { id: uuidv4(), type: 'ເຕຽງດ່ຽວ', numRooms: 1, numNights: 1, price: 0, currency: 'USD' };
                 return { ...acc, rooms: [...acc.rooms, newRoom] };
             }
             return acc;
@@ -356,10 +331,10 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     const addTrainTicket = () => addItem('trainTickets', { id: uuidv4(), from: '', to: '', departureTime: '08:00', ticketClass: '', numTickets: 1, pricePerTicket: 0, currency: 'LAK' });
     const addEntranceFee = () => addItem('entranceFees', { id: uuidv4(), locationName: '', pax: 1, numLocations: 1, price: 0, currency: 'LAK' });
     const addMealCost = () => addItem('meals', { id: uuidv4(), name: '', pax: 1, breakfast: 0, lunch: 0, dinner: 0, pricePerMeal: 0, currency: 'LAK' });
+    const addActivity = () => addItem('activities', { id: uuidv4(), name: '', pax: 1, price: 0, currency: 'LAK' });
     const addGuideFee = () => addItem('guides', { id: uuidv4(), guideName: '', numGuides: 1, numDays: 1, pricePerDay: 0, currency: 'LAK' });
     const addDocumentFee = () => addItem('documents', { id: uuidv4(), documentName: '', pax: 1, price: 0, currency: 'LAK' });
     const addOverseasPackage = () => addItem('overseasPackages', { id: uuidv4(), name: '', priceUSD: 0, priceTHB: 0, priceCNY: 0 });
-    const addActivity = () => addItem('activities', { id: uuidv4(), name: '', pax: 1, price: 0, currency: 'LAK' });
 
     // --- Total Calculation Memos ---
     const accommodationTotals = useMemo(() => {
@@ -492,7 +467,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
     if (loading || !isClient) {
         return (
             <div className="flex flex-col items-center justify-center h-screen">
-                <p className="text-2xl font-semibold mb-4">Loading...</p>
+                <p className="text-2xl font-semibold mb-4">ກຳລັງໂຫຼດ...</p>
             </div>
         );
     }
@@ -601,7 +576,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0">
-                                                    <Calendar mode="single" selected={startDate} onSelect={date => setTourInfo({...tourInfo, startDate: date?.toISOString()})} initialFocus locale={th} />
+                                                    <Calendar mode="single" selected={startDate || undefined} onSelect={date => setTourInfo({...tourInfo, startDate: date?.toISOString()})} initialFocus locale={th} />
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -614,7 +589,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                     </Button>
                                                 </PopoverTrigger>
                                                 <PopoverContent className="w-auto p-0">
-                                                    <Calendar mode="single" selected={endDate} onSelect={date => setTourInfo({...tourInfo, endDate: date?.toISOString()})} initialFocus locale={th} />
+                                                    <Calendar mode="single" selected={endDate || undefined} onSelect={date => setTourInfo({...tourInfo, endDate: date?.toISOString()})} initialFocus locale={th} />
                                                 </PopoverContent>
                                             </Popover>
                                         </div>
@@ -686,7 +661,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                                         </Button>
                                                                     </PopoverTrigger>
                                                                     <PopoverContent className="w-auto p-0">
-                                                                        <Calendar mode="single" selected={toDateSafe(acc.checkInDate)} onSelect={(date) => updateItem('accommodations', acc.id, 'checkInDate', date?.toISOString())} initialFocus />
+                                                                        <Calendar mode="single" selected={toDateSafe(acc.checkInDate) || undefined} onSelect={(date) => updateItem('accommodations', acc.id, 'checkInDate', date?.toISOString())} initialFocus />
                                                                     </PopoverContent>
                                                                 </Popover>
                                                             </div>
@@ -701,9 +676,9 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                                         <Select value={room.type} onValueChange={(v) => updateRoom(acc.id, room.id, 'type', v)}>
                                                                             <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                                                             <SelectContent>
-                                                                                <SelectItem value="เตียงเดี่ยว">ຕຽງດ່ຽວ</SelectItem>
-                                                                                <SelectItem value="เตียงคู่">ຕຽງຄູ່</SelectItem>
-                                                                                <SelectItem value="ห้องสวีท">ຫ້ອງສະວີດ</SelectItem>
+                                                                                <SelectItem value="ເຕຽງດ່ຽວ">ເຕຽງດ່ຽວ</SelectItem>
+                                                                                <SelectItem value="ເຕຽງຄູ່">ເຕຽງຄູ່</SelectItem>
+                                                                                <SelectItem value="ຫ້ອງສະວີດ">ຫ້ອງສະວີດ</SelectItem>
                                                                             </SelectContent>
                                                                         </Select>
                                                                     </div>
@@ -847,7 +822,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-auto p-0">
-                                                                            <Calendar mode="single" selected={toDateSafe(flight.departureDate)} onSelect={(date) => updateItem('flights', flight.id, 'departureDate', date?.toISOString())} initialFocus />
+                                                                            <Calendar mode="single" selected={toDateSafe(flight.departureDate) || undefined} onSelect={(date) => updateItem('flights', flight.id, 'departureDate', date?.toISOString())} initialFocus />
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                     <div className="relative">
@@ -921,7 +896,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                                             </Button>
                                                                         </PopoverTrigger>
                                                                         <PopoverContent className="w-auto p-0">
-                                                                            <Calendar mode="single" selected={toDateSafe(ticket.departureDate)} onSelect={(date) => updateItem('trainTickets', ticket.id, 'departureDate', date?.toISOString())} initialFocus />
+                                                                            <Calendar mode="single" selected={toDateSafe(ticket.departureDate) || undefined} onSelect={(date) => updateItem('trainTickets', ticket.id, 'departureDate', date?.toISOString())} initialFocus />
                                                                         </PopoverContent>
                                                                     </Popover>
                                                                     <div className="relative">
@@ -947,7 +922,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                             <div className="space-y-2">
                                                                 <Label>ສະກຸນເງິນ</Label>
                                                                 <Select value={ticket.currency} onValueChange={(v) => updateItem('trainTickets', ticket.id, 'currency', v)}>
-                                                                    <SelectTrigger><SelectValue /></SelectTrigger>
+                                                                    <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
                                                                     <SelectContent>{(Object.keys(currencySymbols) as Currency[]).map(c => (<SelectItem key={c} value={c}>{currencySymbols[c]}</SelectItem>))}</SelectContent>
                                                                 </Select>
                                                             </div>
@@ -1229,18 +1204,10 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                             <Button onClick={addOverseasPackage}><PlusCircle className="mr-2 h-4 w-4" />ເພີ່ມຄ່າແພັກເກດ</Button>
                                         </div>
                                     </CostCategoryContent>
-<<<<<<< HEAD
-
                                     {/* Activities */}
                                     <CostCategoryContent 
                                         title="ຄ່າກິດຈະກຳ" 
                                         icon={<Bike className="h-5 w-5" />}
-=======
-                                    {/* Activities */}
-                                    <CostCategoryContent 
-                                        title="ຄ່າກິດຈະກຳ" 
-                                        icon={<Ticket className="h-5 w-5" />}
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
                                         summary={<CategorySummary totals={activityTotals} />}
                                     >
                                         <div className="space-y-4 pt-2">
@@ -1260,11 +1227,7 @@ export default function TourCalculatorClientPage({ initialCalculation }: { initi
                                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                             <div className="space-y-2">
                                                                 <Label>ຊື່ກິດຈະກຳ</Label>
-<<<<<<< HEAD
                                                                 <Input value={activity.name} onChange={e => updateItem('activities', activity.id, 'name', e.target.value)} placeholder="ເຊັ່ນ: ຂີ່ລົດຖີບ, ລ່ອງເຮືອ" />
-=======
-                                                                <Input value={activity.name} onChange={e => updateItem('activities', activity.id, 'name', e.target.value)} placeholder="ເຊັ່ນ: ຂີ່ຊ້າງ, ລ່ອງເຮືອ" />
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
                                                             </div>
                                                         </div>
                                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

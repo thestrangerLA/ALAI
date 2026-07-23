@@ -1,14 +1,8 @@
-
-
 "use client"
 
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-<<<<<<< HEAD
 import { Calculator, BedDouble, Truck, Plane, TrainFront, Camera, UtensilsCrossed, Users, FileText, Earth, Bike } from 'lucide-react';
-=======
-import { Calculator, BedDouble, Truck, Plane, TrainFront, Camera, UtensilsCrossed, Users, FileText, Earth, Ticket } from 'lucide-react';
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 
 type Currency = 'USD' | 'THB' | 'LAK' | 'CNY';
 
@@ -43,11 +37,7 @@ const categoryIcons: { [key: string]: React.ReactNode } = {
     'ຄ່າໄກ້': <Users className="h-6 w-6 text-indigo-500" />,
     'ຄ່າເອກະສານ': <FileText className="h-6 w-6 text-pink-500" />,
     'ຄ່າເພັກເກດຕ່າງປະເທດ': <Earth className="h-6 w-6 text-teal-500" />,
-<<<<<<< HEAD
     'ຄ່າກິດຈະກຳ': <Bike className="h-6 w-6 text-cyan-500" />,
-=======
-    'ຄ່າກິດຈະກຳ': <Ticket className="h-6 w-6 text-cyan-500" />,
->>>>>>> 12728d97b028c2558a1c98dfc692eb989169bec2
 };
 
 
