@@ -1,6 +1,8 @@
+
+
 "use client"
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
@@ -15,73 +17,23 @@ import { listenToAutoPartsStockItems } from '@/services/autoPartsStockService';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { format, startOfDay, isWithinInterval, startOfMonth, endOfMonth, getMonth, setMonth, getYear } from 'date-fns';
+import { format, startOfDay, isWithinInterval, startOfMonth, endOfMonth, getMonth, setMonth, getYear, isSameDay } from 'date-fns';
 
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubTrigger, DropdownMenuPortal, DropdownMenuSubContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuPortal, DropdownMenuSubTrigger, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { cn } from '@/lib/utils';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { toDateSafe } from '@/lib/timestamp';
+import { v4 as uuidv4 } from 'uuid';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+
 
 const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('lo-LA', { minimumFractionDigits: 0 }).format(value);
 }
 
-const SearchableSelect = ({ items, value, onValueChange }: { items: StockItem[], value: string, onValueChange: (selectedItem: StockItem | null) => void }) => {
-    const [open, setOpen] = useState(false);
-
-    return (
-        <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-                <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={open}
-                    className="w-full justify-between h-8"
-                >
-                    <span className="truncate">
-                        {value
-                            ? items.find((item) => item.name === value)?.name ?? value
-                            : "ເລືອກສິນຄ້າ..."}
-                    </span>
-                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
-                <Command>
-                    <CommandInput placeholder="ຄົ້ນຫາສິນຄ້າ..." />
-                    <CommandEmpty>ບໍ່ພົບສິນຄ້າ.</CommandEmpty>
-                    <CommandGroup>
-                        {items.map((item) => (
-                            <CommandItem
-                                key={item.id}
-                                value={item.name}
-                                onSelect={(currentValue) => {
-                                    const selectedItem = items.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-                                    onValueChange(selectedItem || null);
-                                    setOpen(false);
-                                }}
-                            >
-                                <Check
-                                    className={cn(
-                                        "mr-2 h-4 w-4",
-                                        value === item.name ? "opacity-100" : "opacity-0"
-                                    )}
-                                />
-                                {item.name}
-                            </CommandItem>
-                        ))}
-                    </CommandGroup>
-                </Command>
-            </PopoverContent>
-        </Popover>
-    );
-};
-
 const AddEntriesDialog = ({ onAddMultipleEntries, stockItems, lastOrderNumber }: { 
-    onAddMultipleEntries: (entries: any[], date: Date, company: 'ANS' | 'HAL' | 'MX' | 'NH', order: number, sender: 'Tee' | 'YU') => Promise<void>;
+    onAddMultipleEntries: (entries: Omit<TransportEntry, 'id'|'createdAt'|'date'|'type'|'sender'|'order'>[], date: Date, company: 'ANS' | 'HAL' | 'MX' | 'NH', order: number, sender: 'Tee' | 'YU') => Promise<void>;
     stockItems: StockItem[];
     lastOrderNumber: number;
 }) => {
@@ -91,7 +43,7 @@ const AddEntriesDialog = ({ onAddMultipleEntries, stockItems, lastOrderNumber }:
     const [company, setCompany] = useState<'ANS' | 'HAL' | 'MX' | 'NH'>('ANS');
     const [order, setOrder] = useState<number>(lastOrderNumber + 1);
     const [sender, setSender] = useState<'Tee' | 'YU'>('Tee');
-    const [entries, setEntries] = useState<any[]>([]);
+    const [entries, setEntries] = useState<Omit<TransportEntry, 'id'|'createdAt'|'date'|'type'|'order'|'sender'>[]>([]);
 
     useEffect(() => {
         setOrder(lastOrderNumber + 1);
@@ -102,7 +54,7 @@ const AddEntriesDialog = ({ onAddMultipleEntries, stockItems, lastOrderNumber }:
         setEntries(prev => [...prev, { detail: '', cost: 0, quantity: 1, amount: 0, finished: false }]);
     };
 
-    const handleItemChange = (index: number, field: string, value: any) => {
+    const handleItemChange = (index: number, field: keyof Omit<TransportEntry, 'id'|'createdAt'|'date'|'type'|'order'|'sender'>, value: any) => {
         setEntries(prev => prev.map((item, i) => i === index ? { ...item, [field]: value } : item));
     };
 
@@ -222,7 +174,60 @@ const AddEntriesDialog = ({ onAddMultipleEntries, stockItems, lastOrderNumber }:
     );
 };
 
-const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }: { 
+const SearchableSelect = ({ items, value, onValueChange }: { items: StockItem[], value: string, onValueChange: (selectedItem: StockItem | null) => void }) => {
+    const [open, setOpen] = useState(false);
+
+    return (
+        <Popover open={open} onOpenChange={setOpen}>
+            <PopoverTrigger asChild>
+                <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={open}
+                    className="w-full justify-between h-8"
+                >
+                    <span className="truncate">
+                        {value
+                            ? items.find((item) => item.name === value)?.name ?? value
+                            : "ເລືອກສິນຄ້າ..."}
+                    </span>
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-[300px] p-0">
+                <Command>
+                    <CommandInput placeholder="ຄົ້ນຫາສິນຄ້າ..." />
+                    <CommandEmpty>ບໍ່ພົບສິນຄ້າ.</CommandEmpty>
+                    <CommandGroup>
+                        {items.map((item) => (
+                            <CommandItem
+                                key={item.id}
+                                value={item.name}
+                                onSelect={(currentValue) => {
+                                    const selectedItem = items.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+                                    onValueChange(selectedItem || null);
+                                    setOpen(false);
+                                }}
+                            >
+                                <Check
+                                    className={cn(
+                                        "mr-2 h-4 w-4",
+                                        value === item.name ? "opacity-100" : "opacity-0"
+                                    )}
+                                />
+                                {item.name}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </Command>
+            </PopoverContent>
+        </Popover>
+    );
+};
+
+
+const TransportTable = ({ type, title, entries, onRowChange, onRowDelete, stockItems }: { 
+    type: 'ANS' | 'HAL' | 'MX' | 'NH',
     title: string, 
     entries: TransportEntry[],
     onRowChange: (id: string, updatedFields: Partial<TransportEntry>) => void,
@@ -249,22 +254,31 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
         return Object.values(groupedByDay).sort((a, b) => b.date.getTime() - a.date.getTime());
     }, [entries]);
 
+     const handleDetailChange = (rowId: string, selectedItem: StockItem | null) => {
+        if (selectedItem) {
+            onRowChange(rowId, { detail: selectedItem.name, cost: selectedItem.costPrice });
+        } else {
+            onRowChange(rowId, { detail: '' });
+        }
+    };
+
+
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
                 <div>
                     <CardTitle>{title}</CardTitle>
-                    <CardDescription className="flex flex-wrap items-center gap-x-2 text-xs">
+                    <CardDescription className="flex flex-wrap items-center gap-x-2">
                         <span>ລວມ: {formatCurrency(totalAmount)}</span>
-                        <span className="text-red-600 font-semibold">ຄົງເຫຼືອ: {formatCurrency(totalRemaining)}</span>
+                        <span className="text-red-600">ຄົງເຫຼືອ: {formatCurrency(totalRemaining)}</span>
                         {totalEntries > 0 && (
-                             <span className="font-semibold text-muted-foreground">| ຄ້າງ {unfinishedEntriesCount}/{totalEntries} ລາຍການ</span>
+                             <span className="font-semibold">| ຄ້າງ {unfinishedEntriesCount}/{totalEntries} ລາຍການ</span>
                         )}
                     </CardDescription>
                 </div>
             </CardHeader>
             <CardContent>
-                 <div className="overflow-x-auto">
+                 <div className="overflow-x-auto print-all-content">
                     {dailySummaries.length > 0 ? (
                          <Accordion type="single" collapsible className="w-full">
                             {dailySummaries.map((summary, index) => {
@@ -279,7 +293,7 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
                                 <AccordionItem value={`day-${index}`} key={index}>
                                     <AccordionTrigger>
                                         <div className="flex justify-between w-full pr-4">
-                                            <div className="font-semibold">{`ວັນທີ ${format(summary.date, "dd/MM/yyyy")}`}</div>
+                                            <div className="font-semibold">{`ວັນທີ ${format(summary.date, "d")}`}</div>
                                         </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="pl-4 border-l-2">
@@ -303,12 +317,12 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
                                                                     <span>ລຳດັບ: {order}</span>
                                                                     <span className="font-medium text-purple-600 text-xs">({entries[0]?.sender})</span>
                                                                 </div>
-                                                                <div className="flex gap-4 items-center text-xs">
+                                                                <div className="flex gap-4 items-center text-sm">
                                                                     <span className={`font-medium ${unfinishedCount > 0 ? 'text-red-500' : 'text-green-500'}`}>
                                                                         ຄ້າງ {unfinishedCount}/{entries.length}
                                                                     </span>
                                                                     {unfinishedCount > 0 && <span className="text-red-600">ເຫຼືອ: {formatCurrency(orderTotals.remainingAmount)}</span>}
-                                                                    <span className={orderTotals.profit >= 0 ? 'text-green-600 font-bold' : 'text-red-600 font-bold'}>
+                                                                    <span className={orderTotals.profit >= 0 ? 'text-green-600' : 'text-red-600'}>
                                                                         ກຳໄລ: {formatCurrency(orderTotals.profit)}
                                                                     </span>
                                                                 </div>
@@ -319,31 +333,38 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
                                                                 <TableHeader>
                                                                     <TableRow>
                                                                         <TableHead className="w-[35%]">ລາຍລະອຽດ</TableHead>
-                                                                        <TableHead className="w-[100px] text-right">ຕົ້ນທຶນ</TableHead>
-                                                                        <TableHead className="w-[80px] text-right">ຈຳນວນ</TableHead>
+                                                                        <TableHead className="w-[120px] text-right">ຕົ້ນທຶນ</TableHead>
+                                                                        <TableHead className="w-[100px] text-right">ຈຳນວນ</TableHead>
                                                                         <TableHead className="w-[120px] text-right">ຈຳນວນເງິນ</TableHead>
+                                                                        <TableHead className="w-[120px] text-right">ກຳໄລ</TableHead>
                                                                         <TableHead className="w-[80px] text-center">ສຳເລັດ</TableHead>
                                                                         <TableHead className="w-[50px] text-center">ລົບ</TableHead>
                                                                     </TableRow>
                                                                 </TableHeader>
                                                                 <TableBody>
-                                                                    {entries.map((row) => (
+                                                                    {entries.map((row) => {
+                                                                        const totalCost = (row.cost || 0) * (row.quantity || 1);
+                                                                        const profit = (row.amount || 0) - totalCost;
+                                                                        return (
                                                                         <TableRow key={row.id}>
                                                                             <TableCell className="p-2">
                                                                                 <SearchableSelect
                                                                                     items={stockItems}
                                                                                     value={row.detail || ''}
-                                                                                    onValueChange={(selected) => onRowChange(row.id, { detail: selected?.name || '', cost: selected?.costPrice || 0 })}
+                                                                                    onValueChange={(selected) => handleDetailChange(row.id, selected)}
                                                                                 />
                                                                             </TableCell>
                                                                             <TableCell className="p-2">
-                                                                                <Input type="number" value={row.cost || ''} onChange={(e) => onRowChange(row.id, { cost: parseFloat(e.target.value) || 0 })} className="h-8 text-right" />
+                                                                                <Input type="number" value={row.cost || ''} onChange={(e) => onRowChange(row.id, { cost: parseFloat(e.target.value) || 0 })} placeholder="ຕົ້ນທຶນ" className="h-8 text-right" />
                                                                             </TableCell>
                                                                             <TableCell className="p-2">
-                                                                                <Input type="number" value={row.quantity || ''} onChange={(e) => onRowChange(row.id, { quantity: parseInt(e.target.value, 10) || 1 })} className="h-8 text-right" />
+                                                                                <Input type="number" value={row.quantity || ''} onChange={(e) => onRowChange(row.id, { quantity: parseInt(e.target.value, 10) || 1 })} placeholder="ຈຳນວນ" className="h-8 text-right" />
                                                                             </TableCell>
                                                                             <TableCell className="p-2">
-                                                                                <Input type="number" value={row.amount || ''} onChange={(e) => onRowChange(row.id, { amount: parseFloat(e.target.value) || 0 })} className="h-8 text-right" />
+                                                                                <Input type="number" value={row.amount || ''} onChange={(e) => onRowChange(row.id, { amount: parseFloat(e.target.value) || 0 })} placeholder="ຈຳນວນເງິນ" className="h-8 text-right" />
+                                                                            </TableCell>
+                                                                            <TableCell className={`p-2 text-right font-medium ${profit >= 0 ? '' : 'text-red-600'}`}>
+                                                                                {formatCurrency(profit)}
                                                                             </TableCell>
                                                                             <TableCell className="text-center p-2">
                                                                                 <Checkbox checked={row.finished} onCheckedChange={(checked) => onRowChange(row.id, { finished: !!checked })} />
@@ -354,7 +375,7 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
                                                                                 </Button>
                                                                             </TableCell>
                                                                         </TableRow>
-                                                                    ))}
+                                                                    )})}
                                                                 </TableBody>
                                                             </Table>
                                                         </AccordionContent>
@@ -367,7 +388,7 @@ const TransportTable = ({ title, entries, onRowChange, onRowDelete, stockItems }
                             )})}
                          </Accordion>
                     ) : (
-                         <div className="text-center text-muted-foreground py-8">ບໍ່ມີລາຍການໃນເດືອນທີ່ເລືອກ</div>
+                         <div className="text-center text-muted-foreground py-4">ບໍ່ມີລາຍການໃນເດືອນທີ່ເລືອກ</div>
                     )}
                 </div>
             </CardContent>
@@ -398,6 +419,11 @@ export default function AutoPartsTransportPage() {
     }, [allEntries, displayMonth]);
 
 
+    const ansEntries = useMemo(() => filteredEntries.filter(e => e.type === 'ANS'), [filteredEntries]);
+    const halEntries = useMemo(() => filteredEntries.filter(e => e.type === 'HAL'), [filteredEntries]);
+    const mxEntries = useMemo(() => filteredEntries.filter(e => e.type === 'MX'), [filteredEntries]);
+    const nhEntries = useMemo(() => filteredEntries.filter(e => e.type === 'NH'), [filteredEntries]);
+
     const lastOrderNumber = useMemo(() => {
         const start = startOfMonth(displayMonth);
         const end = endOfMonth(displayMonth);
@@ -411,13 +437,21 @@ export default function AutoPartsTransportPage() {
     const transportTotalCost = useMemo(() => filteredEntries.reduce((total, row) => total + ((row.cost || 0) * (row.quantity || 1)), 0), [filteredEntries]);
     const transportProfit = useMemo(() => transportTotalAmount - transportTotalCost, [transportTotalAmount, transportTotalCost]);
     const transportRemaining = useMemo(() => filteredEntries.filter(e => !e.finished).reduce((total, row) => total + (row.amount || 0), 0), [filteredEntries]);
+    const transportRemainingCost = useMemo(() => {
+        return filteredEntries
+            .filter(e => !e.finished)
+            .reduce((total, row) => total + ((row.cost || 0) * (row.quantity || 1)), 0);
+    }, [filteredEntries]);
+    
+    const transportRemainingProfit = useMemo(() => transportRemaining - transportRemainingCost, [transportRemaining, transportRemainingCost]);
+
 
     const handleTransportRowChange = async (id: string, updatedFields: Partial<TransportEntry>) => {
         try {
             await updateAutoPartsTransportEntry(id, updatedFields);
         } catch (error) {
             console.error("Error updating row: ", error);
-            toast({ title: "ເກີດຂໍ້ຜິດພາດ", variant: "destructive" });
+            toast({ title: "ເກີດຂໍ້ຜິດພາດ", description: "ບໍ່ສາມາດອັບເດດຂໍ້ມູນໄດ້", variant: "destructive" });
         }
     };
 
@@ -428,7 +462,7 @@ export default function AutoPartsTransportPage() {
             toast({ title: "ລຶບແຖວສຳເລັດ" });
         } catch (error) {
             console.error("Error deleting row: ", error);
-            toast({ title: "ເກີດຂໍ້ຜິດພາດ", variant: "destructive" });
+            toast({ title: "ເກີດຂໍ້ຜິດພາດ", description: "ບໍ່ສາມາດລຶບແຖວໄດ້", variant: "destructive" });
         }
     };
 
@@ -472,9 +506,10 @@ export default function AutoPartsTransportPage() {
         );
     };
 
+
     return (
-        <div className="flex min-h-screen w-full flex-col bg-muted/40">
-            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6">
+        <div className="flex min-h-screen w-full flex-col bg-muted/40 print:bg-white">
+            <header className="sticky top-0 z-30 flex h-14 items-center gap-4 border-b bg-background px-4 sm:static sm:h-auto sm:border-0 sm:bg-transparent sm:px-6 print:hidden">
                 <Button variant="outline" size="icon" className="h-8 w-8" asChild>
                     <Link href="/autoparts">
                         <ArrowLeft className="h-4 w-4" />
@@ -492,13 +527,60 @@ export default function AutoPartsTransportPage() {
             </header>
             <main className="flex-1 p-4 sm:px-6 sm:py-0 md:grid md:grid-cols-3 md:gap-8">
                 <div className="md:col-span-2 flex flex-col gap-4">
-                     <TransportTable 
-                        title="ລາຍການຂົນສົ່ງທັງໝົດ"
-                        entries={filteredEntries}
-                        onRowChange={handleTransportRowChange}
-                        onRowDelete={handleTransportRowDelete}
-                        stockItems={stockItems}
-                    />
+                     <Accordion type="single" collapsible defaultValue="item-ans" className="w-full">
+                        <AccordionItem value="item-ans">
+                            <AccordionTrigger className="text-lg font-bold bg-blue-50 hover:bg-blue-100 px-4 rounded-md">ANS</AccordionTrigger>
+                            <AccordionContent className="p-1">
+                                 <TransportTable 
+                                    type="ANS"
+                                    title="ລາຍການ ANS"
+                                    entries={ansEntries}
+                                    onRowChange={handleTransportRowChange}
+                                    onRowDelete={handleTransportRowDelete}
+                                    stockItems={stockItems}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-hal">
+                             <AccordionTrigger className="text-lg font-bold bg-green-50 hover:bg-green-100 px-4 rounded-md">HAL</AccordionTrigger>
+                            <AccordionContent className="p-1">
+                                <TransportTable 
+                                    type="HAL"
+                                    title="ລາຍການ HAL"
+                                    entries={halEntries}
+                                    onRowChange={handleTransportRowChange}
+                                    onRowDelete={handleTransportRowDelete}
+                                    stockItems={stockItems}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-mx">
+                             <AccordionTrigger className="text-lg font-bold bg-orange-50 hover:bg-orange-100 px-4 rounded-md">MX</AccordionTrigger>
+                            <AccordionContent className="p-1">
+                                <TransportTable 
+                                    type="MX"
+                                    title="ລາຍການ MX"
+                                    entries={mxEntries}
+                                    onRowChange={handleTransportRowChange}
+                                    onRowDelete={handleTransportRowDelete}
+                                    stockItems={stockItems}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                        <AccordionItem value="item-nh">
+                             <AccordionTrigger className="text-lg font-bold bg-purple-50 hover:bg-purple-100 px-4 rounded-md">NH</AccordionTrigger>
+                            <AccordionContent className="p-1">
+                                <TransportTable 
+                                    type="NH"
+                                    title="ລາຍການ NH"
+                                    entries={nhEntries}
+                                    onRowChange={handleTransportRowChange}
+                                    onRowDelete={handleTransportRowDelete}
+                                    stockItems={stockItems}
+                                />
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                 </div>
                 <div className="md:col-span-1 mt-4 md:mt-0 flex flex-col gap-4">
                      <Card>
@@ -522,6 +604,14 @@ export default function AutoPartsTransportPage() {
                                 <span className="font-semibold text-lg">ຍອດຂາຍຄົງເຫຼືອ</span>
                                 <span className="font-bold text-lg text-red-600">{formatCurrency(transportRemaining)}</span>
                             </div>
+                            <div className="flex justify-between items-center p-4 bg-red-100/50 border border-red-200 rounded-md">
+                                <span className="font-semibold text-lg text-red-700">ຕົ້ນທຶນຄົງເຫຼືອ</span>
+                                <span className="font-bold text-lg text-red-700">{formatCurrency(transportRemainingCost)}</span>
+                            </div>
+                            <div className="flex justify-between items-center p-4 bg-yellow-100/50 border border-yellow-200 rounded-md">
+                                <span className="font-semibold text-lg text-yellow-800">ກຳໄລຄົງຄ້າງ</span>
+                                <span className={`font-bold text-lg ${transportRemainingProfit >= 0 ? 'text-yellow-700' : 'text-red-700'}`}>{formatCurrency(transportRemainingProfit)}</span>
+                            </div>
                         </CardContent>
                     </Card>
                 </div>
@@ -529,3 +619,4 @@ export default function AutoPartsTransportPage() {
         </div>
     );
 }
+

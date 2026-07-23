@@ -1,9 +1,11 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft, Landmark, Package, FilePieChart, Wrench, Truck, HandCoins, Users } from "lucide-react"
 import Link from 'next/link'
 import { Button } from "@/components/ui/button"
+
 
 export default function AutoPartsPage() {
   return (
